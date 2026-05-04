@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -89,31 +90,27 @@ class ChunkDaoFlowTest {
 
     @Test
     fun `observeBySession does not emit for different session`() = runTest {
-        dao.observeBySession("s1").test {
-            val initial = awaitItem()
-            assertTrue(initial.isEmpty())
-
-            // 別セッションへのinsert
-            dao.insert(ChunkEntity(
-                sessionId = "s2", chunkIndex = 0,
-                filePath = "/a", status = ChunkStatus.PENDING
-            ))
-
-            // s1のデータは変化なし（空のまま）
-            // Roomのinvalidation trackerが同じ結果を再emitする可能性あるため、
-            // 追加emitがあれば空リストであることを確認
-            var eventCount = 0
-            try {
-                while (true) {
-                    val next = awaitItem()
-                    eventCount++
-                    assertTrue(next.isEmpty(), "s1 should remain empty after s2 insert")
-                }
-            } catch (_: Exception) {
-                // Turbine: no more items
-            }
-
-            cancelAndIgnoreRemainingEvents()
+        // s1を監視
+        val items = mutableListOf<List<ChunkEntity>>()
+        val job = launch {
+            dao.observeBySession("s1").collect { items.add(it) }
         }
+
+        // 初期emit待ち
+        advanceUntilIdle()
+        assertTrue(items.isNotEmpty())
+        assertTrue(items.last().isEmpty())
+
+        // 別セッションにinsert
+        dao.insert(ChunkEntity(
+            sessionId = "s2", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.PENDING
+        ))
+        advanceUntilIdle()
+
+        // s1には影響なし（追加emitがないか、空リストのまま）
+        assertTrue(items.last().isEmpty(), "s1 should remain empty after s2 insert")
+
+        job.cancel()
     }
 }
