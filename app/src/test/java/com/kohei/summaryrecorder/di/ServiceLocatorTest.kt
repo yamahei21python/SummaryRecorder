@@ -3,7 +3,6 @@ package com.kohei.summaryrecorder.di
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.audio.DebugConfig
-import com.kohei.summaryrecorder.audio.DummyAudioProvider
 import com.kohei.summaryrecorder.audio.MockSummaryProvider
 import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
 import com.kohei.summaryrecorder.audio.RealAudioProvider
@@ -187,17 +186,6 @@ class ServiceLocatorTest {
     // ===== createAudioProvider =====
 
     @Test
-    fun `createAudioProvider debugMode=true returns DummyAudioProvider`() {
-        DebugConfig.debugMode = true
-        val context = org.robolectric.RuntimeEnvironment.getApplication()
-        val provider = ServiceLocator.createAudioProvider(context)
-        assertTrue(
-            "Expected DummyAudioProvider, got ${provider::class.simpleName}",
-            provider is DummyAudioProvider
-        )
-    }
-
-    @Test
     fun `createAudioProvider debugMode=false returns RealAudioProvider`() {
         DebugConfig.debugMode = false
         val context = org.robolectric.RuntimeEnvironment.getApplication()
@@ -207,6 +195,9 @@ class ServiceLocatorTest {
             provider is RealAudioProvider
         )
     }
+
+    // Note: createAudioProvider debugMode=true は assets/dummy_audio.wav が必要なため
+    // androidTest または assets付きテストで検証する
 
     // ===== DebugConfig =====
 

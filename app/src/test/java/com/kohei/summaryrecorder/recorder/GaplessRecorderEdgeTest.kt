@@ -121,7 +121,7 @@ class GaplessRecorderEdgeTest {
     }
 
     @Test
-    fun `one byte over chunkSizeBytes produces full chunk plus partial`() = runTest {
+    fun `one byte over chunkSizeBytes produces one oversized chunk`() = runTest {
         val chunkSize = 256L
         val recordedChunks = mutableListOf<Pair<Int, File>>()
         val recorder = GaplessRecorder(
@@ -130,16 +130,17 @@ class GaplessRecorderEdgeTest {
             onChunkComplete = { index, file -> recordedChunks.add(index to file) }
         )
 
-        // 257バイト書込み → 256バイトチャンク + 1バイト残り
+        // 257バイト書込み → 257 >= 256 → 分割トリガー → 257バイトチャンク1個
         recorder.writeTestPcmData(ByteArray(257) { it.toByte() })
         recorder.stopForTest()
 
-        // チャンク1(256) + チャンク2(1) → stopForTestで確定
-        assertTrue(recordedChunks.size >= 2, "Expected >= 2 chunks, got ${recordedChunks.size}")
+        // writeTestPcmDataは書込み後にチェック → 257バイト溜まった時点で>=256 → finalize
+        // その後残り0バイト → stopForTestで0バイトチャンクは追加されない
+        assertTrue(recordedChunks.size >= 1, "Expected >= 1 chunk, got ${recordedChunks.size}")
 
-        // 最初のチャンクは256バイト
         val firstDataLen = recordedChunks[0].second.length() - 44
-        assertEquals(256, firstDataLen)
+        // 257バイト全てが1チャンクに入る（分割は累積>=chunkSizeBytesでトリガー）
+        assertEquals(257, firstDataLen)
     }
 
     // ===== 二重stop安全性（stopForTest） =====

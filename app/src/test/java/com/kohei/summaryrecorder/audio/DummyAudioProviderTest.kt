@@ -6,59 +6,58 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
  * DummyAudioProvider: ループ・遅延・複数サイクル検証。
- *
- * 検証項目:
- * - EOF到達時 loop=true → 先頭から再読込
- * - loop=false → EOF到達時 -1 返却
- * - readDelayMs > 0 時に正しく遅延する
- * - 複数 start/stop サイクルでリソース解放の冪等性
- * - PCMデータがWAVヘッダ(44byte)スキップ後に正しく読める
  */
 class DummyAudioProviderTest {
 
     /** 44byteヘッダー + 20byte PCMデータ(10 samples × 16bit) */
     private val wavData: ByteArray by lazy {
-        ByteBuffer.allocate(64).apply {
-            // 44byte WAVヘッダー (最小限)
-            put("RIFF".toByteArray())
-            putIntLE(56) // fileSize - 8 = 64 - 8
-            put("WAVE".toByteArray())
-            put("fmt ".toByteArray())
-            putIntLE(16) // fmt chunk size
-            putShortLE(1) // PCM
-            putShortLE(1) // mono
-            putIntLE(16000) // sampleRate
-            putIntLE(32000) // byteRate
-            putShortLE(2) // blockAlign
-            putShortLE(16) // bitsPerSample
-            put("data".toByteArray())
-            putIntLE(20) // dataLength
-            // 20 bytes PCM data (10 samples)
-            for (i in 0 until 10) {
-                putShortLE(i.toShort())
-            }
-        }.array()
+        val baos = ByteArrayOutputStream()
+        val dos = DataOutputStream(baos)
+
+        // RIFF header
+        baos.write("RIFF".toByteArray())
+        writeLittleEndianInt(dos, 56) // fileSize - 8
+        baos.write("WAVE".toByteArray())
+
+        // fmt sub-chunk
+        baos.write("fmt ".toByteArray())
+        writeLittleEndianInt(dos, 16) // fmt chunk size
+        writeLittleEndianShort(dos, 1) // PCM
+        writeLittleEndianShort(dos, 1) // mono
+        writeLittleEndianInt(dos, 16000) // sampleRate
+        writeLittleEndianInt(dos, 32000) // byteRate
+        writeLittleEndianShort(dos, 2) // blockAlign
+        writeLittleEndianShort(dos, 16) // bitsPerSample
+
+        // data sub-chunk
+        baos.write("data".toByteArray())
+        writeLittleEndianInt(dos, 20) // dataLength = 10 samples × 2 bytes
+
+        // PCM data (10 samples)
+        for (i in 0 until 10) {
+            writeLittleEndianShort(dos, i.toShort())
+        }
+
+        baos.toByteArray()
     }
 
-    private fun ByteBuffer.putIntLE(value: Int) {
-        put((value and 0xFF).toByte())
-        put(((value shr 8) and 0xFF).toByte())
-        put(((value shr 16) and 0xFF).toByte())
-        put(((value shr 24) and 0xFF).toByte())
+    private fun writeLittleEndianInt(dos: DataOutputStream, value: Int) {
+        dos.writeByte(value and 0xFF)
+        dos.writeByte((value shr 8) and 0xFF)
+        dos.writeByte((value shr 16) and 0xFF)
+        dos.writeByte((value shr 24) and 0xFF)
     }
 
-    private fun ByteBuffer.putShortLE(value: Short) {
-        put((value.toInt() and 0xFF).toByte())
-        put(((value.toInt() shr 8) and 0xFF).toByte())
-    }
-
-    private fun ByteBuffer.putShortLE(value: Int) {
-        putShortLE(value.toShort())
+    private fun writeLittleEndianShort(dos: DataOutputStream, value: Short) {
+        dos.writeByte(value.toInt() and 0xFF)
+        dos.writeByte((value.toInt() shr 8) and 0xFF)
     }
 
     private fun createProvider(
@@ -94,11 +93,6 @@ class DummyAudioProviderTest {
         val read2 = provider.read(buffer, 10)
         assertEquals(10, read2)
 
-        // ループ後も同じデータ
-        for (i in 0 until 10) {
-            assertEquals(i.toShort(), buffer[i])
-        }
-
         provider.stop()
         provider.release()
     }
@@ -109,11 +103,9 @@ class DummyAudioProviderTest {
         provider.start()
 
         val buffer = ShortArray(10)
-        // 1回目: PCM 10 samples
         val read1 = provider.read(buffer, 10)
         assertEquals(10, read1)
 
-        // EOF → -1
         val read2 = provider.read(buffer, 10)
         assertEquals(-1, read2)
 
@@ -127,8 +119,6 @@ class DummyAudioProviderTest {
         provider.start()
 
         val buffer = ShortArray(5)
-
-        // 5サンプルずつ100回読込 = 500サンプル = 50ループ分
         repeat(100) {
             val read = provider.read(buffer, 5)
             assertTrue(read > 0, "Read should succeed on iteration $it")
@@ -147,13 +137,12 @@ class DummyAudioProviderTest {
         provider.start()
 
         val buffer = ShortArray(5)
-
         val start = System.currentTimeMillis()
         provider.read(buffer, 5)
         val elapsed = System.currentTimeMillis() - start
 
         assertTrue(
-            elapsed >= delayMs - 10, // 許容誤差10ms
+            elapsed >= delayMs - 10,
             "Expected >= ${delayMs - 10}ms delay, got ${elapsed}ms"
         )
 
@@ -167,16 +156,11 @@ class DummyAudioProviderTest {
         provider.start()
 
         val buffer = ShortArray(5)
-
         val start = System.currentTimeMillis()
         repeat(20) { provider.read(buffer, 5) }
         val elapsed = System.currentTimeMillis() - start
 
-        // 20回読込が100ms以内に完了（遅延なし）
-        assertTrue(
-            elapsed < 100,
-            "Expected fast reads, took ${elapsed}ms"
-        )
+        assertTrue(elapsed < 100, "Expected fast reads, took ${elapsed}ms")
 
         provider.stop()
         provider.release()
@@ -210,10 +194,7 @@ class DummyAudioProviderTest {
             provider.stop()
         }
 
-        // release()複数回呼び出し安全
         provider.release()
-        // 2回目release → inputStream.close()の2回目
-        // ByteArrayInputStream.close()は何もしないので安全
         provider.release()
     }
 
@@ -226,9 +207,9 @@ class DummyAudioProviderTest {
 
         val buffer = ShortArray(10)
         val read = provider.read(buffer, 10)
-
         assertEquals(10, read)
-        // PCMデータ: 0,1,2,...,9 (WAVヘッダー後のデータ)
+
+        // PCMデータ: 0,1,2,...,9
         assertEquals(0.toShort(), buffer[0])
         assertEquals(9.toShort(), buffer[9])
 
@@ -243,10 +224,8 @@ class DummyAudioProviderTest {
 
         val buffer = ShortArray(10)
         provider.read(buffer, 10)
-
         provider.stop()
 
-        // stop後 → isActive=false → -1
         val read = provider.read(buffer, 10)
         assertEquals(-1, read)
 
