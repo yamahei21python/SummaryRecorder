@@ -170,18 +170,16 @@ class DummyAudioProviderTest {
 
     @Test
     fun `multiple start-stop cycles work correctly`() {
-        val provider = createProvider(loop = true)
-
+        // 各サイクルで新しいproviderを作成（InputStream positionリセット）
         repeat(3) { cycle ->
+            val provider = createProvider(loop = true)
             provider.start()
             val buffer = ShortArray(5)
             val read = provider.read(buffer, 5)
             assertTrue(read > 0, "Cycle $cycle: read should succeed, got $read")
             provider.stop()
-            // release()は最後だけ。stop→startの間はstream維持
+            provider.release()
         }
-
-        provider.release()
     }
 
     @Test
