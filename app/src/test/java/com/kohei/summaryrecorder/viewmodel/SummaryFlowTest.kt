@@ -1,6 +1,8 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import android.app.Application
 import android.content.Context
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
@@ -8,6 +10,7 @@ import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,15 +18,18 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [31], application = Application::class)
 class SummaryFlowTest {
 
     private lateinit var dao: ChunkDao
@@ -31,7 +37,7 @@ class SummaryFlowTest {
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var context: Context
 
-    @BeforeEach
+    @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         dao = mockk<ChunkDao>(relaxed = true)
@@ -39,9 +45,10 @@ class SummaryFlowTest {
         chunksFlow = MutableStateFlow(emptyList())
         context = mockk<Context>(relaxed = true)
         coEvery { dao.observeBySession(any()) } returns chunksFlow
+        every { context.startService(any()) } returns null
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
@@ -64,7 +71,6 @@ class SummaryFlowTest {
     )
 
     @Test
-    @DisplayName("all done triggers summarize")
     fun `all done triggers summarize`() = runTest {
         coEvery { summaryRepo.summarize(any()) } returns Result.success("要約テキスト")
 
@@ -86,7 +92,6 @@ class SummaryFlowTest {
     }
 
     @Test
-    @DisplayName("partial done does not trigger summarize")
     fun `partial done does not trigger summarize`() = runTest {
         val viewModel = MainViewModel(dao, summaryRepo)
         viewModel.startRecording(context)
@@ -102,7 +107,6 @@ class SummaryFlowTest {
     }
 
     @Test
-    @DisplayName("empty chunks does not trigger summarize")
     fun `empty chunks does not trigger summarize`() = runTest {
         val viewModel = MainViewModel(dao, summaryRepo)
         viewModel.startRecording(context)
@@ -114,7 +118,6 @@ class SummaryFlowTest {
     }
 
     @Test
-    @DisplayName("summarize failure shows error")
     fun `summarize failure shows error`() = runTest {
         coEvery { summaryRepo.summarize(any()) } returns Result.failure(
             RuntimeException("API error")
