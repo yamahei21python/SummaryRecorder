@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,8 +7,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-// local.properties読込（トップレベルでKotlin DSL解決問題回避）
-val localProps = java.util.Properties()
+// local.properties読込
+val localProps = Properties()
 val localPropsFile = rootProject.file("local.properties")
 if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
