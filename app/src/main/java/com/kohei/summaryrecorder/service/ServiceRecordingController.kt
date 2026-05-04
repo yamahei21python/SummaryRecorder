@@ -1,6 +1,7 @@
 package com.kohei.summaryrecorder.service
 
 import android.content.Context
+import com.kohei.summaryrecorder.domain.controller.RecordingController
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 

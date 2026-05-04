@@ -1,5 +1,7 @@
 package com.kohei.summaryrecorder.audio
 
+import com.kohei.summaryrecorder.domain.provider.SummaryProvider
+
 /** E2E用: 固定要約結果を返すモック */
 class MockSummaryProvider : SummaryProvider {
     override suspend fun summarize(text: String): Result<String> =

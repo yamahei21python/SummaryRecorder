@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.audio
 
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
