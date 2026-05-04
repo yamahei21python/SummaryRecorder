@@ -45,12 +45,25 @@ import java.util.concurrent.TimeUnit
  */
 class RecordingService : Service() {
 
-    private companion object {
-        const val CHANNEL_ID = "recording_channel"
-        const val NOTIFICATION_ID = 1
-        const val ACTION_START = "ACTION_START"
-        const val ACTION_STOP = "ACTION_STOP"
-        const val EXTRA_SESSION_ID = "session_id"
+    companion object {
+        private const val CHANNEL_ID = "recording_channel"
+        private const val NOTIFICATION_ID = 1
+        private const val ACTION_START = "ACTION_START"
+        private const val ACTION_STOP = "ACTION_STOP"
+        private const val EXTRA_SESSION_ID = "session_id"
+
+        fun startIntent(context: Context, sessionId: String): Intent {
+            return Intent(context, RecordingService::class.java).apply {
+                action = ACTION_START
+                putExtra(EXTRA_SESSION_ID, sessionId)
+            }
+        }
+
+        fun stopIntent(context: Context): Intent {
+            return Intent(context, RecordingService::class.java).apply {
+                action = ACTION_STOP
+            }
+        }
     }
 
     // DI（ServiceLocator経由）
@@ -230,22 +243,5 @@ class RecordingService : Service() {
                 ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
-    }
-
-    // ===== Companion (Intent Builder) =====
-
-    companion object {
-        fun startIntent(context: Context, sessionId: String): Intent {
-            return Intent(context, RecordingService::class.java).apply {
-                action = ACTION_START
-                putExtra(EXTRA_SESSION_ID, sessionId)
-            }
-        }
-
-        fun stopIntent(context: Context): Intent {
-            return Intent(context, RecordingService::class.java).apply {
-                action = ACTION_STOP
-            }
-        }
     }
 }

@@ -74,6 +74,6 @@ object WavHeaderWriter {
     }
 
     private fun RandomAccessFile.writeBytes(s: String) {
-        s.toByteArray(Charsets.US_ASCII).forEach { writeByte(it) }
+        s.toByteArray(Charsets.US_ASCII).forEach { writeByte(it.toInt()) }
     }
 }
