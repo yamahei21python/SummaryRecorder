@@ -1,0 +1,216 @@
+package com.kohei.summaryrecorder.service
+
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.WorkerParameters
+import com.kohei.summaryrecorder.data.db.AppDatabase
+import com.kohei.summaryrecorder.data.db.ChunkEntity
+import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
+import com.kohei.summaryrecorder.di.ServiceLocator
+import io.mockk.coEvery
+import io.mockk.mockk
+import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import retrofit2.HttpException
+import retrofit2.Response
+import java.io.File
+import java.net.SocketTimeoutException
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * RetryWorker: ネットワークエラー・API制約テスト（Phase 4）。
+ *
+ * 検証項目:
+ * - IOException（ネットワーク断）→ FAILED維持
+ * - HTTP 401（認証エラー）→ FAILED維持
+ * - HTTP 429（レート制限）→ FAILED維持
+ * - 混在シナリオ: 成功と失敗が混ざったチャンク群
+ */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [31], manifest = Config.NONE)
+class RetryWorkerNetworkTest {
+
+    private lateinit var db: AppDatabase
+    private lateinit var mockTranscriptionRepo: TranscriptionRepository
+    private lateinit var tempDir: File
+
+    @Before
+    fun setUp() {
+        db = AppDatabase.createInMemory(
+            ApplicationProvider.getApplicationContext()
+        )
+        mockTranscriptionRepo = mockk<TranscriptionRepository>()
+        tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
+            .filesDir.resolve("test_retry_network").also { it.mkdirs() }
+
+        ServiceLocator.overrideForTest(
+            database = db,
+            transcriptionRepository = mockTranscriptionRepo
+        )
+    }
+
+    @After
+    fun tearDown() {
+        ServiceLocator.clearTestOverrides()
+        db.close()
+        unmockkAll()
+        tempDir.deleteRecursively()
+    }
+
+    @Test
+    fun `IOException - network down, stays FAILED`() = runTest {
+        // Arrange
+        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
+            java.io.IOException("Network is unreachable")
+        )
+
+        val dao = db.chunkDao()
+        val chunkFile = File(tempDir, "net_chunk.wav").also { it.writeBytes(ByteArray(100)) }
+
+        dao.insert(
+            ChunkEntity(
+                sessionId = "net-session-001",
+                chunkIndex = 0,
+                filePath = chunkFile.absolutePath,
+                status = ChunkStatus.FAILED
+            )
+        )
+
+        // Act
+        val worker = RetryWorker(
+            ApplicationProvider.getApplicationContext(),
+            mockk<WorkerParameters>()
+        )
+        worker.doWork()
+
+        // Assert: FAILEDのまま、ファイル残存
+        val failed = dao.getByStatus(ChunkStatus.FAILED)
+        assertEquals(1, failed.size)
+        assertTrue(chunkFile.exists())
+    }
+
+    @Test
+    fun `HTTP 401 - auth error, stays FAILED`() = runTest {
+        // Arrange
+        val mockResponse = Response.success<Any?>(null) // dummy
+        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
+            HttpException(
+                Response.error<Any>(401, "Unauthorized".toResponseBody())
+            )
+        )
+
+        val dao = db.chunkDao()
+        val chunkFile = File(tempDir, "auth_chunk.wav").also { it.writeBytes(ByteArray(100)) }
+
+        dao.insert(
+            ChunkEntity(
+                sessionId = "auth-session",
+                chunkIndex = 0,
+                filePath = chunkFile.absolutePath,
+                status = ChunkStatus.FAILED
+            )
+        )
+
+        // Act
+        val worker = RetryWorker(
+            ApplicationProvider.getApplicationContext(),
+            mockk<WorkerParameters>()
+        )
+        worker.doWork()
+
+        // Assert: FAILEDのまま
+        assertEquals(1, dao.getByStatus(ChunkStatus.FAILED).size)
+        assertEquals(0, dao.getByStatus(ChunkStatus.DONE).size)
+    }
+
+    @Test
+    fun `HTTP 429 - rate limited, stays FAILED`() = runTest {
+        // Arrange
+        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
+            HttpException(
+                Response.error<Any>(429, "Too Many Requests".toResponseBody())
+            )
+        )
+
+        val dao = db.chunkDao()
+        val chunkFile = File(tempDir, "rate_chunk.wav").also { it.writeBytes(ByteArray(100)) }
+
+        dao.insert(
+            ChunkEntity(
+                sessionId = "rate-session",
+                chunkIndex = 0,
+                filePath = chunkFile.absolutePath,
+                status = ChunkStatus.FAILED
+            )
+        )
+
+        // Act
+        val worker = RetryWorker(
+            ApplicationProvider.getApplicationContext(),
+            mockk<WorkerParameters>()
+        )
+        worker.doWork()
+
+        // Assert: FAILEDのまま（次回WorkManager周期で再送）
+        assertEquals(1, dao.getByStatus(ChunkStatus.FAILED).size)
+    }
+
+    @Test
+    fun `mixed results - some succeed some fail`() = runTest {
+        // Arrange: 3チャンク、最初と3番目成功、2番目失敗
+        val callCount = mutableListOf<Int>()
+        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } answers {
+            val file = firstArg<File>()
+            val index = file.nameWithoutExtension.substringAfter("chunk_").toInt()
+            callCount.add(index)
+            if (index == 1) {
+                Result.failure(java.io.IOException("timeout"))
+            } else {
+                Result.success("テキスト$index")
+            }
+        }
+
+        val dao = db.chunkDao()
+        val sessionId = "mixed-session"
+
+        for (i in 0..2) {
+            val chunkFile = File(tempDir, "chunk_$i.wav").also { it.writeBytes(ByteArray(100)) }
+            dao.insert(
+                ChunkEntity(
+                    sessionId = sessionId,
+                    chunkIndex = i,
+                    filePath = chunkFile.absolutePath,
+                    status = ChunkStatus.FAILED
+                )
+            )
+        }
+
+        // Act
+        val worker = RetryWorker(
+            ApplicationProvider.getApplicationContext(),
+            mockk<WorkerParameters>()
+        )
+        worker.doWork()
+
+        // Assert
+        val done = dao.getByStatus(ChunkStatus.DONE)
+        val failed = dao.getByStatus(ChunkStatus.FAILED)
+        assertEquals(2, done.size)
+        assertEquals(1, failed.size)
+        assertEquals(1, failed[0].chunkIndex) // chunk_1 が FAILED
+    }
+}
+
+// Response.body()拡張（テスト用ヘルパー）
+private fun String.toResponseBody() =
+    okhttp3.ResponseBody.create("text/plain".toMediaTypeOrNull(), this)
+
+private fun String.toMediaTypeOrNull() =
+    okhttp3.MediaType.parse(this)
