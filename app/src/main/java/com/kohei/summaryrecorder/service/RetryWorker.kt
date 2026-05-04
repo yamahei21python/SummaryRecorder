@@ -9,12 +9,13 @@ import com.kohei.summaryrecorder.di.ServiceLocator
 import java.io.File
 
 /**
- * WorkManager定期再送Worker（Phase 4で本格実装）。
+ * WorkManager定期再送Worker（Phase 4実装完了）。
  *
- * 現状: コンパイル通すためのスタブ。
- * Phase 4で以下を実装:
- * - FAILED → UPLOADING → DONE/FAILED 再送
- * - ファイル消失時セッション全削除
+ * 機能:
+ * - FAILEDチャンクを取得 → UPLOADING → DONE/FAILED 再送
+ * - ファイル消失時: セッション全削除（ゾンビレコード防止）
+ * - 15分間隔・ネットワーク接続時のみ実行（RecordingServiceでスケジュール）
+ * - 冪等: doWork()複数回実行で副作用なし（FAILED時のみ処理）
  */
 class RetryWorker(
     context: Context,
