@@ -32,12 +32,12 @@ object WavHeaderWriter {
         file.seek(0)
 
         // RIFF header
-        file.writeBytes("RIFF")
+        file.writeAsciiBytes("RIFF")
         file.writeIntLE((fileSize - 8).toInt())
-        file.writeBytes("WAVE")
+        file.writeAsciiBytes("WAVE")
 
         // fmt sub-chunk
-        file.writeBytes("fmt ")
+        file.writeAsciiBytes("fmt ")
         file.writeIntLE(16)
         file.writeShortLE(1) // PCM = 1
         file.writeShortLE(channels)
@@ -47,7 +47,7 @@ object WavHeaderWriter {
         file.writeShortLE(bitsPerSample)
 
         // data sub-chunk
-        file.writeBytes("data")
+        file.writeAsciiBytes("data")
         file.writeIntLE(dataLength.toInt())
     }
 
@@ -73,7 +73,7 @@ object WavHeaderWriter {
         writeByte((value shr 8) and 0xFF)
     }
 
-    private fun RandomAccessFile.writeBytes(s: String) {
+    private fun RandomAccessFile.writeAsciiBytes(s: String) {
         s.toByteArray(Charsets.US_ASCII).forEach { writeByte(it.toInt()) }
     }
 }

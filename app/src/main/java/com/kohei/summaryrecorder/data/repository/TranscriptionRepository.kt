@@ -13,7 +13,7 @@ class TranscriptionRepository(
 ) {
 
     suspend fun transcribe(file: File): Result<String> {
-        return runCatching {
+        return try {
             val fileBody = file.asRequestBody(
                 "audio/wav".toMediaType()
             )
@@ -29,7 +29,9 @@ class TranscriptionRepository(
                 responseFormat = "json".toRequestBody("text/plain".toMediaType())
             )
 
-            response.text
+            Result.success(response.text)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

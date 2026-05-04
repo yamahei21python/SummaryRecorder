@@ -22,14 +22,20 @@ class SummaryRepository(
     }
 
     suspend fun summarize(combinedText: String): Result<String> {
-        return runCatching {
-            withTimeout(TIMEOUT_MS) {
-                val response = generativeModel.generateContent(
+        return try {
+            val response = withTimeout(TIMEOUT_MS) {
+                generativeModel.generateContent(
                     content { text(combinedText) }
                 )
-                response.text
-                    ?: throw IllegalStateException("Gemini returned empty response")
             }
+            val text = response.text
+            if (text != null) {
+                Result.success(text)
+            } else {
+                Result.failure(IllegalStateException("Gemini returned empty response"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

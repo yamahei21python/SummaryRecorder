@@ -11,67 +11,74 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ServiceLocator {
 
+    // 本番用: lazy初期化
+    private val _database: AppDatabase by lazy {
+        AppDatabase.getInstance(contextHolder)
+    }
+
+    // テスト用: override可能（lateinit var）
     @Volatile
-    private var _database: AppDatabase? = null
+    var testDatabase: AppDatabase? = null
 
     @Volatile
-    private var _groqApiKey: String? = null
+    var testTranscriptionRepo: TranscriptionRepository? = null
 
     @Volatile
-    private var _geminiApiKey: String? = null
+    var testSummaryRepo: SummaryRepository? = null
 
-    // テスト用オーバーライド
-    @Volatile
-    private var _testDatabase: AppDatabase? = null
-
-    @Volatile
-    private var _testTranscriptionRepo: TranscriptionRepository? = null
-
-    @Volatile
-    private var _testSummaryRepo: SummaryRepository? = null
+    // Context保持用（initialize呼出前にlazy参照不能用）
+    private lateinit var contextHolder: Context
 
     fun initialize(context: Context) {
-        _database = AppDatabase.getInstance(context)
+        contextHolder = context.applicationContext
     }
+
+    val database: AppDatabase
+        get() = testDatabase ?: _database
+
+    // ---- テスト用API ----
 
     fun setApiKeys(groqKey: String, geminiKey: String) {
         _groqApiKey = groqKey
         _geminiApiKey = geminiKey
     }
 
-    val database: AppDatabase
-        get() = _testDatabase ?: _database ?: error("ServiceLocator not initialized")
-
-    val groqApiService: GroqApiService by lazy {
+    // lazy 化された本実装（initialize 後しか使えない）
+    private val _groqApiService: GroqApiService by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.groq.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GroqApiService::class.java)
     }
+    private lateinit var _groqApiKey: String
+    private lateinit var _geminiApiKey: String
+
+    val groqApiService: GroqApiService
+        get() = _groqApiService
 
     val transcriptionRepository: TranscriptionRepository
-        get() = _testTranscriptionRepo ?: _lazyTranscriptionRepo
+        get() = testTranscriptionRepo ?: _lazyTranscriptionRepo
 
     private val _lazyTranscriptionRepo: TranscriptionRepository by lazy {
         TranscriptionRepository(
             apiService = groqApiService,
-            apiKey = _groqApiKey ?: error("Groq API key not set")
+            apiKey = _groqApiKey
         )
     }
 
     val summaryRepository: SummaryRepository
-        get() = _testSummaryRepo ?: _lazySummaryRepo
+        get() = testSummaryRepo ?: _lazySummaryRepo
 
     private val _lazySummaryRepo: SummaryRepository by lazy {
         val model = GenerativeModel(
             modelName = "gemini-2.0-flash",
-            apiKey = _geminiApiKey ?: error("Gemini API key not set")
+            apiKey = _geminiApiKey
         )
         SummaryRepository(generativeModel = model)
     }
 
-    // ===== テスト用API =====
+    // ===== テスト用オーバーライド =====
 
     /**
      * テスト用: DB と TranscriptionRepository をオーバーライドする。
@@ -81,12 +88,12 @@ object ServiceLocator {
         database: AppDatabase,
         transcriptionRepository: TranscriptionRepository
     ) {
-        _testDatabase = database
-        _testTranscriptionRepo = transcriptionRepository
+        testDatabase = database
+        testTranscriptionRepo = transcriptionRepository
     }
 
     fun overrideSummaryRepository(summaryRepository: SummaryRepository) {
-        _testSummaryRepo = summaryRepository
+        testSummaryRepo = summaryRepository
     }
 
     /**
@@ -94,8 +101,8 @@ object ServiceLocator {
      * 各テストの @After で呼び出すこと。
      */
     fun clearTestOverrides() {
-        _testDatabase = null
-        _testTranscriptionRepo = null
-        _testSummaryRepo = null
+        testDatabase = null
+        testTranscriptionRepo = null
+        testSummaryRepo = null
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkDao
+import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.service.RecordingService
@@ -65,18 +66,8 @@ class MainViewModel(
         // チャンク一覧表示用Flow
         viewModelScope.launch {
             dao.observeBySession(sessionId)
-                .map { chunks ->
-                    chunks.map { entity ->
-                        ChunkUiItem(
-                            index = entity.chunkIndex,
-                            status = entity.status,
-                            transcription = entity.transcriptionText
-                        )
-                    }
-                }
-                .onEach { items ->
-                    _uiState.update { it.copy(chunks = items) }
-                }
+                .map { chunks -> chunks.map { it.toUiItem() } }
+                .onEach { items -> _uiState.update { it.copy(chunks = items) } }
                 .collect {}
         }
 
@@ -88,12 +79,16 @@ class MainViewModel(
                 }
                 .distinctUntilChanged()
                 .filter { it }
-                .onEach {
-                    summarizeAll(sessionId)
-                }
+                .onEach { summarizeAll(sessionId) }
                 .collect {}
         }
     }
+
+    private fun ChunkEntity.toUiItem() = ChunkUiItem(
+        index = chunkIndex,
+        status = status,
+        transcription = transcriptionText
+    )
 
     // ===== 要約 =====
 

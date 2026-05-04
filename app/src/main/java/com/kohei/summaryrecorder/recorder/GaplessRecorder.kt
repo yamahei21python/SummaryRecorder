@@ -3,6 +3,7 @@ package com.kohei.summaryrecorder.recorder
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -157,6 +158,7 @@ class GaplessRecorder(
      * テスト用: バイト配列をPCMデータとして書込む。
      * AudioRecordを使わずにファイル書込みロジックを検証する。
      */
+    @VisibleForTesting
     fun writeTestPcmData(data: ByteArray) {
         // ファイル未オープンなら新規作成
         if (currentFile == null) {
@@ -182,6 +184,7 @@ class GaplessRecorder(
      * テスト用: 現在のチャンクを確定して停止。
      * AudioRecordへの依存なし。
      */
+    @VisibleForTesting
     fun stopForTest() {
         isRecording = false
         // テスト時はcurrentFileを直接確定
