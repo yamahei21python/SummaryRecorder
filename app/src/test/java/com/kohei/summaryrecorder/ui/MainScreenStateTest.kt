@@ -1,8 +1,8 @@
 package com.kohei.summaryrecorder.ui
 
-import android.app.Application
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.viewmodel.MainViewModel
@@ -16,11 +16,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [31], application = Application::class)
+@Config(sdk = [31])
 class MainScreenStateTest {
 
     @get:Rule
-    val composeTestRule = createEmptyComposeRule()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     private val mutableState = MutableStateFlow(MainViewModel.UiState())
 
