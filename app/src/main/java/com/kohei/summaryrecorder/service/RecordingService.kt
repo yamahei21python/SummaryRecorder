@@ -28,6 +28,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Provider
 
 @AndroidEntryPoint
 class RecordingService : Service() {
@@ -56,9 +57,9 @@ class RecordingService : Service() {
     @Inject lateinit var dao: ChunkDao
     @Inject lateinit var uploader: TranscriptionUploader
     @Inject lateinit var audioProviderFactory: AudioProviderFactory
-    @Inject @ChunkSizeBytes lateinit var chunkSizeBytesHolder: Number
+    @Inject @ChunkSizeBytes lateinit var chunkSizeBytesProvider: Provider<Long>
 
-    private val chunkSizeBytes: Long get() = chunkSizeBytesHolder.toLong()
+    private val chunkSizeBytes: Long get() = chunkSizeBytesProvider.get()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var recordingManager: RecordingManager
 
