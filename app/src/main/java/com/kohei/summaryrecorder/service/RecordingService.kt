@@ -11,6 +11,7 @@ import android.os.IBinder
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.AudioProviderFactory
 import com.kohei.summaryrecorder.di.ChunkSize
+import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
