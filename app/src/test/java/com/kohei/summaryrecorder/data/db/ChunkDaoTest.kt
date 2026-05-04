@@ -3,18 +3,25 @@ package com.kohei.summaryrecorder.data.db
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [31], manifest = Config.NONE)
 class ChunkDaoTest {
 
     private lateinit var db: AppDatabase
     private lateinit var dao: ChunkDao
 
-    @BeforeEach
+    @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
@@ -23,7 +30,7 @@ class ChunkDaoTest {
         dao = db.chunkDao()
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
         db.close()
     }

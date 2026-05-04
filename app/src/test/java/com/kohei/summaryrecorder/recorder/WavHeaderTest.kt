@@ -27,7 +27,8 @@ class WavHeaderTest {
         raf.close()
 
         val file = File(tempDir, "test.wav")
-        assertEquals(44 + 1000L, file.length())
+        // writeHeader only writes the 44-byte header, not the PCM data
+        assertEquals(44L, file.length())
     }
 
     @Test
