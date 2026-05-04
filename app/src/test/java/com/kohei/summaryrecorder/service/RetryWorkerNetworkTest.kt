@@ -8,7 +8,6 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import com.kohei.summaryrecorder.di.ServiceLocator
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -87,8 +86,7 @@ class RetryWorkerNetworkTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: FAILEDのまま、ファイル残存
@@ -121,8 +119,7 @@ class RetryWorkerNetworkTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: FAILEDのまま
@@ -154,8 +151,7 @@ class RetryWorkerNetworkTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: FAILEDのまま（次回WorkManager周期で再送）
@@ -195,8 +191,7 @@ class RetryWorkerNetworkTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert

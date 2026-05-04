@@ -8,7 +8,6 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import com.kohei.summaryrecorder.di.ServiceLocator
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -85,8 +84,7 @@ class RetryWorkerIdempotentTest {
         // Act: 1回目
         val worker1 = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker1.doWork()
 
         // Assert: 全DONE
@@ -96,8 +94,7 @@ class RetryWorkerIdempotentTest {
         // Act: 2回目（FAILEDなし）
         val worker2 = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         val result2 = worker2.doWork()
 
         // Assert: 変化なし（冪等）
@@ -132,8 +129,7 @@ class RetryWorkerIdempotentTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: セッション全削除
@@ -172,8 +168,7 @@ class RetryWorkerIdempotentTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: セッション全削除（chunk_0もchunk_1も消える）
@@ -225,8 +220,7 @@ class RetryWorkerIdempotentTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert
@@ -276,8 +270,7 @@ class RetryWorkerIdempotentTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: Session A → DONE

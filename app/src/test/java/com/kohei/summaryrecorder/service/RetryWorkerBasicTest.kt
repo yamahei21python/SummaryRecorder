@@ -8,7 +8,6 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import com.kohei.summaryrecorder.di.ServiceLocator
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -83,8 +82,7 @@ class RetryWorkerBasicTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         val result = worker.doWork()
 
         // Assert
@@ -121,8 +119,7 @@ class RetryWorkerBasicTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         val result = worker.doWork()
 
         // Assert
@@ -158,8 +155,7 @@ class RetryWorkerBasicTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         worker.doWork()
 
         // Assert: 全チャンクDONE
@@ -185,8 +181,7 @@ class RetryWorkerBasicTest {
         // Act
         val worker = RetryWorker(
             ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>()
-        )
+            mockk<WorkerParameters>(relaxed = true)        )
         val result = worker.doWork()
 
         // Assert: 何も変化なし
