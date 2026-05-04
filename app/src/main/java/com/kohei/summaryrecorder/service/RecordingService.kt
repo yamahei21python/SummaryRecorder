@@ -129,6 +129,8 @@ class RecordingService : Service() {
         recorder?.stop()
         recorder = null
         updateNotification("文字起こし処理中...")
+        stopForeground(true)
+        stopSelf()
     }
 
     // ===== チャンク処理 =====
@@ -203,6 +205,7 @@ class RecordingService : Service() {
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
             ).apply {
                 data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(intent)
         }
