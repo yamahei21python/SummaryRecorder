@@ -20,6 +20,13 @@ object ServiceLocator {
     @Volatile
     private var _geminiApiKey: String? = null
 
+    // テスト用オーバーライド
+    @Volatile
+    private var _testDatabase: AppDatabase? = null
+
+    @Volatile
+    private var _testTranscriptionRepo: TranscriptionRepository? = null
+
     fun initialize(context: Context) {
         _database = AppDatabase.getInstance(context)
     }
@@ -30,7 +37,7 @@ object ServiceLocator {
     }
 
     val database: AppDatabase
-        get() = _database ?: error("ServiceLocator not initialized")
+        get() = _testDatabase ?: _database ?: error("ServiceLocator not initialized")
 
     val groqApiService: GroqApiService by lazy {
         Retrofit.Builder()
@@ -40,7 +47,10 @@ object ServiceLocator {
             .create(GroqApiService::class.java)
     }
 
-    val transcriptionRepository: TranscriptionRepository by lazy {
+    val transcriptionRepository: TranscriptionRepository
+        get() = _testTranscriptionRepo ?: _lazyTranscriptionRepo
+
+    private val _lazyTranscriptionRepo: TranscriptionRepository by lazy {
         TranscriptionRepository(
             apiService = groqApiService,
             apiKey = _groqApiKey ?: error("Groq API key not set")
@@ -53,5 +63,28 @@ object ServiceLocator {
             apiKey = _geminiApiKey ?: error("Gemini API key not set")
         )
         SummaryRepository(generativeModel = model)
+    }
+
+    // ===== テスト用API =====
+
+    /**
+     * テスト用: DB と TranscriptionRepository をオーバーライドする。
+     * テストでのみ呼び出すこと。
+     */
+    fun overrideForTest(
+        database: AppDatabase,
+        transcriptionRepository: TranscriptionRepository
+    ) {
+        _testDatabase = database
+        _testTranscriptionRepo = transcriptionRepository
+    }
+
+    /**
+     * テスト用: オーバーライドをクリアする。
+     * 各テストの @After で呼び出すこと。
+     */
+    fun clearTestOverrides() {
+        _testDatabase = null
+        _testTranscriptionRepo = null
     }
 }
