@@ -70,8 +70,8 @@ android {
 
 dependencies {
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.51.1")
+    implementation("com.google.dagger:hilt-android:2.54.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.54.1")
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
 
@@ -123,8 +123,8 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("org.robolectric:robolectric:4.12")
-    testImplementation("com.google.dagger:hilt-android-testing:2.51.1")
-    kspTest("com.google.dagger:hilt-android-compiler:2.51.1")
+    testImplementation("com.google.dagger:hilt-android-testing:2.54.1")
+    kspTest("com.google.dagger:hilt-android-compiler:2.54.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.work:work-testing:2.9.0")
 }
