@@ -13,9 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.di.ServiceLocator
 import com.kohei.summaryrecorder.viewmodel.MainViewModel
 
@@ -160,12 +158,12 @@ fun ChunkRow(chunk: MainViewModel.ChunkUiItem) {
 }
 
 @Composable
-fun StatusBadge(status: com.kohei.summaryrecorder.data.db.ChunkStatus) {
+fun StatusBadge(status: ChunkStatus) {
     val (text, color) = when (status) {
-        com.kohei.summaryrecorder.data.db.ChunkStatus.PENDING -> "待機中" to Color.Gray
-        com.kohei.summaryrecorder.data.db.ChunkStatus.UPLOADING -> "送信中" to Color(0xFF2196F3)
-        com.kohei.summaryrecorder.data.db.ChunkStatus.DONE -> "完了" to Color(0xFF4CAF50)
-        com.kohei.summaryrecorder.data.db.ChunkStatus.FAILED -> "失敗" to Color(0xFFF44336)
+        ChunkStatus.PENDING -> "待機中" to Color.Gray
+        ChunkStatus.UPLOADING -> "送信中" to Color(0xFF2196F3)
+        ChunkStatus.DONE -> "完了" to Color(0xFF4CAF50)
+        ChunkStatus.FAILED -> "失敗" to Color(0xFFF44336)
     }
     Surface(
         color = color.copy(alpha = 0.2f),
