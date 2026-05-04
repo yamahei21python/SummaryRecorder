@@ -16,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -57,7 +56,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -75,9 +73,9 @@ fun MainScreen(viewModel: MainViewModel) {
         Button(
             onClick = {
                 if (uiState.isRecording) {
-                    viewModel.stopRecording(context)
+                    viewModel.stopRecording()
                 } else {
-                    viewModel.startRecording(context)
+                    viewModel.startRecording()
                 }
             },
             modifier = Modifier.fillMaxWidth(),

@@ -16,6 +16,8 @@ import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
+import com.kohei.summaryrecorder.service.RecordingController
+import com.kohei.summaryrecorder.service.ServiceRecordingController
 import com.kohei.summaryrecorder.service.TranscriptionUploader
 import dagger.Module
 import dagger.Provides
@@ -152,4 +154,10 @@ object UseCaseModule {
     ): TranscriptionUploader {
         return TranscriptionUploader(dao, transcriptionProvider)
     }
+
+    @Provides
+    @Singleton
+    fun provideRecordingController(
+        impl: ServiceRecordingController
+    ): RecordingController = impl
 }

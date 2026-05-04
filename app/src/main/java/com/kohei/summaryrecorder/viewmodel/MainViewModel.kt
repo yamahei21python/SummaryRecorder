@@ -1,14 +1,14 @@
 package com.kohei.summaryrecorder.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
-import com.kohei.summaryrecorder.service.RecordingService
+import com.kohei.summaryrecorder.service.RecordingController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -17,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ChunkDao,
-    private val summaryRepo: SummaryRepository
+    private val summaryRepo: SummaryRepository,
+    private val recordingController: RecordingController
 ) : ViewModel() {
 
     // ===== UI State =====
@@ -40,9 +41,12 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+    // observeChunks の Job を保持 → 再 startRecording 時に cancel
+    private var observeJobs: List<Job> = emptyList()
+
     // ===== 録音制御 =====
 
-    fun startRecording(context: Context) {
+    fun startRecording() {
         val sessionId = UUID.randomUUID().toString()
         _uiState.update {
             it.copy(
@@ -52,22 +56,23 @@ class MainViewModel @Inject constructor(
                 error = null
             )
         }
-        context.startService(
-            RecordingService.startIntent(context, sessionId)
-        )
+        recordingController.startRecording(sessionId)
         observeChunks(sessionId)
     }
 
-    fun stopRecording(context: Context) {
+    fun stopRecording() {
         _uiState.update { it.copy(isRecording = false, isLoading = true) }
-        context.startService(RecordingService.stopIntent(context))
+        recordingController.stopRecording()
     }
 
     // ===== チャンク監視 =====
 
     private fun observeChunks(sessionId: String) {
+        // 古い購読をキャンセル（リーク防止）
+        observeJobs.forEach { it.cancel() }
+
         // チャンク一覧表示用Flow
-        viewModelScope.launch {
+        val listJob = viewModelScope.launch {
             dao.observeBySession(sessionId)
                 .map { chunks -> chunks.map { it.toUiItem() } }
                 .onEach { items -> _uiState.update { it.copy(chunks = items) } }
@@ -75,7 +80,7 @@ class MainViewModel @Inject constructor(
         }
 
         // 全DONE検知 → 要約トリガー
-        viewModelScope.launch {
+        val summaryJob = viewModelScope.launch {
             dao.observeBySession(sessionId)
                 .map { chunks ->
                     chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
@@ -85,6 +90,8 @@ class MainViewModel @Inject constructor(
                 .onEach { summarizeAll(sessionId) }
                 .collect {}
         }
+
+        observeJobs = listOf(listJob, summaryJob)
     }
 
     private fun ChunkEntity.toUiItem() = ChunkUiItem(

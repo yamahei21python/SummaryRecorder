@@ -1,17 +1,18 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
-import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
+import com.kohei.summaryrecorder.service.RecordingController
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -19,11 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,7 +43,7 @@ class MainViewModelEdgeTest {
     private lateinit var dao: ChunkDao
     private lateinit var summaryRepo: SummaryRepository
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
-    private lateinit var context: Context
+    private lateinit var recordingController: RecordingController
 
     @Before
     fun setUp() {
@@ -54,9 +51,10 @@ class MainViewModelEdgeTest {
         dao = mockk<ChunkDao>(relaxed = true)
         summaryRepo = mockk<SummaryRepository>()
         chunksFlow = MutableStateFlow(emptyList())
-        context = mockk<Context>(relaxed = true)
+        recordingController = mockk<RecordingController>(relaxed = true)
         coEvery { dao.observeBySession(any()) } returns chunksFlow
-        every { context.startService(any()) } returns null
+        every { recordingController.startRecording(any()) } returns Unit
+        every { recordingController.stopRecording() } returns Unit
     }
 
     @After
@@ -79,19 +77,19 @@ class MainViewModelEdgeTest {
     fun `consecutive start-stop-start switches sessionId`() = runTest {
         coEvery { summaryRepo.summarize(any()) } returns Result.success("要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
 
         // 1回目の録音開始
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val firstSessionId = viewModel.uiState.value.sessionId
         assertTrue(viewModel.uiState.value.isRecording)
 
         // 停止
-        viewModel.stopRecording(context)
+        viewModel.stopRecording()
         assertFalse(viewModel.uiState.value.isRecording)
 
         // 2回目の録音開始
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val secondSessionId = viewModel.uiState.value.sessionId
 
         // sessionIdが異なることを確認
@@ -105,17 +103,17 @@ class MainViewModelEdgeTest {
     fun `consecutive start-stop-start observes new session`() = runTest {
         coEvery { summaryRepo.summarize(any()) } returns Result.success("要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
 
         // 1回目
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val firstSession = viewModel.uiState.value.sessionId
 
         // 停止
-        viewModel.stopRecording(context)
+        viewModel.stopRecording()
 
         // 2回目
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val secondSession = viewModel.uiState.value.sessionId
 
         // 新しいセッションのdoneチャンクを投入
@@ -134,8 +132,8 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `empty chunks does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
         // 空リストemit
         chunksFlow.value = emptyList()
@@ -149,8 +147,8 @@ class MainViewModelEdgeTest {
         // 全DONEだがtranscriptionText全null → combinedText=""
         coEvery { summaryRepo.summarize(any()) } returns Result.success("空の要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
         // transcriptionText=nullのDONEチャンク
         val doneNoText = ChunkEntity(
@@ -183,8 +181,8 @@ class MainViewModelEdgeTest {
             RuntimeException("Gemini API error")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
         chunksFlow.value = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1")
@@ -211,8 +209,8 @@ class MainViewModelEdgeTest {
             RuntimeException("fail")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
         chunksFlow.value = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1")
@@ -237,8 +235,8 @@ class MainViewModelEdgeTest {
             RuntimeException("test error")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
         // エラー状態にする
         chunksFlow.value = listOf(
@@ -262,35 +260,33 @@ class MainViewModelEdgeTest {
     // ===== startRecording → service intent =====
 
     @Test
-    fun `startRecording sends service intent`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
+    fun `startRecording calls recordingController`() = runTest {
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
 
-        // context.startService が呼ばれたことを確認
-        io.mockk.verify { context.startService(any()) }
+        verify { recordingController.startRecording(any()) }
     }
 
     @Test
-    fun `stopRecording sends stop intent`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo)
-        viewModel.startRecording(context)
-        viewModel.stopRecording(context)
+    fun `stopRecording calls recordingController`() = runTest {
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        viewModel.startRecording()
+        viewModel.stopRecording()
 
-        // startServiceが2回呼ばれる（start + stop）
-        io.mockk.verify(atLeast = 2) { context.startService(any()) }
+        verify { recordingController.stopRecording() }
     }
 
     @Test
     fun `startRecording resets isRecording and sessionId`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo)
+        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
 
         // 1回目
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val firstSessionId = viewModel.uiState.value.sessionId
         assertTrue(viewModel.uiState.value.isRecording)
 
         // 2回目: startRecording → sessionId変更、isRecording=true
-        viewModel.startRecording(context)
+        viewModel.startRecording()
         val secondSessionId = viewModel.uiState.value.sessionId
         assertTrue(firstSessionId != secondSessionId)
         assertTrue(viewModel.uiState.value.isRecording)
