@@ -12,15 +12,15 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import retrofit2.HttpException
-import retrofit2.Response
 import java.io.File
-import java.net.SocketTimeoutException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -99,10 +99,9 @@ class RetryWorkerNetworkTest {
     @Test
     fun `HTTP 401 - auth error, stays FAILED`() = runTest {
         // Arrange
-        val mockResponse = Response.success<Any?>(null) // dummy
         coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
             HttpException(
-                Response.error<Any>(401, "Unauthorized".toResponseBody())
+                "Unauthorized".toResponseBody(401)
             )
         )
 
@@ -135,7 +134,7 @@ class RetryWorkerNetworkTest {
         // Arrange
         coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
             HttpException(
-                Response.error<Any>(429, "Too Many Requests".toResponseBody())
+                "Too Many Requests".toResponseBody(429)
             )
         )
 
@@ -208,9 +207,6 @@ class RetryWorkerNetworkTest {
     }
 }
 
-// Response.body()拡張（テスト用ヘルパー）
-private fun String.toResponseBody() =
-    okhttp3.ResponseBody.create("text/plain".toMediaTypeOrNull(), this)
-
-private fun String.toMediaTypeOrNull() =
-    okhttp3.MediaType.parse(this)
+// テスト用ヘルパー: HTTPエラーResponse生成
+private fun String.toResponseBody(code: Int): retrofit2.Response<Any> =
+    retrofit2.Response.error(code, this.toResponseBody("text/plain".toMediaType()))

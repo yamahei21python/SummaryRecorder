@@ -2,9 +2,11 @@ package com.kohei.summaryrecorder.data.api
 
 import com.google.gson.Gson
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -99,13 +101,4 @@ class GroqApiServiceTest {
 
         tempFile.delete()
     }
-
-    // --- helper extensions ---
-    private fun java.io.File.asRequestBody(mediaType: okhttp3.MediaType) =
-        okhttp3.RequestBody.Companion.asRequestBody(this, mediaType)
-
-    private fun String.toRequestBody(mediaType: okhttp3.MediaType) =
-        okhttp3.RequestBody.Companion.toRequestBody(this, mediaType)
-
-    private fun String.toMediaType() = okhttp3.MediaType.Companion.toMediaType(this)
 }
