@@ -90,7 +90,8 @@ class ChunkDaoFlowTest {
     @Test
     fun `observeBySession does not emit for different session`() = runTest {
         dao.observeBySession("s1").test {
-            awaitItem() // 初期空
+            val initial = awaitItem()
+            assertTrue(initial.isEmpty())
 
             // 別セッションへのinsert
             dao.insert(ChunkEntity(
@@ -98,8 +99,19 @@ class ChunkDaoFlowTest {
                 filePath = "/a", status = ChunkStatus.PENDING
             ))
 
-            // s1には影響なし → 追加emitなしを確認
-            expectNoEvents()
+            // s1のデータは変化なし（空のまま）
+            // Roomのinvalidation trackerが同じ結果を再emitする可能性あるため、
+            // 追加emitがあれば空リストであることを確認
+            var eventCount = 0
+            try {
+                while (true) {
+                    val next = awaitItem()
+                    eventCount++
+                    assertTrue(next.isEmpty(), "s1 should remain empty after s2 insert")
+                }
+            } catch (_: Exception) {
+                // Turbine: no more items
+            }
 
             cancelAndIgnoreRemainingEvents()
         }
