@@ -1,6 +1,7 @@
 package com.kohei.summaryrecorder.service
 
-import com.kohei.summaryrecorder.audio.AudioProvider
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus

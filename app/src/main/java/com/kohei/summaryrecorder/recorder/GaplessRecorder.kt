@@ -1,7 +1,7 @@
 package com.kohei.summaryrecorder.recorder
 
 import androidx.annotation.VisibleForTesting
-import com.kohei.summaryrecorder.audio.AudioProvider
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.audio.RealAudioProvider
 import kotlinx.coroutines.CoroutineScope

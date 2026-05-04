@@ -5,7 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.audio.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll

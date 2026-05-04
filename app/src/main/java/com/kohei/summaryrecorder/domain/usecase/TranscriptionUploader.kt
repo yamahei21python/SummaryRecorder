@@ -1,9 +1,9 @@
-package com.kohei.summaryrecorder.service
+package com.kohei.summaryrecorder.domain.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.audio.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
 import java.io.File
 import javax.inject.Inject
 

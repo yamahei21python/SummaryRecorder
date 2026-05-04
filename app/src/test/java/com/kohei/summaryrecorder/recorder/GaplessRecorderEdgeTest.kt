@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
-import com.kohei.summaryrecorder.audio.AudioProvider
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

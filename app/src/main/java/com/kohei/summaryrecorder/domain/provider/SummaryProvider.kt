@@ -1,4 +1,4 @@
-package com.kohei.summaryrecorder.audio
+package com.kohei.summaryrecorder.domain.provider
 
 /** 要約API抽象化。本番=Gemini, E2E=Mock */
 fun interface SummaryProvider {
