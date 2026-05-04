@@ -22,6 +22,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -31,10 +36,6 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: gradle-
 
-      - name: Generate Gradle wrapper
-        run: |
-          gradle wrapper --gradle-version 8.11.1
-
       - name: Create local.properties
         run: |
           echo "groq.api.key=dummy_key_for_ci" > local.properties
@@ -42,7 +43,7 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee test-output.txt
+        run: gradle testDebugUnitTest --stacktrace 2>&1 | tee test-output.txt
 
       - name: Upload test results
         if: always()
