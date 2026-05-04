@@ -1,0 +1,75 @@
+package com.kohei.summaryrecorder.data.db
+
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+
+class ChunkDaoResetTest {
+
+    private lateinit var db: AppDatabase
+    private lateinit var dao: ChunkDao
+
+    @BeforeEach
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        dao = db.chunkDao()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        db.close()
+    }
+
+    @Test
+    fun `resetStuckUploads converts UPLOADING to FAILED`() = runTest {
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/a", status = ChunkStatus.UPLOADING))
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.UPLOADING))
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 2, filePath = "/c", status = ChunkStatus.DONE))
+
+        dao.resetStuckUploads()
+
+        val failed = dao.getByStatus(ChunkStatus.FAILED)
+        assertEquals(2, failed.size)
+
+        val uploading = dao.getByStatus(ChunkStatus.UPLOADING)
+        assertEquals(0, uploading.size)
+
+        // DONE は影響なし
+        assertEquals(1, dao.getByStatus(ChunkStatus.DONE).size)
+    }
+
+    @Test
+    fun `resetStuckUploads does not affect PENDING or DONE`() = runTest {
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/a", status = ChunkStatus.PENDING))
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.DONE))
+
+        dao.resetStuckUploads()
+
+        assertEquals(1, dao.getByStatus(ChunkStatus.PENDING).size)
+        assertEquals(1, dao.getByStatus(ChunkStatus.DONE).size)
+    }
+
+    @Test
+    fun `resetStuckUploads updates updatedAt timestamp`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.UPLOADING
+        ))
+        val beforeReset = dao.getById(id)!!.updatedAt
+
+        // 時間差を確保
+        Thread.sleep(10)
+        dao.resetStuckUploads()
+
+        val afterReset = dao.getById(id)!!
+        assertTrue(afterReset.updatedAt >= beforeReset)
+    }
+}
