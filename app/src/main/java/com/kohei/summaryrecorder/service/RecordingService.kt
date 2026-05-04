@@ -10,7 +10,7 @@ import android.os.Build
 import android.os.IBinder
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.AudioProviderFactory
-import com.kohei.summaryrecorder.di.ChunkSizeBytes
+import com.kohei.summaryrecorder.di.ChunkSize
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -28,7 +28,6 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.inject.Provider
 
 @AndroidEntryPoint
 class RecordingService : Service() {
@@ -57,9 +56,8 @@ class RecordingService : Service() {
     @Inject lateinit var dao: ChunkDao
     @Inject lateinit var uploader: TranscriptionUploader
     @Inject lateinit var audioProviderFactory: AudioProviderFactory
-    @Inject @ChunkSizeBytes lateinit var chunkSizeBytesProvider: Provider<Long>
+    @Inject lateinit var chunkSize: ChunkSize
 
-    private val chunkSizeBytes: Long get() = chunkSizeBytesProvider.get()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var recordingManager: RecordingManager
 
@@ -84,7 +82,7 @@ class RecordingService : Service() {
                 recordingManager.startRecording(
                     sessionId = sessionId,
                     outputDir = outputDir,
-                    chunkSizeBytes = chunkSizeBytes,
+                    chunkSizeBytes = chunkSize.bytes,
                     audioProvider = audioProviderFactory.create(this)
                 )
             }

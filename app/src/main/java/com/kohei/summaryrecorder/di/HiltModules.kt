@@ -34,9 +34,8 @@ import javax.inject.Singleton
 @Retention(AnnotationRetention.BINARY)
 annotation class DebugMode
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class ChunkSizeBytes
+// ChunkSizeを型で区別（qualifier不要）
+data class ChunkSize(val bytes: Long)
 
 // ===== Audio Provider Factory =====
 
@@ -138,9 +137,10 @@ object ProviderModule {
 
     @Provides
     @Singleton
-    @ChunkSizeBytes
-    fun provideChunkSizeBytes(@DebugMode debugMode: Boolean): Long {
-        return if (debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+    fun provideChunkSize(@DebugMode debugMode: Boolean): ChunkSize {
+        return ChunkSize(
+            bytes = if (debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+        )
     }
 }
 
