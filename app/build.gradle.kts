@@ -5,14 +5,14 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// local.properties読込（トップレベルでKotlin DSL解決問題回避）
+val localProps = java.util.Properties()
+val localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
+
 android {
     namespace = "com.kohei.summaryrecorder"
     compileSdk = 34
-
-    // local.propertiesからAPIキー読込（ブロック外参照でKotlin DSL解決問題回避）
-    val localProps = java.util.Properties()
-    val localPropsFile = rootProject.file("local.properties")
-    if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
 
     defaultConfig {
         applicationId = "com.kohei.summaryrecorder"
