@@ -9,6 +9,11 @@ android {
     namespace = "com.kohei.summaryrecorder"
     compileSdk = 34
 
+    // local.propertiesからAPIキー読込（ブロック外参照でKotlin DSL解決問題回避）
+    val localProps = java.util.Properties()
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
+
     defaultConfig {
         applicationId = "com.kohei.summaryrecorder"
         minSdk = 31
@@ -17,12 +22,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // local.propertiesからAPIキー読込
-        val localProps = java.util.Properties().apply {
-            val f = rootProject.file("local.properties")
-            if (f.exists()) load(f.inputStream())
-        }
 
         buildConfigField(
             "String", "GROQ_API_KEY",

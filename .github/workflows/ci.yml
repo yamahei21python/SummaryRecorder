@@ -43,7 +43,7 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
       - name: Run unit tests
-        run: gradle testDebugUnitTest --stacktrace 2>&1 | tee test-output.txt
+        run: set -o pipefail && gradle testDebugUnitTest --stacktrace 2>&1 | tee test-output.txt
 
       - name: Upload test results
         if: always()
