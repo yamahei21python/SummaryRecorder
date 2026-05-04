@@ -46,15 +46,15 @@ class DummyAudioProviderTest {
     }
 
     private fun ByteBuffer.putIntLE(value: Int) {
-        putByte((value and 0xFF).toByte())
-        putByte(((value shr 8) and 0xFF).toByte())
-        putByte(((value shr 16) and 0xFF).toByte())
-        putByte(((value shr 24) and 0xFF).toByte())
+        put((value and 0xFF).toByte())
+        put(((value shr 8) and 0xFF).toByte())
+        put(((value shr 16) and 0xFF).toByte())
+        put(((value shr 24) and 0xFF).toByte())
     }
 
     private fun ByteBuffer.putShortLE(value: Short) {
-        putByte((value.toInt() and 0xFF).toByte())
-        putByte(((value.toInt() shr 8) and 0xFF).toByte())
+        put((value.toInt() and 0xFF).toByte())
+        put(((value.toInt() shr 8) and 0xFF).toByte())
     }
 
     private fun ByteBuffer.putShortLE(value: Int) {
