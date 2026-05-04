@@ -2,6 +2,15 @@ package com.kohei.summaryrecorder.di
 
 import android.content.Context
 import com.google.ai.client.generativeai.GenerativeModel
+import com.kohei.summaryrecorder.audio.AudioProvider
+import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.audio.DummyAudioProvider
+import com.kohei.summaryrecorder.audio.MockApiProvider
+import com.kohei.summaryrecorder.audio.MockSummaryProvider
+import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
+import com.kohei.summaryrecorder.audio.RealAudioProvider
+import com.kohei.summaryrecorder.audio.SummaryProvider
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.data.api.GroqApiService
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
@@ -16,7 +25,7 @@ object ServiceLocator {
         AppDatabase.getInstance(contextHolder)
     }
 
-    // テスト用: override可能（lateinit var）
+    // テスト用: override可能
     @Volatile
     var testDatabase: AppDatabase? = null
 
@@ -25,6 +34,13 @@ object ServiceLocator {
 
     @Volatile
     var testSummaryRepo: SummaryRepository? = null
+
+    // モックProvider (debug mode)
+    @Volatile
+    var mockTranscriptionProvider: TranscriptionProvider? = null
+
+    @Volatile
+    var mockSummaryProvider: SummaryProvider? = null
 
     // Context保持用（initialize呼出前にlazy参照不能用）
     private lateinit var contextHolder: Context
@@ -78,12 +94,45 @@ object ServiceLocator {
         SummaryRepository(generativeModel = model)
     }
 
-    // ===== テスト用オーバーライド =====
+    // ===== Audio =====
 
     /**
-     * テスト用: DB と TranscriptionRepository をオーバーライドする。
-     * テストでのみ呼び出すこと。
+     * 音源Provider。
+     * debugMode=true → DummyAudioProvider（assets内WAV）
+     * 本番 → RealAudioProvider（端末マイク）
      */
+    fun createAudioProvider(context: Context): AudioProvider {
+        if (DebugConfig.debugMode) {
+            val stream = context.assets.open("dummy_audio.wav")
+            return DummyAudioProvider(inputStream = stream)
+        }
+        return RealAudioProvider()
+    }
+
+    // ===== モックProvider (debug mode) =====
+
+    /**
+     * 文字起こしProvider。
+     * debugMode=true → MockTranscriptionProvider
+     * 本番 → ServiceLocator.transcriptionRepository
+     */
+    val transcriptionProvider: TranscriptionProvider
+        get() = mockTranscriptionProvider
+            ?: if (DebugConfig.debugMode) MockTranscriptionProvider()
+            else transcriptionRepository
+
+    /**
+     * 要約Provider。
+     * debugMode=true → MockSummaryProvider
+     * 本番 → ServiceLocator.summaryRepository
+     */
+    val summaryProvider: SummaryProvider
+        get() = mockSummaryProvider
+            ?: if (DebugConfig.debugMode) MockSummaryProvider()
+            else summaryRepository
+
+    // ===== テスト用オーバーライド =====
+
     fun overrideForTest(
         database: AppDatabase,
         transcriptionRepository: TranscriptionRepository
@@ -96,10 +145,6 @@ object ServiceLocator {
         testSummaryRepo = summaryRepository
     }
 
-    /**
-     * テスト用: オーバーライドをクリアする。
-     * 各テストの @After で呼び出すこと。
-     */
     fun clearTestOverrides() {
         testDatabase = null
         testTranscriptionRepo = null

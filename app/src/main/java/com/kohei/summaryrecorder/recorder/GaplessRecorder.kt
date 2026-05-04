@@ -1,9 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
 import androidx.annotation.VisibleForTesting
+import com.kohei.summaryrecorder.audio.AudioProvider
+import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.audio.RealAudioProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,28 +20,31 @@ import java.nio.ByteOrder
 /**
  * ギャップレス連続録音エンジン。
  *
- * PCM 16kHz/Mono/16bit を AudioRecord で連続読込し、
+ * PCM 16kHz/Mono/16bit を AudioProvider 経由で連続読込し、
  * 指定サイズ到達時に自動でファイル分割する。
  * Mutex排他でデータ欠落ゼロを保証。
  *
  * @param outputDir チャンク出力ディレクトリ
- * @param chunkSizeBytes チャンク上限（デフォルト19MB ≒ 10分）
+ * @param chunkSizeBytes チャンク上限（デフォルト19MB ≒ 10分、DebugConfigで切替）
  * @param onChunkComplete チャンク確定時コールバック（インデックス, ファイル）
+ * @param audioProvider 音源（デフォルト=RealAudioProvider、テスト/Debug時=DummyAudioProvider）
  */
 class GaplessRecorder(
     private val outputDir: File,
-    private val chunkSizeBytes: Long = 19L * 1024 * 1024,
-    private val onChunkComplete: (chunkIndex: Int, file: File) -> Unit
+    private val chunkSizeBytes: Long = DebugConfig.chunkSizeBytes,
+    private val onChunkComplete: (chunkIndex: Int, file: File) -> Unit,
+    private val audioProvider: AudioProvider? = null
 ) {
     // AudioConfig
     private companion object {
         const val SAMPLE_RATE = 16000
-        const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-        const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+        const val CHANNEL_CONFIG = android.media.AudioFormat.CHANNEL_IN_MONO
+        const val AUDIO_FORMAT = android.media.AudioFormat.ENCODING_PCM_16BIT
+        const val READ_BUFFER = 4096
     }
 
     private val mutex = Mutex()
-    private var audioRecord: AudioRecord? = null
+    private var provider: AudioProvider? = null
     private var currentFile: RandomAccessFile? = null
     private var currentChunkIndex = 0
     private var currentBytesWritten = 0L
@@ -53,21 +56,14 @@ class GaplessRecorder(
     // ===== 公開API =====
 
     fun start() {
-        val minBufferSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT
+        val provider = audioProvider ?: RealAudioProvider(
+            sampleRate = SAMPLE_RATE,
+            bufferSize = READ_BUFFER
         )
-        require(minBufferSize != AudioRecord.ERROR_BAD_VALUE) {
-            "AudioRecord: unsupported audio config"
+        if (!provider.start()) {
+            throw IllegalStateException("AudioProvider.start() failed")
         }
-        val bufferSize = maxOf(minBufferSize, 4096)
-
-        audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            CHANNEL_CONFIG,
-            AUDIO_FORMAT,
-            bufferSize
-        ).also { it.startRecording() }
+        this.provider = provider
 
         isRecording = true
         currentChunkIndex = 0
@@ -76,10 +72,10 @@ class GaplessRecorder(
         recordingScope.launch {
             mutex.withLock { openNewFile() }
 
-            val buffer = ShortArray(bufferSize)
+            val buffer = ShortArray(READ_BUFFER)
             while (isRecording) {
-                val read = audioRecord?.read(buffer, 0, bufferSize) ?: break
-                if (read <= 0) continue
+                val read = provider.read(buffer, READ_BUFFER)
+                if (read <= 0) break
 
                 mutex.withLock {
                     if (!isRecording) return@withLock
@@ -99,18 +95,18 @@ class GaplessRecorder(
     /**
      * 停止フロー:
      * 1. isRecording=false → ループ脱出フラグ
-     * 2. audioRecord.release() → read()が即座に終了
+     * 2. provider.release() → read()が即座に終了
      * 3. cancelChildren() → 残存コルーチン破棄
      * 4. mutex.withLock { finalizeCurrentChunk() } → 最終チャンク安全確定
      */
     fun stop() {
         isRecording = false
 
-        audioRecord?.apply {
-            try { stop() } catch (_: IllegalStateException) {}
+        provider?.apply {
+            stop()
             release()
         }
-        audioRecord = null
+        provider = null
 
         recordingScope.coroutineContext.cancelChildren()
 
@@ -156,22 +152,18 @@ class GaplessRecorder(
 
     /**
      * テスト用: バイト配列をPCMデータとして書込む。
-     * AudioRecordを使わずにファイル書込みロジックを検証する。
+     * AudioProviderを使わずにファイル書込みロジックを検証する。
      */
     @VisibleForTesting
     fun writeTestPcmData(data: ByteArray) {
-        // ファイル未オープンなら新規作成
         if (currentFile == null) {
             openNewFile()
         }
-        // Short配列に変換して書込み
-        // dataが奇数長の場合は最後の1byteは無視
         val shortCount = data.size / 2
         val shorts = ShortArray(shortCount)
         ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
         writePcmData(shorts, shortCount)
 
-        // チャンクサイズ到達 → 確定→新ファイル
         if (currentBytesWritten >= chunkSizeBytes) {
             finalizeCurrentChunk()
             currentChunkIndex++
@@ -182,12 +174,11 @@ class GaplessRecorder(
 
     /**
      * テスト用: 現在のチャンクを確定して停止。
-     * AudioRecordへの依存なし。
+     * AudioProviderへの依存なし。
      */
     @VisibleForTesting
     fun stopForTest() {
         isRecording = false
-        // テスト時はcurrentFileを直接確定
         if (currentFile != null) {
             finalizeCurrentChunk()
         }

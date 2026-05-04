@@ -20,8 +20,8 @@ import androidx.work.WorkManager
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.ChunkDao
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
+import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.di.ServiceLocator
 import com.kohei.summaryrecorder.recorder.GaplessRecorder
 import kotlinx.coroutines.CoroutineScope
@@ -70,11 +70,8 @@ class RecordingService : Service() {
     private val dao: ChunkDao by lazy {
         ServiceLocator.database.chunkDao()
     }
-    private val transcriptionRepo: TranscriptionRepository by lazy {
-        ServiceLocator.transcriptionRepository
-    }
-    private val summaryRepo: SummaryRepository by lazy {
-        ServiceLocator.summaryRepository
+    private val transcriptionProvider: TranscriptionProvider by lazy {
+        ServiceLocator.transcriptionProvider
     }
 
     private var recorder: GaplessRecorder? = null
@@ -128,13 +125,17 @@ class RecordingService : Service() {
             it.mkdirs()
         }
 
+        val audioProvider = ServiceLocator.createAudioProvider(this)
+
         recorder = GaplessRecorder(
             outputDir = outputDir,
+            chunkSizeBytes = DebugConfig.chunkSizeBytes,
             onChunkComplete = { chunkIndex, file ->
                 serviceScope.launch {
                     onChunkRecorded(chunkIndex, file)
                 }
-            }
+            },
+            audioProvider = audioProvider
         ).also { it.start() }
     }
 
@@ -167,7 +168,7 @@ class RecordingService : Service() {
         dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
 
         val file = File(chunk.filePath)
-        val result = transcriptionRepo.transcribe(file)
+        val result = transcriptionProvider.transcribe(file)
 
         if (result.isSuccess) {
             val text = result.getOrThrow()

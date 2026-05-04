@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.di.ServiceLocator
 import java.io.File
 
@@ -23,8 +23,8 @@ class RetryWorker(
 ) : CoroutineWorker(context, params) {
 
     private val dao by lazy { ServiceLocator.database.chunkDao() }
-    private val transcriptionRepo: TranscriptionRepository by lazy {
-        ServiceLocator.transcriptionRepository
+    private val transcriptionProvider: TranscriptionProvider by lazy {
+        ServiceLocator.transcriptionProvider
     }
 
     override suspend fun doWork(): Result {
@@ -43,7 +43,7 @@ class RetryWorker(
 
                 dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
 
-                val result = transcriptionRepo.transcribe(file)
+                val result = transcriptionProvider.transcribe(file)
                 if (result.isSuccess) {
                     dao.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
                     file.delete()

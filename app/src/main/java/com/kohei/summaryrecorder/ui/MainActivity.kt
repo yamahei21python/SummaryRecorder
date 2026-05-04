@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import com.kohei.summaryrecorder.audio.DebugConfig
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,11 @@ import com.kohei.summaryrecorder.viewmodel.MainViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // E2E用: intent extra "debug" = true → DebugConfig有効化
+        if (intent.getBooleanExtra("debug", false)) {
+            DebugConfig.debugMode = true
+        }
 
         // 権限チェック
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)

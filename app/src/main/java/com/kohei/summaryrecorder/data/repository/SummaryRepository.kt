@@ -6,7 +6,7 @@ import kotlinx.coroutines.withTimeout
 
 class SummaryRepository(
     private val generativeModel: GenerativeModel
-) {
+) : com.kohei.summaryrecorder.audio.SummaryProvider {
 
     companion object {
         private const val SYSTEM_PROMPT = """

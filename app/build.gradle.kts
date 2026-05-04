@@ -97,6 +97,9 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // MockWebServer (debug builds only: E2E/Maestro用)
+    debugImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("org.junit.vintage:junit-vintage-engine:5.10.0")

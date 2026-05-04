@@ -1,0 +1,22 @@
+appId: com.kohei.summaryrecorder
+---
+# E2E Happy Path: 録音→分割→文字起こし→要約表示
+# Debug mode起動（ダミー音声 + モックAPI + 小チャンク）
+- exec:
+    command: adb shell am start -n com.kohei.summaryrecorder/.ui.MainActivity --ez debug true
+
+# UI読込待ち
+- waitFor: "録音開始"
+
+# 録音開始（ダミー音声をループ読込、100KB毎にチャンク生成）
+- tapOn: "録音開始"
+
+# チャンク一覧が表示され、少なくとも1つが完了状態になるのを待つ
+- assertVisible: "チャンク状態"
+- assertVisible: "完了"
+
+# 録音停止
+- tapOn: "録音停止"
+
+# 要約結果が表示されるまで待機（MockSummaryProviderが固定応答を返す）
+- assertVisible: "要約結果"

@@ -10,7 +10,7 @@ import java.io.File
 class TranscriptionRepository(
     private val apiService: GroqApiService,
     private val apiKey: String
-) {
+) : com.kohei.summaryrecorder.audio.TranscriptionProvider {
 
     suspend fun transcribe(file: File): Result<String> {
         return try {
