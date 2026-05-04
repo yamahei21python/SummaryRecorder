@@ -25,25 +25,20 @@ import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
-import javax.inject.Qualifier
 import javax.inject.Singleton
 
-// ===== Qualifiers =====
+// ===== Value types for DI (qualifier不要) =====
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DebugMode
-
-// ChunkSizeを型で区別（qualifier不要）
 data class ChunkSize(val bytes: Long)
+data class DebugMode(val enabled: Boolean)
 
 // ===== Audio Provider Factory =====
 
 class AudioProviderFactory @Inject constructor(
-    @DebugMode private val debugMode: Boolean
+    private val debugMode: DebugMode
 ) {
     fun create(context: Context): AudioProvider {
-        return if (debugMode) {
+        return if (debugMode.enabled) {
             DummyAudioProvider(inputStream = context.assets.open("dummy_audio.wav"))
         } else {
             RealAudioProvider()
@@ -106,41 +101,40 @@ object RepositoryModule {
     }
 }
 
-// ===== Provider (debug/prod binding) =====
+// ===== Config + Provider =====
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ProviderModule {
+object ConfigModule {
+
+    @Provides
+    @Singleton
+    fun provideDebugMode(): DebugMode = DebugMode(DebugConfig.debugMode)
+
+    @Provides
+    @Singleton
+    fun provideChunkSize(debugMode: DebugMode): ChunkSize {
+        return ChunkSize(
+            bytes = if (debugMode.enabled) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+        )
+    }
 
     @Provides
     @Singleton
     fun provideTranscriptionProvider(
-        @DebugMode debugMode: Boolean,
+        debugMode: DebugMode,
         repository: TranscriptionRepository
     ): TranscriptionProvider {
-        return if (debugMode) MockTranscriptionProvider() else repository
+        return if (debugMode.enabled) MockTranscriptionProvider() else repository
     }
 
     @Provides
     @Singleton
     fun provideSummaryProvider(
-        @DebugMode debugMode: Boolean,
+        debugMode: DebugMode,
         repository: SummaryRepository
     ): SummaryProvider {
-        return if (debugMode) MockSummaryProvider() else repository
-    }
-
-    @Provides
-    @Singleton
-    @DebugMode
-    fun provideDebugMode(): Boolean = DebugConfig.debugMode
-
-    @Provides
-    @Singleton
-    fun provideChunkSize(@DebugMode debugMode: Boolean): ChunkSize {
-        return ChunkSize(
-            bytes = if (debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
-        )
+        return if (debugMode.enabled) MockSummaryProvider() else repository
     }
 }
 
