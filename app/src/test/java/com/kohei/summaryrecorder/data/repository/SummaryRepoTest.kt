@@ -1,13 +1,13 @@
 package com.kohei.summaryrecorder.data.repository
 
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.GenerateContentResponse
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,13 +38,13 @@ class SummaryRepoTest {
     fun `summarize success returns text`() = runTest {
         val mockResponse = mockk<GenerateContentResponse>()
         every { mockResponse.text } returns "要約テキスト"
-        coEvery { generativeModel.generateContent(any()) } returns mockResponse
+        coEvery { generativeModel.generateContent(any<Content>()) } returns mockResponse
 
         val result = repository.summarize("テスト入力テキスト")
 
         assertTrue(result.isSuccess)
         assertEquals("要約テキスト", result.getOrThrow())
-        coVerify(exactly = 1) { generativeModel.generateContent(any()) }
+        coVerify(exactly = 1) { generativeModel.generateContent(any<Content>()) }
     }
 
     @Test
@@ -52,7 +52,7 @@ class SummaryRepoTest {
     fun `summarize empty response returns failure`() = runTest {
         val mockResponse = mockk<GenerateContentResponse>()
         every { mockResponse.text } returns null
-        coEvery { generativeModel.generateContent(any()) } returns mockResponse
+        coEvery { generativeModel.generateContent(any<Content>()) } returns mockResponse
 
         val result = repository.summarize("テスト入力テキスト")
 
@@ -65,7 +65,7 @@ class SummaryRepoTest {
     @Test
     @DisplayName("summarize exception returns failure")
     fun `summarize exception returns failure`() = runTest {
-        coEvery { generativeModel.generateContent(any()) } throws RuntimeException("API error")
+        coEvery { generativeModel.generateContent(any<Content>()) } throws RuntimeException("API error")
 
         val result = repository.summarize("テスト入力テキスト")
 
@@ -76,14 +76,13 @@ class SummaryRepoTest {
     }
 
     @Test
-    @DisplayName("summarize timeout returns failure")
-    fun `summarize timeout returns failure`() = runTest {
-        coEvery { generativeModel.generateContent(any()) } throws
-            TimeoutCancellationException("Timed out waiting for response")
+    @DisplayName("summarize cancellation returns failure")
+    fun `summarize cancellation returns failure`() = runTest {
+        coEvery { generativeModel.generateContent(any<Content>()) } throws java.util.concurrent.CancellationException("Timed out")
 
         val result = repository.summarize("テスト入力テキスト")
 
         assertTrue(result.isFailure)
-        assertInstanceOf(TimeoutCancellationException::class.java, result.exceptionOrNull())
+        assertInstanceOf(java.util.concurrent.CancellationException::class.java, result.exceptionOrNull())
     }
 }
