@@ -1,8 +1,8 @@
 package com.kohei.summaryrecorder.ui
 
-import androidx.activity.ComponentActivity
+import android.app.Application
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkStatus
@@ -17,11 +17,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [31])
+@Config(sdk = [31], application = Application::class)
 class MainScreenTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    val composeTestRule = createComposeRule()
 
     private fun mockViewModel(initialState: MainViewModel.UiState = MainViewModel.UiState()): MainViewModel {
         val viewModel = mockk<MainViewModel>(relaxed = true)
