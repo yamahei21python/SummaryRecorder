@@ -281,7 +281,7 @@ class MainViewModelEdgeTest {
     }
 
     @Test
-    fun `startRecording resets summary`() = runTest {
+    fun `startRecording resets summary to null`() = runTest {
         coEvery { summaryRepo.summarize(any()) } returns Result.success("要約テキスト")
 
         val viewModel = MainViewModel(dao, summaryRepo)
@@ -291,13 +291,10 @@ class MainViewModelEdgeTest {
         chunksFlow.value = listOf(doneChunk(id = 1, index = 0, text = "テキスト1"))
         coEvery { dao.getBySession(any()) } returns listOf(doneChunk(id = 1, index = 0, text = "テキスト1"))
 
-        viewModel.uiState.test {
-            // 要約結果が出るまで待つ
-            val state = awaitItem()
-            // summaryが設定されたことを確認（nullでなければOK）
-        }
+        // summarizeAllが完了するまで少し待つ
+        Thread.sleep(200)
 
-        // 2回目: startRecording → summaryリセット
+        // 2回目: startRecording → summaryリセット確認
         viewModel.startRecording(context)
         assertNull(viewModel.uiState.value.summary)
     }

@@ -176,8 +176,9 @@ class DummyAudioProviderTest {
             provider.start()
             val buffer = ShortArray(5)
             val read = provider.read(buffer, 5)
-            assertTrue(read > 0, "Cycle $cycle: read should succeed")
+            assertTrue(read > 0, "Cycle $cycle: read should succeed, got $read")
             provider.stop()
+            // release()は最後だけ。stop→startの間はstream維持
         }
 
         provider.release()
