@@ -21,7 +21,7 @@ class SummaryRepository(
         private const val TIMEOUT_MS = 60_000L // 60秒（長文要約用）
     }
 
-    suspend fun summarize(combinedText: String): Result<String> {
+    override suspend fun summarize(combinedText: String): Result<String> {
         return try {
             val response = withTimeout(TIMEOUT_MS) {
                 generativeModel.generateContent(

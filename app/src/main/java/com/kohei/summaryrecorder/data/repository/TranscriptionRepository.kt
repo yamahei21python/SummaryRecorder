@@ -12,7 +12,7 @@ class TranscriptionRepository(
     private val apiKey: String
 ) : com.kohei.summaryrecorder.audio.TranscriptionProvider {
 
-    suspend fun transcribe(file: File): Result<String> {
+    override suspend fun transcribe(file: File): Result<String> {
         return try {
             val fileBody = file.asRequestBody(
                 "audio/wav".toMediaType()
