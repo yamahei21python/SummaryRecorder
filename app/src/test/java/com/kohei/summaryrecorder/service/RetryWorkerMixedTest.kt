@@ -2,12 +2,10 @@ package com.kohei.summaryrecorder.service
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.work.WorkerParameters
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.di.ServiceLocator
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -21,7 +19,7 @@ import java.io.File
 import kotlin.test.assertEquals
 
 /**
- * RetryWorker: 複合状態テスト（既存テストの補完）。
+ * TranscriptionUploader: 複合状態テスト（既存テストの補完）。
  *
  * 検証項目:
  * - FAILED + PENDING混在 → PENDING無視、FAILEDのみ再送
@@ -34,22 +32,19 @@ import kotlin.test.assertEquals
 class RetryWorkerMixedTest {
 
     private lateinit var db: AppDatabase
-    private lateinit var mockRepo: TranscriptionRepository
+    private lateinit var mockProvider: TranscriptionProvider
     private lateinit var tempDir: File
 
     @Before
     fun setUp() {
         db = AppDatabase.createInMemory(ApplicationProvider.getApplicationContext())
-        mockRepo = mockk<TranscriptionRepository>()
+        mockProvider = mockk<TranscriptionProvider>()
         tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("test_mixed").also { it.mkdirs() }
-
-        ServiceLocator.overrideForTest(db, mockRepo)
     }
 
     @After
     fun tearDown() {
-        ServiceLocator.clearTestOverrides()
         db.close()
         unmockkAll()
         tempDir.deleteRecursively()
@@ -57,9 +52,10 @@ class RetryWorkerMixedTest {
 
     @Test
     fun `FAILED and PENDING mixed - only FAILED retried`() = runTest {
-        coEvery { mockRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "mixed-fp-session"
 
         // FAILED: 再送対象
@@ -76,11 +72,7 @@ class RetryWorkerMixedTest {
             filePath = pendingFile.absolutePath, status = ChunkStatus.PENDING
         ))
 
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)
-        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         val all = dao.getBySession(sessionId)
         assertEquals(2, all.size)
@@ -96,6 +88,7 @@ class RetryWorkerMixedTest {
     @Test
     fun `all FAILED files missing - entire session deleted`() = runTest {
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "all-missing-session"
 
         // 全ファイル存在しない
@@ -112,11 +105,7 @@ class RetryWorkerMixedTest {
             filePath = "/tmp/missing_2.wav", status = ChunkStatus.FAILED
         ))
 
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)
-        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // セッション全削除
         assertEquals(0, dao.getBySession(sessionId).size)
@@ -124,20 +113,17 @@ class RetryWorkerMixedTest {
 
     @Test
     fun `UPLOADING chunks are not processed`() = runTest {
-        coEvery { mockRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val uploadFile = File(tempDir, "uploading.wav").also { it.writeBytes(ByteArray(100)) }
         dao.insert(ChunkEntity(
             sessionId = "upload-session", chunkIndex = 0,
             filePath = uploadFile.absolutePath, status = ChunkStatus.UPLOADING
         ))
 
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)
-        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // UPLOADINGはgetByStatus(FAILED)に含まれない → 不変
         val chunks = dao.getBySession("upload-session")
@@ -147,9 +133,10 @@ class RetryWorkerMixedTest {
 
     @Test
     fun `multiple sessions - only one has missing files`() = runTest {
-        coEvery { mockRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
 
         // Session A: ファイル存在 → 再送成功
         val fileA = File(tempDir, "a.wav").also { it.writeBytes(ByteArray(100)) }
@@ -164,11 +151,7 @@ class RetryWorkerMixedTest {
             filePath = "/tmp/missing_b.wav", status = ChunkStatus.FAILED
         ))
 
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)
-        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // Session A: DONE
         val sessionA = dao.getBySession("session-A")
@@ -181,9 +164,10 @@ class RetryWorkerMixedTest {
 
     @Test
     fun `FAILED chunk with large file - retried successfully`() = runTest {
-        coEvery { mockRepo.transcribe(any<File>()) } returns Result.success("大きなファイルテキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("大きなファイルテキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val largeFile = File(tempDir, "large.wav").also {
             it.writeBytes(ByteArray(1024 * 100)) // 100KB
         }
@@ -192,13 +176,9 @@ class RetryWorkerMixedTest {
             filePath = largeFile.absolutePath, status = ChunkStatus.FAILED
         ))
 
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)
-        )
-        val result = worker.doWork()
+        val count = uploader.retryFailedChunks()
 
-        assertEquals(androidx.work.ListenableWorker.Result.success(), result)
+        assertEquals(1, count)
         val done = dao.getByStatus(ChunkStatus.DONE)
         assertEquals(1, done.size)
         assertEquals("大きなファイルテキスト", done[0].transcriptionText)

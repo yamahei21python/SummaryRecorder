@@ -2,11 +2,10 @@ package com.kohei.summaryrecorder.service
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.di.ServiceLocator
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -31,15 +30,14 @@ import kotlin.test.assertTrue
  * - 文字起こし失敗時: 音声ファイル残存
  * - 複数チャンクの順次処理
  *
- * ※ Service起動(startForeground)はRobolectric環境で失敗するため、
- *    DAO + Repository レベルでフローを検証する。
+ * ※ DAO + TranscriptionProvider レベルでフローを検証。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [31], manifest = Config.NONE)
 class RecordingServiceFlowTest {
 
     private lateinit var db: AppDatabase
-    private lateinit var mockTranscriptionRepo: TranscriptionRepository
+    private lateinit var mockProvider: TranscriptionProvider
     private lateinit var tempDir: File
 
     @Before
@@ -47,19 +45,13 @@ class RecordingServiceFlowTest {
         db = AppDatabase.createInMemory(
             ApplicationProvider.getApplicationContext()
         )
-        mockTranscriptionRepo = mockk<TranscriptionRepository>()
+        mockProvider = mockk<TranscriptionProvider>()
         tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("test_recordings").also { it.mkdirs() }
-
-        ServiceLocator.overrideForTest(
-            database = db,
-            transcriptionRepository = mockTranscriptionRepo
-        )
     }
 
     @After
     fun tearDown() {
-        ServiceLocator.clearTestOverrides()
         db.close()
         unmockkAll()
         tempDir.deleteRecursively()
@@ -67,15 +59,16 @@ class RecordingServiceFlowTest {
 
     @Test
     fun `chunk upload succeeds - PENDING to UPLOADING to DONE, file deleted`() = runTest {
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("こんにちは世界")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("こんにちは世界")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val chunkFile = File(tempDir, "chunk_0.wav").also {
             it.parentFile?.mkdirs()
             it.writeBytes(ByteArray(100))
         }
 
-        // PENDING → UPLOADING → DONE
+        // PENDING → UPLOADING → DONE (via TranscriptionUploader)
         val entity = ChunkEntity(
             sessionId = "test-session-001",
             chunkIndex = 0,
@@ -84,28 +77,27 @@ class RecordingServiceFlowTest {
         )
         val id = dao.insert(entity)
 
-        dao.updateStatus(id, ChunkStatus.UPLOADING)
-        val result = mockTranscriptionRepo.transcribe(chunkFile)
-        assertTrue(result.isSuccess)
-        dao.updateStatus(id, ChunkStatus.DONE, result.getOrThrow())
+        val chunk = dao.getById(id)!!
+        val result = uploader.uploadChunk(chunk)
 
         // Assert: DONE + テキスト保存
+        assertTrue(result.isSuccess)
         val updated = dao.getById(id)!!
         assertEquals(ChunkStatus.DONE, updated.status)
         assertEquals("こんにちは世界", updated.transcriptionText)
 
-        // ファイル削除（RecordingServiceの実装をシミュレート）
-        chunkFile.delete()
+        // ファイル削除
         assertTrue(!chunkFile.exists())
     }
 
     @Test
     fun `chunk upload fails - status becomes FAILED`() = runTest {
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.failure(
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.failure(
             java.io.IOException("Network error")
         )
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val chunkFile = File(tempDir, "chunk_0.wav").also {
             it.parentFile?.mkdirs()
             it.writeBytes(ByteArray(100))
@@ -119,12 +111,11 @@ class RecordingServiceFlowTest {
         )
         val id = dao.insert(entity)
 
-        dao.updateStatus(id, ChunkStatus.UPLOADING)
-        val result = mockTranscriptionRepo.transcribe(chunkFile)
-        assertTrue(result.isFailure)
-        dao.updateStatus(id, ChunkStatus.FAILED)
+        val chunk = dao.getById(id)!!
+        val result = uploader.uploadChunk(chunk)
 
         // Assert: FAILED + テキストなし
+        assertTrue(result.isFailure)
         val updated = dao.getById(id)!!
         assertEquals(ChunkStatus.FAILED, updated.status)
         assertNull(updated.transcriptionText)
@@ -135,9 +126,10 @@ class RecordingServiceFlowTest {
 
     @Test
     fun `multiple chunks - sequential upload`() = runTest {
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "test-session-003"
 
         for (i in 0..2) {
@@ -152,13 +144,8 @@ class RecordingServiceFlowTest {
             )
             val id = dao.insert(entity)
 
-            dao.updateStatus(id, ChunkStatus.UPLOADING)
-            val result = mockTranscriptionRepo.transcribe(chunkFile)
-            if (result.isSuccess) {
-                dao.updateStatus(id, ChunkStatus.DONE, result.getOrThrow())
-            } else {
-                dao.updateStatus(id, ChunkStatus.FAILED)
-            }
+            val chunk = dao.getById(id)!!
+            uploader.uploadChunk(chunk)
         }
 
         // Assert: 全チャンクDONE
@@ -171,10 +158,10 @@ class RecordingServiceFlowTest {
 
     @Test
     fun `start and stop recording lifecycle - DAO state transitions`() = runTest {
-        // Service start/stopの代わりに、DAO状態遷移の完全なライフサイクルをテスト
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("録音テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("録音テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "lifecycle-session"
 
         // Start: チャンク作成→PENDING
@@ -188,18 +175,14 @@ class RecordingServiceFlowTest {
             status = ChunkStatus.PENDING
         ))
 
-        // Upload flow
-        dao.updateStatus(id, ChunkStatus.UPLOADING)
-        val result = mockTranscriptionRepo.transcribe(chunkFile)
-        dao.updateStatus(id, ChunkStatus.DONE, result.getOrThrow())
-
-        // Stop: ファイル削除
-        chunkFile.delete()
+        // Upload flow via TranscriptionUploader
+        val chunk = dao.getById(id)!!
+        uploader.uploadChunk(chunk)
 
         // Verify final state
-        val chunk = dao.getById(id)!!
-        assertEquals(ChunkStatus.DONE, chunk.status)
-        assertEquals("録音テキスト", chunk.transcriptionText)
+        val updated = dao.getById(id)!!
+        assertEquals(ChunkStatus.DONE, updated.status)
+        assertEquals("録音テキスト", updated.transcriptionText)
         assertTrue(!chunkFile.exists())
     }
 }

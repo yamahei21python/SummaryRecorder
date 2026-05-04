@@ -2,11 +2,10 @@ package com.kohei.summaryrecorder.service
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.di.ServiceLocator
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -15,11 +14,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -27,33 +24,30 @@ import kotlin.test.assertTrue
  *
  * 検証項目:
  * - クラッシュ前にUPLOADING状態だったレコードがFAILEDにリセットされること
- * - リセット後、RetryWorkerがFAILEDレコードを再送できること
+ * - リセット後、TranscriptionUploaderがFAILEDレコードを再送できること
  * - ファイル消失時、セッション単位で全削除されること
+ *
+ * ※ @AndroidEntryPoint環境でRobolectric.buildService不可のため、
+ *    DAO + TranscriptionUploader で直接検証。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [31], manifest = Config.NONE)
 class RecordingServiceSelfHealTest {
 
     private lateinit var db: AppDatabase
-    private lateinit var mockTranscriptionRepo: TranscriptionRepository
+    private lateinit var mockProvider: TranscriptionProvider
 
     @Before
     fun setUp() {
         db = AppDatabase.createInMemory(
             ApplicationProvider.getApplicationContext()
         )
-        mockTranscriptionRepo = mockk<TranscriptionRepository>()
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("復旧テキスト")
-
-        ServiceLocator.overrideForTest(
-            database = db,
-            transcriptionRepository = mockTranscriptionRepo
-        )
+        mockProvider = mockk<TranscriptionProvider>()
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("復旧テキスト")
     }
 
     @After
     fun tearDown() {
-        ServiceLocator.clearTestOverrides()
         db.close()
         unmockkAll()
     }
@@ -84,9 +78,8 @@ class RecordingServiceSelfHealTest {
             transcriptionText = "完了済み"
         ))
 
-        // Act: サービス再起動 → onCreate で resetStuckUploads
-        val controller = Robolectric.buildService(RecordingService::class.java)
-        controller.create()
+        // Act: onCreateで呼ばれるresetStuckUploadsを直接実行
+        dao.resetStuckUploads()
 
         // Assert: UPLOADING → FAILED リセット
         val failed = dao.getByStatus(ChunkStatus.FAILED)
@@ -102,13 +95,12 @@ class RecordingServiceSelfHealTest {
 
         // UPLOADINGは0件
         assertEquals(0, dao.getByStatus(ChunkStatus.UPLOADING).size)
-
-        controller.destroy()
     }
 
     @Test
     fun `retry after recovery - FAILED chunks can be retried`() = runTest {
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("retry_test").also { it.mkdirs() }
 
@@ -117,37 +109,21 @@ class RecordingServiceSelfHealTest {
             val chunkFile = File(tempDir, "retry_chunk.wav").also {
                 it.writeBytes(ByteArray(100))
             }
-            dao.insert(ChunkEntity(
+            val id = dao.insert(ChunkEntity(
                 sessionId = "retry-session",
                 chunkIndex = 0,
                 filePath = chunkFile.absolutePath,
                 status = ChunkStatus.FAILED
             ))
 
-            // サービス再起動（自己修復）
-            val controller = Robolectric.buildService(RecordingService::class.java)
-            controller.create()
-
-            // FAILEDチャンクを再送シミュレート
-            val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
-            assertEquals(1, failedChunks.size)
-
-            val chunk = failedChunks[0]
-            dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-            val file = File(chunk.filePath)
-            assertTrue(file.exists())
-
-            val result = mockTranscriptionRepo.transcribe(file)
-            if (result.isSuccess) {
-                dao.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
-            }
+            // FAILEDチャンクを再送
+            val processedCount = uploader.retryFailedChunks()
+            assertEquals(1, processedCount)
 
             // Assert: 再送成功
-            val updated = dao.getById(chunk.id)!!
+            val updated = dao.getById(id)!!
             assertEquals(ChunkStatus.DONE, updated.status)
             assertEquals("復旧テキスト", updated.transcriptionText)
-
-            controller.destroy()
         } finally {
             tempDir.deleteRecursively()
         }
@@ -156,6 +132,7 @@ class RecordingServiceSelfHealTest {
     @Test
     fun `file missing - session records should be cleaned up`() = runTest {
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
 
         // Arrange: ファイル消失済みのFAILEDチャンク
         dao.insert(ChunkEntity(
@@ -171,22 +148,11 @@ class RecordingServiceSelfHealTest {
             status = ChunkStatus.FAILED
         ))
 
-        // Act: ファイル消失検知 → セッション全削除（RetryWorkerのロジックをシミュレート）
-        val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
-        val bySession = failedChunks.groupBy { it.sessionId }
+        // Act: retryFailedChunks → ファイル消失 → セッション全削除
+        val processedCount = uploader.retryFailedChunks()
 
-        bySession.forEach { (sessionId, chunks) ->
-            chunks.forEach { chunk ->
-                val file = File(chunk.filePath)
-                if (!file.exists()) {
-                    // ファイル消失 → セッション単位全削除
-                    dao.deleteBySession(sessionId)
-                    return@forEach
-                }
-            }
-        }
-
-        // Assert: セッション全削除済み
+        // Assert: セッション全削除済み、処理数0
+        assertEquals(0, processedCount)
         val remaining = dao.getBySession("missing-session")
         assertEquals(0, remaining.size)
     }
@@ -210,9 +176,8 @@ class RecordingServiceSelfHealTest {
             transcriptionText = "正常完了"
         ))
 
-        // Act: サービス再起動
-        val controller = Robolectric.buildService(RecordingService::class.java)
-        controller.create()
+        // Act: resetStuckUploadsを直接実行
+        dao.resetStuckUploads()
 
         // Assert: クラッシュセッションのみFAILED
         val crashed = dao.getBySession("crashed-session")
@@ -224,7 +189,5 @@ class RecordingServiceSelfHealTest {
         assertEquals(1, healthy.size)
         assertEquals(ChunkStatus.DONE, healthy[0].status)
         assertEquals("正常完了", healthy[0].transcriptionText)
-
-        controller.destroy()
     }
 }

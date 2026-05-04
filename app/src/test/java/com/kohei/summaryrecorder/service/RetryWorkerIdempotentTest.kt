@@ -2,12 +2,10 @@ package com.kohei.summaryrecorder.service
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.work.WorkerParameters
+import com.kohei.summaryrecorder.audio.TranscriptionProvider
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.di.ServiceLocator
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -19,13 +17,12 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
- * RetryWorker: 冪等性テスト（Phase 4）。
+ * TranscriptionUploader: 冪等性テスト（Phase 4）。
  *
  * 検証項目:
- * - 2回連続doWork(): 2回目はFAILEDなしで安全終了
+ * - 2回連続retryFailedChunks(): 2回目はFAILEDなしで安全終了
  * - ファイル消失: セッション全削除（ゾンビレコード防止）
  * - ファイル消失+正常チャンク混在: セッション単位で全削除
  * - DONE/PENDINGチャンクは処理対象外
@@ -35,7 +32,7 @@ import kotlin.test.assertTrue
 class RetryWorkerIdempotentTest {
 
     private lateinit var db: AppDatabase
-    private lateinit var mockTranscriptionRepo: TranscriptionRepository
+    private lateinit var mockProvider: TranscriptionProvider
     private lateinit var tempDir: File
 
     @Before
@@ -43,30 +40,25 @@ class RetryWorkerIdempotentTest {
         db = AppDatabase.createInMemory(
             ApplicationProvider.getApplicationContext()
         )
-        mockTranscriptionRepo = mockk<TranscriptionRepository>()
+        mockProvider = mockk<TranscriptionProvider>()
         tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("test_retry_idempotent").also { it.mkdirs() }
-
-        ServiceLocator.overrideForTest(
-            database = db,
-            transcriptionRepository = mockTranscriptionRepo
-        )
     }
 
     @After
     fun tearDown() {
-        ServiceLocator.clearTestOverrides()
         db.close()
         unmockkAll()
         tempDir.deleteRecursively()
     }
 
     @Test
-    fun `idempotent - second doWork has no FAILED chunks`() = runTest {
+    fun `idempotent - second retry has no FAILED chunks`() = runTest {
         // Arrange: 全チャンク再送成功
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "idempotent-session"
 
         for (i in 0..1) {
@@ -82,23 +74,17 @@ class RetryWorkerIdempotentTest {
         }
 
         // Act: 1回目
-        val worker1 = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        worker1.doWork()
+        uploader.retryFailedChunks()
 
         // Assert: 全DONE
         assertEquals(2, dao.getByStatus(ChunkStatus.DONE).size)
         assertEquals(0, dao.getByStatus(ChunkStatus.FAILED).size)
 
         // Act: 2回目（FAILEDなし）
-        val worker2 = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        val result2 = worker2.doWork()
+        val count2 = uploader.retryFailedChunks()
 
         // Assert: 変化なし（冪等）
-        assertEquals(androidx.work.ListenableWorker.Result.success(), result2)
+        assertEquals(0, count2)
         assertEquals(2, dao.getByStatus(ChunkStatus.DONE).size)
         assertEquals(0, dao.getByStatus(ChunkStatus.FAILED).size)
     }
@@ -107,6 +93,7 @@ class RetryWorkerIdempotentTest {
     fun `file missing - deletes entire session`() = runTest {
         // Arrange: ファイルパスが存在しないFAILEDチャンク
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "missing-file-session"
 
         dao.insert(
@@ -127,10 +114,7 @@ class RetryWorkerIdempotentTest {
         )
 
         // Act
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // Assert: セッション全削除
         assertEquals(0, dao.getBySession(sessionId).size)
@@ -140,9 +124,10 @@ class RetryWorkerIdempotentTest {
     @Test
     fun `file missing in one chunk - deletes entire session including intact files`() = runTest {
         // Arrange: 1つのファイル消失 + 1つのファイル存在
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "partial-missing-session"
 
         // chunk_0: ファイル存在
@@ -166,10 +151,7 @@ class RetryWorkerIdempotentTest {
         )
 
         // Act
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // Assert: セッション全削除（chunk_0もchunk_1も消える）
         // ※ グループ化順序はHashMap依存。chunk_1が先に来たらセッション全削除。
@@ -182,9 +164,10 @@ class RetryWorkerIdempotentTest {
     @Test
     fun `DONE and PENDING chunks are not processed`() = runTest {
         // Arrange: DONE / PENDING / FAILED混在
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
         val sessionId = "mixed-status-session"
 
         // DONE: 処理対象外
@@ -218,10 +201,7 @@ class RetryWorkerIdempotentTest {
         )
 
         // Act
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // Assert
         val allChunks = dao.getBySession(sessionId)
@@ -242,9 +222,10 @@ class RetryWorkerIdempotentTest {
     @Test
     fun `different sessions - processed independently`() = runTest {
         // Arrange: 2セッション、それぞれ別々に処理
-        coEvery { mockTranscriptionRepo.transcribe(any<File>()) } returns Result.success("テキスト")
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val dao = db.chunkDao()
+        val uploader = TranscriptionUploader(dao, mockProvider)
 
         // Session A: 全ファイル存在
         val fileA = File(tempDir, "a_chunk_0.wav").also { it.writeBytes(ByteArray(100)) }
@@ -268,10 +249,7 @@ class RetryWorkerIdempotentTest {
         )
 
         // Act
-        val worker = RetryWorker(
-            ApplicationProvider.getApplicationContext(),
-            mockk<WorkerParameters>(relaxed = true)        )
-        worker.doWork()
+        uploader.retryFailedChunks()
 
         // Assert: Session A → DONE
         val sessionA = dao.getBySession("session-A")

@@ -8,15 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.data.db.ChunkDao
-import com.kohei.summaryrecorder.di.ServiceLocator
+import com.kohei.summaryrecorder.di.AudioProviderFactory
+import com.kohei.summaryrecorder.di.ChunkSizeBytes
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,11 +27,9 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
-/**
- * Foreground Service: 長時間録音 + 即時アップロード。
- * ライフサイクル管理のみ。録音/アップロード/バッテリー最適化は各クラスに委譲。
- */
+@AndroidEntryPoint
 class RecordingService : Service() {
 
     companion object {
@@ -54,16 +53,18 @@ class RecordingService : Service() {
         }
     }
 
-    private val dao: ChunkDao by lazy { ServiceLocator.database.chunkDao() }
-    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    @Inject lateinit var dao: ChunkDao
+    @Inject lateinit var uploader: TranscriptionUploader
+    @Inject lateinit var audioProviderFactory: AudioProviderFactory
+    @Inject @ChunkSizeBytes lateinit var chunkSizeBytesHolder: Number
 
+    private val chunkSizeBytes: Long get() = chunkSizeBytesHolder.toLong()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var recordingManager: RecordingManager
 
     override fun onCreate() {
         super.onCreate()
-        val uploader = TranscriptionUploader(dao, ServiceLocator.transcriptionProvider)
         recordingManager = RecordingManager(dao, uploader, serviceScope)
-
         runBlocking { dao.resetStuckUploads() }
         createNotificationChannel()
         BatteryOptimizer.requestBatteryOptimization(this)
@@ -82,14 +83,12 @@ class RecordingService : Service() {
                 recordingManager.startRecording(
                     sessionId = sessionId,
                     outputDir = outputDir,
-                    chunkSizeBytes = DebugConfig.chunkSizeBytes,
-                    audioProvider = ServiceLocator.createAudioProvider(this)
+                    chunkSizeBytes = chunkSizeBytes,
+                    audioProvider = audioProviderFactory.create(this)
                 )
             }
             ACTION_STOP -> {
-                serviceScope.launch {
-                    recordingManager.stopRecording()
-                }
+                serviceScope.launch { recordingManager.stopRecording() }
                 updateNotification("文字起こし処理中...")
                 stopForeground(true)
                 stopSelf()
@@ -101,24 +100,17 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        serviceScope.launch {
-            recordingManager.stopRecording()
-        }
+        serviceScope.launch { recordingManager.stopRecording() }
         serviceScope.cancel()
         super.onDestroy()
     }
 
-    // ===== 通知 =====
-
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "録音サービス",
-                NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "録音サービス", NotificationManager.IMPORTANCE_LOW
             )
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
@@ -136,24 +128,11 @@ class RecordingService : Service() {
             .notify(NOTIFICATION_ID, buildNotification(text))
     }
 
-    // ===== WorkManager =====
-
     private fun scheduleRetryWorker() {
-        val request = PeriodicWorkRequestBuilder<RetryWorker>(
-            15, TimeUnit.MINUTES
-        )
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
+        val request = PeriodicWorkRequestBuilder<RetryWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
-
         WorkManager.getInstance(this)
-            .enqueueUniquePeriodicWork(
-                "retry_transcription",
-                ExistingPeriodicWorkPolicy.KEEP,
-                request
-            )
+            .enqueueUniquePeriodicWork("retry_transcription", ExistingPeriodicWorkPolicy.KEEP, request)
     }
 }
