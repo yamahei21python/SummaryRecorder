@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -93,13 +92,16 @@ class GaplessRecorder(
     }
 
     /**
-     * 停止フロー:
+     * 停止（suspend版）。
+     * runBlockingを使わず、呼び出し元のcoroutine contextで実行。
+     *
+     * フロー:
      * 1. isRecording=false → ループ脱出フラグ
      * 2. provider.release() → read()が即座に終了
      * 3. cancelChildren() → 残存コルーチン破棄
      * 4. mutex.withLock { finalizeCurrentChunk() } → 最終チャンク安全確定
      */
-    fun stop() {
+    suspend fun stop() {
         isRecording = false
 
         provider?.apply {
@@ -110,10 +112,8 @@ class GaplessRecorder(
 
         recordingScope.coroutineContext.cancelChildren()
 
-        runBlocking {
-            mutex.withLock {
-                finalizeCurrentChunk()
-            }
+        mutex.withLock {
+            finalizeCurrentChunk()
         }
     }
 
@@ -174,7 +174,7 @@ class GaplessRecorder(
 
     /**
      * テスト用: 現在のチャンクを確定して停止。
-     * AudioProviderへの依存なし。
+     * AudioProviderへの依存なし。非suspend（runBlocking内でmutex使用）。
      */
     @VisibleForTesting
     fun stopForTest() {

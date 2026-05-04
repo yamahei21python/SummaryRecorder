@@ -5,7 +5,6 @@ import com.google.ai.client.generativeai.GenerativeModel
 import com.kohei.summaryrecorder.audio.AudioProvider
 import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.audio.DummyAudioProvider
-import com.kohei.summaryrecorder.audio.MockApiProvider
 import com.kohei.summaryrecorder.audio.MockSummaryProvider
 import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
 import com.kohei.summaryrecorder.audio.RealAudioProvider

@@ -8,11 +8,14 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.service.RecordingService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
-class MainViewModel(
+@HiltViewModel
+class MainViewModel @Inject constructor(
     private val dao: ChunkDao,
     private val summaryRepo: SummaryRepository
 ) : ViewModel() {

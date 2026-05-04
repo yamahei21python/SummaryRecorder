@@ -2,7 +2,9 @@ package com.kohei.summaryrecorder
 
 import android.app.Application
 import com.kohei.summaryrecorder.di.ServiceLocator
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class SummaryRecorderApp : Application() {
 
     override fun onCreate() {

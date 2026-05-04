@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import com.kohei.summaryrecorder.audio.DebugConfig
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,13 +20,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.di.ServiceLocator
 import com.kohei.summaryrecorder.viewmodel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,19 +47,8 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val viewModel: MainViewModel by viewModels {
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return MainViewModel(
-                        dao = ServiceLocator.database.chunkDao(),
-                        summaryRepo = ServiceLocator.summaryRepository
-                    ) as T
-                }
-            }
-        }
-
         setContent {
+            val viewModel: MainViewModel = hiltViewModel()
             MainScreen(viewModel = viewModel)
         }
     }

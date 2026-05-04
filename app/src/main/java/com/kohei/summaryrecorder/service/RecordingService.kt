@@ -6,29 +6,21 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
-import android.provider.Settings
+import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.data.db.ChunkDao
+import com.kohei.summaryrecorder.di.ServiceLocator
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.kohei.summaryrecorder.data.db.ChunkEntity
-import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.db.ChunkDao
-import com.kohei.summaryrecorder.audio.DebugConfig
-import com.kohei.summaryrecorder.audio.TranscriptionProvider
-import com.kohei.summaryrecorder.di.ServiceLocator
-import com.kohei.summaryrecorder.recorder.GaplessRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -37,11 +29,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Foreground Service: 長時間録音 + 即時アップロード。
- *
- * - onCreate: 自己修復(resetStuckUploads) + 通知チャンネル + バッテリー最適化確認
- * - onStartCommand(ACTION_START): 録音開始 + WorkManager登録
- * - onStartCommand(ACTION_STOP): 録音停止
- * - onDestroy: リソース解放
+ * ライフサイクル管理のみ。録音/アップロード/バッテリー最適化は各クラスに委譲。
  */
 class RecordingService : Service() {
 
@@ -66,46 +54,46 @@ class RecordingService : Service() {
         }
     }
 
-    // DI（ServiceLocator経由）
-    private val dao: ChunkDao by lazy {
-        ServiceLocator.database.chunkDao()
-    }
-    private val transcriptionProvider: TranscriptionProvider by lazy {
-        ServiceLocator.transcriptionProvider
-    }
-
-    private var recorder: GaplessRecorder? = null
-    private var sessionId: String = ""
+    private val dao: ChunkDao by lazy { ServiceLocator.database.chunkDao() }
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    // ===== ライフサイクル =====
+    private lateinit var recordingManager: RecordingManager
 
     override fun onCreate() {
         super.onCreate()
-        // 1. 自己修復（runBlockingで同期待ち）
+        val uploader = TranscriptionUploader(dao, ServiceLocator.transcriptionProvider)
+        recordingManager = RecordingManager(dao, uploader, serviceScope)
+
         runBlocking { dao.resetStuckUploads() }
-        // 2. 通知チャンネル
         createNotificationChannel()
-        // 3. バッテリー最適化確認
-        requestBatteryOptimization()
+        BatteryOptimizer.requestBatteryOptimization(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
+                val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
                     ?: UUID.randomUUID().toString()
 
-                // Foreground開始
                 startForeground(NOTIFICATION_ID, buildNotification("録音中..."))
-
-                // WorkManager登録
                 scheduleRetryWorker()
 
-                // 録音開始
-                startRecording()
+                val outputDir = File(filesDir, "recordings/$sessionId").also { it.mkdirs() }
+                recordingManager.startRecording(
+                    sessionId = sessionId,
+                    outputDir = outputDir,
+                    chunkSizeBytes = DebugConfig.chunkSizeBytes,
+                    audioProvider = ServiceLocator.createAudioProvider(this)
+                )
             }
-            ACTION_STOP -> stopRecording()
+            ACTION_STOP -> {
+                serviceScope.launch {
+                    recordingManager.stopRecording()
+                }
+                updateNotification("文字起こし処理中...")
+                stopForeground(true)
+                stopSelf()
+            }
         }
         return START_STICKY
     }
@@ -113,73 +101,11 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        recorder?.stop()
+        serviceScope.launch {
+            recordingManager.stopRecording()
+        }
         serviceScope.cancel()
         super.onDestroy()
-    }
-
-    // ===== 録音制御 =====
-
-    private fun startRecording() {
-        val outputDir = File(filesDir, "recordings/$sessionId").also {
-            it.mkdirs()
-        }
-
-        val audioProvider = ServiceLocator.createAudioProvider(this)
-
-        recorder = GaplessRecorder(
-            outputDir = outputDir,
-            chunkSizeBytes = DebugConfig.chunkSizeBytes,
-            onChunkComplete = { chunkIndex, file ->
-                serviceScope.launch {
-                    onChunkRecorded(chunkIndex, file)
-                }
-            },
-            audioProvider = audioProvider
-        ).also { it.start() }
-    }
-
-    private fun stopRecording() {
-        recorder?.stop()
-        recorder = null
-        updateNotification("文字起こし処理中...")
-        stopForeground(true)
-        stopSelf()
-    }
-
-    // ===== チャンク処理 =====
-
-    private suspend fun onChunkRecorded(chunkIndex: Int, file: File) {
-        // 1. DB登録
-        val entity = ChunkEntity(
-            sessionId = sessionId,
-            chunkIndex = chunkIndex,
-            filePath = file.absolutePath,
-            status = ChunkStatus.PENDING
-        )
-        val id = dao.insert(entity)
-
-        // 2. 即時アップロード
-        uploadChunk(entity.copy(id = id))
-    }
-
-    private suspend fun uploadChunk(chunk: ChunkEntity) {
-        // UPLOADINGに遷移
-        dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-
-        val file = File(chunk.filePath)
-        val result = transcriptionProvider.transcribe(file)
-
-        if (result.isSuccess) {
-            val text = result.getOrThrow()
-            // DONE + テキスト保存
-            dao.updateStatus(chunk.id, ChunkStatus.DONE, text)
-            // 音声ファイル削除（NFR-005）
-            file.delete()
-        } else {
-            // FAILED
-            dao.updateStatus(chunk.id, ChunkStatus.FAILED)
-        }
     }
 
     // ===== 通知 =====
@@ -208,25 +134,6 @@ class RecordingService : Service() {
     private fun updateNotification(text: String) {
         getSystemService(NotificationManager::class.java)
             .notify(NOTIFICATION_ID, buildNotification(text))
-    }
-
-    // ===== バッテリー最適化 =====
-
-    private fun requestBatteryOptimization() {
-        try {
-            val pm = getSystemService(PowerManager::class.java)
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                val intent = Intent(
-                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                ).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                startActivity(intent)
-            }
-        } catch (_: Exception) {
-            // テスト環境やSettings未サポート端末では安全に無視
-        }
     }
 
     // ===== WorkManager =====
