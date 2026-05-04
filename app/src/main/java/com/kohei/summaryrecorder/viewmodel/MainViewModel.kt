@@ -84,7 +84,7 @@ class MainViewModel(
                 .onEach { items ->
                     _uiState.update { it.copy(chunks = items) }
                 }
-                .collect()
+                .collect {}
         }
 
         // 全DONE検知 → 要約トリガー
@@ -98,7 +98,7 @@ class MainViewModel(
                 .onEach {
                     summarizeAll(sessionId)
                 }
-                .collect()
+                .collect {}
         }
     }
 

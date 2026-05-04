@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -91,7 +93,6 @@ fun MainScreen(viewModel: MainViewModel) {
         // 録音ボタン
         Button(
             onClick = {
-                val context = LocalContext.current
                 if (uiState.isRecording) {
                     viewModel.stopRecording(context)
                 } else {
