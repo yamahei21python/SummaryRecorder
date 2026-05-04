@@ -1,0 +1,135 @@
+package com.kohei.summaryrecorder.viewmodel
+
+import android.content.Context
+import app.cash.turbine.test
+import com.kohei.summaryrecorder.data.db.ChunkDao
+import com.kohei.summaryrecorder.data.db.ChunkEntity
+import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.repository.SummaryRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+
+class SummaryFlowTest {
+
+    private lateinit var dao: ChunkDao
+    private lateinit var summaryRepo: SummaryRepository
+    private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
+    private lateinit var context: Context
+
+    @BeforeEach
+    fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        dao = mockk<ChunkDao>(relaxed = true)
+        summaryRepo = mockk<SummaryRepository>()
+        chunksFlow = MutableStateFlow(emptyList())
+        context = mockk<Context>(relaxed = true)
+        coEvery { dao.observeBySession(any()) } returns chunksFlow
+    }
+
+    @AfterEach
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun doneChunk(id: Long, index: Int, text: String) = ChunkEntity(
+        id = id,
+        sessionId = "test-session",
+        chunkIndex = index,
+        filePath = "/chunk_$index.wav",
+        status = ChunkStatus.DONE,
+        transcriptionText = text
+    )
+
+    private fun pendingChunk(id: Long, index: Int) = ChunkEntity(
+        id = id,
+        sessionId = "test-session",
+        chunkIndex = index,
+        filePath = "/chunk_$index.wav",
+        status = ChunkStatus.PENDING
+    )
+
+    @Test
+    @DisplayName("all done triggers summarize")
+    fun `all done triggers summarize`() = runTest {
+        coEvery { summaryRepo.summarize(any()) } returns Result.success("要約テキスト")
+
+        val viewModel = MainViewModel(dao, summaryRepo)
+        viewModel.startRecording(context)
+
+        val doneChunks = listOf(
+            doneChunk(id = 1, index = 0, text = "テキスト1"),
+            doneChunk(id = 2, index = 1, text = "テキスト2")
+        )
+        chunksFlow.value = doneChunks
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals("要約テキスト", state.summary)
+        }
+
+        coVerify { dao.deleteBySession(any()) }
+    }
+
+    @Test
+    @DisplayName("partial done does not trigger summarize")
+    fun `partial done does not trigger summarize`() = runTest {
+        val viewModel = MainViewModel(dao, summaryRepo)
+        viewModel.startRecording(context)
+
+        val partialChunks = listOf(
+            doneChunk(id = 1, index = 0, text = "テキスト1"),
+            pendingChunk(id = 2, index = 1)
+        )
+        chunksFlow.value = partialChunks
+
+        assertNull(viewModel.uiState.value.summary)
+        coVerify(exactly = 0) { summaryRepo.summarize(any()) }
+    }
+
+    @Test
+    @DisplayName("empty chunks does not trigger summarize")
+    fun `empty chunks does not trigger summarize`() = runTest {
+        val viewModel = MainViewModel(dao, summaryRepo)
+        viewModel.startRecording(context)
+
+        chunksFlow.value = emptyList()
+
+        assertNull(viewModel.uiState.value.summary)
+        coVerify(exactly = 0) { summaryRepo.summarize(any()) }
+    }
+
+    @Test
+    @DisplayName("summarize failure shows error")
+    fun `summarize failure shows error`() = runTest {
+        coEvery { summaryRepo.summarize(any()) } returns Result.failure(
+            RuntimeException("API error")
+        )
+
+        val viewModel = MainViewModel(dao, summaryRepo)
+        viewModel.startRecording(context)
+
+        chunksFlow.value = listOf(
+            doneChunk(id = 1, index = 0, text = "テキスト1")
+        )
+
+        val error = viewModel.uiState.value.error
+        assertNotNull(error)
+        assertTrue(error!!.contains("API error"))
+        coVerify(exactly = 0) { dao.deleteBySession(any()) }
+    }
+}

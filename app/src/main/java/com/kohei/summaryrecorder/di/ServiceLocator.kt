@@ -27,6 +27,9 @@ object ServiceLocator {
     @Volatile
     private var _testTranscriptionRepo: TranscriptionRepository? = null
 
+    @Volatile
+    private var _testSummaryRepo: SummaryRepository? = null
+
     fun initialize(context: Context) {
         _database = AppDatabase.getInstance(context)
     }
@@ -57,7 +60,10 @@ object ServiceLocator {
         )
     }
 
-    val summaryRepository: SummaryRepository by lazy {
+    val summaryRepository: SummaryRepository
+        get() = _testSummaryRepo ?: _lazySummaryRepo
+
+    private val _lazySummaryRepo: SummaryRepository by lazy {
         val model = GenerativeModel(
             modelName = "gemini-2.0-flash",
             apiKey = _geminiApiKey ?: error("Gemini API key not set")
@@ -79,6 +85,10 @@ object ServiceLocator {
         _testTranscriptionRepo = transcriptionRepository
     }
 
+    fun overrideSummaryRepository(summaryRepository: SummaryRepository) {
+        _testSummaryRepo = summaryRepository
+    }
+
     /**
      * テスト用: オーバーライドをクリアする。
      * 各テストの @After で呼び出すこと。
@@ -86,5 +96,6 @@ object ServiceLocator {
     fun clearTestOverrides() {
         _testDatabase = null
         _testTranscriptionRepo = null
+        _testSummaryRepo = null
     }
 }
