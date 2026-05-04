@@ -82,7 +82,7 @@ class GroqApiServiceTest {
         val tempFile = java.io.File.createTempFile("test", ".wav")
         tempFile.writeBytes(ByteArray(44))
 
-        assertThrows(retrofit2.HttpException::class.java) {
+        val result = kotlin.runCatching {
             apiService.transcribe(
                 authorization = "Bearer test-key",
                 file = okhttp3.MultipartBody.Part.createFormData(
@@ -94,6 +94,8 @@ class GroqApiServiceTest {
                 responseFormat = "json".toRequestBody("text/plain".toMediaType())
             )
         }
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is retrofit2.HttpException)
 
         tempFile.delete()
     }
