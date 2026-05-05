@@ -6,7 +6,7 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +48,8 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          # KVMが利用可能か確認
+          ls -l /dev/kvm || echo "KVM not available"
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -56,7 +58,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api31-x86_64
+          key: avd-api31-x86-v3
 
       - name: Create AVD and generate snapshot
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -64,13 +66,14 @@ jobs:
         with:
           api-level: 31
           arch: x86_64
-          profile: pixel_6
-          ram-size: 4096M
-          heap-size: 512M
-          disk-size: 8192M
+          target: default
+          ram-size: 2048M
+          heap-size: 256M
+          disk-size: 6000M
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -memory 2048
           disable-animations: true
+          emulator-boot-timeout: 1200
           script: echo "AVD snapshot generated"
 
       - name: Install Maestro
@@ -83,13 +86,14 @@ jobs:
         with:
           api-level: 31
           arch: x86_64
-          profile: pixel_6
-          ram-size: 4096M
-          heap-size: 512M
-          disk-size: 8192M
+          target: default
+          ram-size: 2048M
+          heap-size: 256M
+          disk-size: 6000M
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -memory 2048
           disable-animations: true
+          emulator-boot-timeout: 1200
           script: |
             # APKインストール
             adb install -r app/build/outputs/apk/debug/app-debug.apk
