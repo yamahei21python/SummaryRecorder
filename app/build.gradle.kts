@@ -131,4 +131,5 @@ dependencies {
     kspTest("com.google.dagger:hilt-android-compiler:2.54")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.work:work-testing:2.9.0")
+    testImplementation("androidx.work:work-testing:2.9.0")
 }
