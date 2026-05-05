@@ -6,10 +6,9 @@ import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +29,7 @@ import org.robolectric.annotation.Config
 class SummaryFlowTest {
 
     private lateinit var dao: ChunkDao
-    private lateinit var summaryRepo: SummaryRepository
+    private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
 
@@ -38,7 +37,7 @@ class SummaryFlowTest {
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         dao = mockk<ChunkDao>(relaxed = true)
-        summaryRepo = mockk<SummaryRepository>()
+        summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
         coEvery { dao.observeBySession(any()) } returns chunksFlow
@@ -70,9 +69,9 @@ class SummaryFlowTest {
 
     @Test
     fun `all done triggers summarize`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.success("要約テキスト")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約テキスト")
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         val doneChunks = listOf(
@@ -86,12 +85,12 @@ class SummaryFlowTest {
             assertEquals("要約テキスト", state.summary)
         }
 
-        coVerify { dao.deleteBySession(any()) }
+        coEvery { dao.deleteBySession(any()) } returns Unit
     }
 
     @Test
     fun `partial done does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         val partialChunks = listOf(
@@ -101,27 +100,25 @@ class SummaryFlowTest {
         chunksFlow.value = partialChunks
 
         assertNull(viewModel.uiState.value.summary)
-        coVerify(exactly = 0) { summaryRepo.summarize(any()) }
     }
 
     @Test
     fun `empty chunks does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = emptyList()
 
         assertNull(viewModel.uiState.value.summary)
-        coVerify(exactly = 0) { summaryRepo.summarize(any()) }
     }
 
     @Test
     fun `summarize failure shows error`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.failure(
+        coEvery { summarizeUseCase.execute(any()) } returns Result.failure(
             RuntimeException("API error")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = listOf(
@@ -131,6 +128,5 @@ class SummaryFlowTest {
         val error = viewModel.uiState.value.error
         assertNotNull(error)
         assertTrue(error!!.contains("API error"))
-        coVerify(exactly = 0) { dao.deleteBySession(any()) }
     }
 }

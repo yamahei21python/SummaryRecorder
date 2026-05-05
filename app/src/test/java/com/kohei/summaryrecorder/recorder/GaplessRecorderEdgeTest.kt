@@ -23,6 +23,14 @@ class GaplessRecorderEdgeTest {
     @TempDir
     lateinit var tempDir: File
 
+    /** テスト用: 何もしないAudioProvider（writeTestPcmData使用時用） */
+    private val noopProvider = object : AudioProvider {
+        override fun start(): Boolean = true
+        override fun read(buffer: ShortArray, size: Int): Int = -1
+        override fun stop() {}
+        override fun release() {}
+    }
+
     // ===== AudioProvider.start() 失敗 =====
 
     @Test
@@ -88,7 +96,8 @@ class GaplessRecorderEdgeTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = 1024,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 0バイト書込み → 何もしない
@@ -107,7 +116,8 @@ class GaplessRecorderEdgeTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 丁度256バイト書込み → 分割トリガー（== chunkSizeBytes）
@@ -127,7 +137,8 @@ class GaplessRecorderEdgeTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 257バイト書込み → shortCount=128 (257/2=128、最後1バイト切り捨て)
@@ -150,7 +161,8 @@ class GaplessRecorderEdgeTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = 1024,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         recorder.writeTestPcmData(ByteArray(100) { it.toByte() })

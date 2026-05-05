@@ -46,7 +46,7 @@ class TranscriptionUploader(
      * 失敗チャンクを一括再送。
      * RetryWorkerのdoWorkロジック。
      *
-     * @return 処理済みセッション数
+     * @return 処理済みチャンク数
      */
     suspend fun retryFailedChunks(): Int {
         val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
@@ -63,7 +63,14 @@ class TranscriptionUploader(
 
                 dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
 
-                val result = transcriptionProvider.transcribe(file)
+                // 各チャンクのtranscribeをtry/catchで囲み、例外時もFAILEDに戻して次チャンクへ継続
+                val result = try {
+                    transcriptionProvider.transcribe(file)
+                } catch (e: Exception) {
+                    dao.updateStatus(chunk.id, ChunkStatus.FAILED)
+                    return@forEach
+                }
+
                 if (result.isSuccess) {
                     dao.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
                     file.delete()
@@ -75,5 +82,13 @@ class TranscriptionUploader(
         }
 
         return processedCount
+    }
+
+    /**
+     * 失敗チャンクが残っているかチェック。
+     * RetryWorkerで Result.retry / Result.success の判定に使用。
+     */
+    suspend fun hasFailedChunks(): Boolean {
+        return dao.getByStatus(ChunkStatus.FAILED).isNotEmpty()
     }
 }

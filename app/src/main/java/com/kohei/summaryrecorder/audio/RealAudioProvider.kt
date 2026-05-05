@@ -1,16 +1,17 @@
 package com.kohei.summaryrecorder.audio
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.recorder.AudioConstants
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 
 /** 本番: AudioRecord 経由で端末マイクからPCM取得 */
 class RealAudioProvider(
-    private val sampleRate: Int = 16000,
-    private val channelConfig: Int = AudioFormat.CHANNEL_IN_MONO,
-    private val audioFormat: Int = AudioFormat.ENCODING_PCM_16BIT,
-    private val bufferSize: Int = 4096
+    private val sampleRate: Int = AudioConstants.SAMPLE_RATE,
+    private val channelConfig: Int = AudioConstants.CHANNEL_CONFIG,
+    private val audioFormat: Int = AudioConstants.AUDIO_FORMAT,
+    private val bufferSize: Int = AudioConstants.READ_BUFFER
 ) : AudioProvider {
 
     private var audioRecord: AudioRecord? = null

@@ -21,7 +21,7 @@ object WavHeaderWriter {
     fun writeHeader(
         file: RandomAccessFile,
         dataLength: Long,
-        sampleRate: Int = 16000,
+        sampleRate: Int = AudioConstants.SAMPLE_RATE,
         channels: Int = 1,
         bitsPerSample: Int = 16
     ) {
@@ -39,12 +39,12 @@ object WavHeaderWriter {
         // fmt sub-chunk
         file.writeAsciiBytes("fmt ")
         file.writeIntLE(16)
-        file.writeShortLE(1) // PCM = 1
-        file.writeShortLE(channels)
+        file.writeShortLE(1.toShort()) // PCM = 1
+        file.writeShortLE(channels.toShort())
         file.writeIntLE(sampleRate)
         file.writeIntLE(byteRate)
-        file.writeShortLE(blockAlign)
-        file.writeShortLE(bitsPerSample)
+        file.writeShortLE(blockAlign.toShort())
+        file.writeShortLE(bitsPerSample.toShort())
 
         // data sub-chunk
         file.writeAsciiBytes("data")
@@ -68,9 +68,9 @@ object WavHeaderWriter {
         writeByte((value shr 24) and 0xFF)
     }
 
-    private fun RandomAccessFile.writeShortLE(value: Int) {
-        writeByte(value and 0xFF)
-        writeByte((value shr 8) and 0xFF)
+    private fun RandomAccessFile.writeShortLE(value: Short) {
+        writeByte(value.toInt() and 0xFF)
+        writeByte((value.toInt() shr 8) and 0xFF)
     }
 
     private fun RandomAccessFile.writeAsciiBytes(s: String) {

@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -15,6 +16,13 @@ class GaplessRecorderGaplessTest {
     @TempDir
     lateinit var tempDir: File
 
+    private val noopProvider = object : AudioProvider {
+        override fun start(): Boolean = true
+        override fun read(buffer: ShortArray, size: Int): Int = -1
+        override fun stop() {}
+        override fun release() {}
+    }
+
     @Test
     fun `no data loss across chunk boundaries`() = runTest {
         val chunkSize = 200L
@@ -22,7 +30,8 @@ class GaplessRecorderGaplessTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 200 bytesずつ（一意パターン）5回書込み → 1000 bytes total
@@ -56,7 +65,8 @@ class GaplessRecorderGaplessTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 200 + 200 = 2チャンクぴったり

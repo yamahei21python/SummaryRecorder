@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -17,6 +18,13 @@ class GaplessRecorderMutexTest {
     @TempDir
     lateinit var tempDir: File
 
+    private val noopProvider = object : AudioProvider {
+        override fun start(): Boolean = true
+        override fun read(buffer: ShortArray, size: Int): Int = -1
+        override fun stop() {}
+        override fun release() {}
+    }
+
     @Test
     fun `concurrent writes do not corrupt file`() = runTest {
         val chunkSize = 8192L
@@ -28,7 +36,8 @@ class GaplessRecorderMutexTest {
                 synchronized(recordedChunks) {
                     recordedChunks.add(index to file)
                 }
-            }
+            },
+            audioProvider = noopProvider
         )
 
         // メインスレッドで5回書込み（各1024 bytes）

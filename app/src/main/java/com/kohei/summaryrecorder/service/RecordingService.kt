@@ -3,14 +3,19 @@ package com.kohei.summaryrecorder.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import com.kohei.summaryrecorder.R
+import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.audio.DummyAudioProvider
+import com.kohei.summaryrecorder.audio.RealAudioProvider
 import com.kohei.summaryrecorder.data.db.ChunkDao
-import com.kohei.summaryrecorder.di.AudioProviderFactory
 import com.kohei.summaryrecorder.di.ChunkSize
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
@@ -56,7 +61,6 @@ class RecordingService : Service() {
 
     @Inject lateinit var dao: ChunkDao
     @Inject lateinit var uploader: TranscriptionUploader
-    @Inject lateinit var audioProviderFactory: AudioProviderFactory
     @Inject lateinit var chunkSize: ChunkSize
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -67,7 +71,8 @@ class RecordingService : Service() {
         recordingManager = RecordingManager(dao, uploader, serviceScope)
         runBlocking { dao.resetStuckUploads() }
         createNotificationChannel()
-        BatteryOptimizer.requestBatteryOptimization(this)
+        // バッテリー最適化は通知経由で後からユーザーに促す（onCreateでは直接開かない）
+        BatteryOptimizer.checkAndNotify(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -84,7 +89,7 @@ class RecordingService : Service() {
                     sessionId = sessionId,
                     outputDir = outputDir,
                     chunkSizeBytes = chunkSize.bytes,
-                    audioProvider = audioProviderFactory.create(this)
+                    audioProvider = createAudioProvider()
                 )
             }
             ACTION_STOP -> {
@@ -97,10 +102,20 @@ class RecordingService : Service() {
         return START_STICKY
     }
 
+    // DebugConfig.debugMode を直接参照してAudioProvider生成
+    private fun createAudioProvider(): AudioProvider {
+        return if (DebugConfig.debugMode) {
+            DummyAudioProvider(inputStream = assets.open("dummy_audio.wav"))
+        } else {
+            RealAudioProvider()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // onDestroy: runBlockingでstopRecording確実完了後にcancel
     override fun onDestroy() {
-        serviceScope.launch { recordingManager.stopRecording() }
+        runBlocking { recordingManager.stopRecording() }
         serviceScope.cancel()
         super.onDestroy()
     }

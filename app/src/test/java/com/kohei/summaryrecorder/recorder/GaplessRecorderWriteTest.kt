@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -23,13 +24,22 @@ class GaplessRecorderWriteTest {
     @TempDir
     lateinit var tempDir: File
 
+    /** テスト用: 何もしないAudioProvider（writeTestPcmData使用時はstart()不要なため） */
+    private val noopProvider = object : AudioProvider {
+        override fun start(): Boolean = true
+        override fun read(buffer: ShortArray, size: Int): Int = -1
+        override fun stop() {}
+        override fun release() {}
+    }
+
     @Test
     fun `single chunk file has valid WAV header after stop`() = runTest {
         val recordedChunks = mutableListOf<Pair<Int, File>>()
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = 19L * 1024 * 1024,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // PCMデータを書き込む（1000 bytes = 500 samples @ 16bit mono）
@@ -65,7 +75,8 @@ class GaplessRecorderWriteTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = 19L * 1024 * 1024,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 何も書かずにstop

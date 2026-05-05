@@ -22,10 +22,13 @@ class SummaryRepoTest {
     private lateinit var generativeModel: GenerativeModel
     private lateinit var repository: SummaryRepository
 
+    // テスト用システムプロンプト
+    private val testSystemPrompt = "テスト用システムプロンプト"
+
     @BeforeEach
     fun setUp() {
         generativeModel = mockk<GenerativeModel>()
-        repository = SummaryRepository(generativeModel)
+        repository = SummaryRepository(generativeModel, testSystemPrompt)
     }
 
     @AfterEach

@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -17,7 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ChunkDao,
-    private val summaryRepo: SummaryRepository,
+    private val summarizeUseCase: SummarizeUseCase,
     private val recordingController: RecordingController
 ) : ViewModel() {
 
@@ -103,12 +103,7 @@ class MainViewModel @Inject constructor(
     // ===== 要約 =====
 
     private suspend fun summarizeAll(sessionId: String) {
-        val chunks = dao.getBySession(sessionId)
-        val combinedText = chunks
-            .sortedBy { it.chunkIndex }
-            .joinToString("\n\n") { it.transcriptionText ?: "" }
-
-        val result = summaryRepo.summarize(combinedText)
+        val result = summarizeUseCase.execute(sessionId)
 
         if (result.isSuccess) {
             _uiState.update {

@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
+import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -20,6 +21,13 @@ class GaplessRecorderSplitTest {
     @TempDir
     lateinit var tempDir: File
 
+    private val noopProvider = object : AudioProvider {
+        override fun start(): Boolean = true
+        override fun read(buffer: ShortArray, size: Int): Int = -1
+        override fun stop() {}
+        override fun release() {}
+    }
+
     @Test
     fun `splits into multiple chunks when exceeding chunkSizeBytes`() = runTest {
         // 小さいチャンクサイズ（512 bytes）
@@ -28,7 +36,8 @@ class GaplessRecorderSplitTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 3回に分けて書込み（各256 bytes） → 3回目で累計768 > 512 → 分割
@@ -55,7 +64,8 @@ class GaplessRecorderSplitTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         // 200 bytesずつ書込み → 毎回分割トリガー
@@ -77,7 +87,8 @@ class GaplessRecorderSplitTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) }
+            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider
         )
 
         recorder.writeTestPcmData(ByteArray(200) { 0.toByte() })

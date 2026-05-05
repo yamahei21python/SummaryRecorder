@@ -17,6 +17,7 @@ class RetryWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         uploader.retryFailedChunks()
-        return Result.success()
+        // 失敗チャンクが残っていればリトライ
+        return if (uploader.hasFailedChunks()) Result.retry() else Result.success()
     }
 }

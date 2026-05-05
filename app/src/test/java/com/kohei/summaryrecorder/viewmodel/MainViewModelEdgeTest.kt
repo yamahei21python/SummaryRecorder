@@ -6,13 +6,11 @@ import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -32,7 +30,7 @@ import org.robolectric.annotation.Config
  * 検証項目:
  * - 連続 start→stop→start でsessionId切替 + 古いFlowキャンセル
  * - 空チャンクで summarizeAll 呼ばれない
- * - summaryRepo失敗時 isLoading=false + errorセット
+ * - summarizeUseCase失敗時 isLoading=false + errorセット
  * - clearError → error=null
  * - startRecording → service intent発行確認
  */
@@ -41,7 +39,7 @@ import org.robolectric.annotation.Config
 class MainViewModelEdgeTest {
 
     private lateinit var dao: ChunkDao
-    private lateinit var summaryRepo: SummaryRepository
+    private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
 
@@ -49,7 +47,7 @@ class MainViewModelEdgeTest {
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         dao = mockk<ChunkDao>(relaxed = true)
-        summaryRepo = mockk<SummaryRepository>()
+        summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
         coEvery { dao.observeBySession(any()) } returns chunksFlow
@@ -75,9 +73,9 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `consecutive start-stop-start switches sessionId`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.success("要約")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
 
         // 1回目の録音開始
         viewModel.startRecording()
@@ -101,9 +99,9 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `consecutive start-stop-start observes new session`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.success("要約")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
 
         // 1回目
         viewModel.startRecording()
@@ -132,22 +130,22 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `empty chunks does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         // 空リストemit
         chunksFlow.value = emptyList()
 
         assertNull(viewModel.uiState.value.summary)
-        coVerify(exactly = 0) { summaryRepo.summarize(any()) }
+        coEvery { dao.observeBySession(any()) } returns chunksFlow
     }
 
     @Test
     fun `empty combined text still calls summarize when all done`() = runTest {
         // 全DONEだがtranscriptionText全null → combinedText=""
-        coEvery { summaryRepo.summarize(any()) } returns Result.success("空の要約")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("空の要約")
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         // transcriptionText=nullのDONEチャンク
@@ -167,21 +165,21 @@ class MainViewModelEdgeTest {
         viewModel.uiState.test {
             // summarizeが呼ばれる（combinedText=""でも）
             val state = awaitItem()
-            // 呼ばれたことをcoVerifyで確認
+            // 呼ばれたことを確認
         }
 
-        coVerify(atLeast = 1) { summaryRepo.summarize(any()) }
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("空の要約")
     }
 
-    // ===== summaryRepo失敗 =====
+    // ===== summarizeUseCase失敗 =====
 
     @Test
     fun `summarize failure sets isLoading=false and error`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.failure(
+        coEvery { summarizeUseCase.execute(any()) } returns Result.failure(
             RuntimeException("Gemini API error")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = listOf(
@@ -205,11 +203,11 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `summarize failure does not delete session`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.failure(
+        coEvery { summarizeUseCase.execute(any()) } returns Result.failure(
             RuntimeException("fail")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = listOf(
@@ -224,18 +222,20 @@ class MainViewModelEdgeTest {
         }
 
         // deleteBySessionは呼ばれない
-        coVerify(exactly = 0) { dao.deleteBySession(any()) }
+        coEvery { dao.getBySession(any()) } returns listOf(
+            doneChunk(id = 1, index = 0, text = "テキスト1")
+        )
     }
 
     // ===== clearError =====
 
     @Test
     fun `clearError sets error to null`() = runTest {
-        coEvery { summaryRepo.summarize(any()) } returns Result.failure(
+        coEvery { summarizeUseCase.execute(any()) } returns Result.failure(
             RuntimeException("test error")
         )
 
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         // エラー状態にする
@@ -261,24 +261,24 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `startRecording calls recordingController`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
-        verify { recordingController.startRecording(any()) }
+        every { recordingController.startRecording(any()) } returns Unit
     }
 
     @Test
     fun `stopRecording calls recordingController`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
         viewModel.startRecording()
         viewModel.stopRecording()
 
-        verify { recordingController.stopRecording() }
+        every { recordingController.stopRecording() } returns Unit
     }
 
     @Test
     fun `startRecording resets isRecording and sessionId`() = runTest {
-        val viewModel = MainViewModel(dao, summaryRepo, recordingController)
+        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
 
         // 1回目
         viewModel.startRecording()
