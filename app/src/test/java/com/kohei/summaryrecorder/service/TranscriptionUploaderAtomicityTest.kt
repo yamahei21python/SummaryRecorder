@@ -25,7 +25,7 @@ class TranscriptionUploaderAtomicityTest {
 
     @Test
     fun `transcribe exception after UPLOADING status properly reverts to FAILED`() = runTest {
-        val chunk = ChunkEntity("s", 0, "/path.wav", ChunkStatus.PENDING, id = 1L)
+        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = "/path.wav", status = ChunkStatus.PENDING)
         val file = File("/path.wav")
         
         coEvery { mockProvider.transcribe(any()) } throws RuntimeException("Network Error")

@@ -24,7 +24,7 @@ class ConfigModuleSingletonTimingTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        module = ConfigModule()
+        module = ConfigModule
         mockRepo = mockk()
     }
 

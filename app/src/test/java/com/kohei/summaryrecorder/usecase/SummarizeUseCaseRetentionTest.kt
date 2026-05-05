@@ -26,13 +26,13 @@ import kotlin.test.assertTrue
 class SummarizeUseCaseRetentionTest {
 
     private lateinit var mockRepo: ChunkRepository
-    private lateinit var mockSummaryRepo: SummaryRepository
+    private lateinit var mockSummaryRepo: SummaryProvider
     private lateinit var useCase: SummarizeUseCase
 
     @Before
     fun setUp() {
         mockRepo = mockk<ChunkRepository>(relaxed = true)
-        mockSummaryRepo = mockk<SummaryRepository>(relaxed = true)
+        mockSummaryRepo = mockk<SummaryProvider>(relaxed = true)
         useCase = SummarizeUseCase(mockRepo, mockSummaryRepo)
     }
 

@@ -30,9 +30,7 @@ class SummaryRepositoryPromptTest {
         repository.summarize("Input Text")
 
         coVerify {
-            mockModel.generateContent(match { content ->
-                // システムプロンプトと入力テキストの両方が含まれていることを確認する
-                // 実装によっては Content 内に複数の Part があるか、結合されているかを確認
+            mockModel.generateContent(match<Content> { content ->
                 val textParts = content.parts.filterIsInstance<TextPart>()
                 textParts.any { it.text.contains(systemPrompt) } &&
                 textParts.any { it.text.contains("Input Text") }

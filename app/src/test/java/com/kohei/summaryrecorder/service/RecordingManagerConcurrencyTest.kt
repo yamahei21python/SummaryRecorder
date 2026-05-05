@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.service
 
+import com.kohei.summaryrecorder.data.db.ChunkEntity
+import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import io.mockk.any
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.*
@@ -32,7 +35,7 @@ class RecordingManagerConcurrencyTest {
         repeat(3) { i ->
             launch {
                 // RecordingManager.onChunkRecorded と同等の処理が走ることを期待
-                val entity = ChunkEntity("session-1", i, "path$i.wav", ChunkStatus.PENDING)
+                val entity = ChunkEntity(sessionId = "session-1", chunkIndex = i, filePath = "path$i.wav", status = ChunkStatus.PENDING)
                 mockRepo.insert(entity)
                 mockUploader.uploadChunk(any())
             }

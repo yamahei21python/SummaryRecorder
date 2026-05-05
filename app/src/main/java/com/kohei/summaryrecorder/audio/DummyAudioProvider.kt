@@ -7,7 +7,9 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class DummyAudioProvider(
-    inputStream: InputStream
+    inputStream: InputStream,
+    private val readDelayMs: Long = 0,
+    private val loop: Boolean = true
 ) : AudioProvider {
 
     private val audioData: ByteArray = inputStream.readBytes()
@@ -22,11 +24,15 @@ class DummyAudioProvider(
     override fun read(buffer: ShortArray, size: Int): Int {
         if (!isActive) return -1
         
+        if (readDelayMs > 0) {
+            Thread.sleep(readDelayMs)
+        }
+
         val bytesToRead = size * 2
         val tempBuffer = ByteArray(bytesToRead)
         
         var readBytes = bais.read(tempBuffer)
-        if (readBytes == -1) {
+        if (readBytes == -1 && loop) {
             // ループ
             bais = ByteArrayInputStream(audioData)
             readBytes = bais.read(tempBuffer)

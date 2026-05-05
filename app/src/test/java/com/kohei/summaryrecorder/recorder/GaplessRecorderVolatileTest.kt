@@ -29,6 +29,8 @@ class GaplessRecorderVolatileTest {
     fun `stop from different coroutine context terminates recording loop`() = runTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
+            chunkSizeBytes = 1024L * 1024,
+            onChunkComplete = { _, _ -> },
             audioProvider = noopProvider,
             coroutineScope = CoroutineScope(Dispatchers.Default)
         )

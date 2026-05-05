@@ -31,7 +31,7 @@ class ChunkDaoUpdateTextTest {
 
     @Test
     fun `updateStatus with text overwrites existing transcriptionText`() = runTest {
-        val chunk = ChunkEntity("s1", 0, "/path", ChunkStatus.PENDING)
+        val chunk = ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/path", status = ChunkStatus.PENDING)
         val id = dao.insert(chunk)
 
         dao.updateStatus(id, ChunkStatus.DONE, "New Text")
@@ -43,7 +43,7 @@ class ChunkDaoUpdateTextTest {
 
     @Test
     fun `updateStatus with null text clears existing transcriptionText`() = runTest {
-        val chunk = ChunkEntity("s1", 0, "/path", ChunkStatus.DONE, transcriptionText = "Old Text")
+        val chunk = ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/path", status = ChunkStatus.DONE, transcriptionText = "Old Text")
         val id = dao.insert(chunk)
 
         dao.updateStatus(id, ChunkStatus.FAILED, null)
