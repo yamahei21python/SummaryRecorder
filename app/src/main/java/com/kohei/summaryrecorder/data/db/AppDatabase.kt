@@ -15,18 +15,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chunkDao(): ChunkDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-
-        fun getInstance(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "summary_recorder.db"
-                ).build().also { INSTANCE = it }
-            }
-        }
+        private const val DB_NAME = "summary_recorder.db"
 
         /**
          * テスト用: inMemoryインスタンスを生成

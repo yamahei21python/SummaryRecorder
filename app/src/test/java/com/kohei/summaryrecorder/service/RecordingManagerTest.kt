@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -78,7 +79,6 @@ class RecordingManagerTest {
     }
 
     // ===== start/stop ライフサイクル =====
-
     @Test
     fun `startRecording creates recorder`() = runTest {
         val manager = RecordingManager(mockRepo, mockUploader, testScope)
@@ -102,7 +102,6 @@ class RecordingManagerTest {
     }
 
     // ===== onChunkRecorded 正常系 =====
-
     @Test
     fun `onChunkRecorded inserts and uploads`() = runTest {
         coEvery { mockRepo.insert(any()) } returns 1L
@@ -121,7 +120,6 @@ class RecordingManagerTest {
     }
 
     // ===== onChunkRecorded 異常系: insert失敗 =====
-
     @Test
     fun `onChunkRecorded handles insert failure gracefully`() = runTest {
         coEvery { mockRepo.insert(any()) } throws RuntimeException("DB error")
@@ -136,7 +134,6 @@ class RecordingManagerTest {
     }
 
     // ===== onChunkRecorded 異常系: upload失敗 =====
-
     @Test
     fun `onChunkRecorded handles upload failure gracefully`() = runTest {
         coEvery { mockRepo.insert(any()) } returns 1L
@@ -155,7 +152,6 @@ class RecordingManagerTest {
     }
 
     // ===== Race Condition =====
-
     @Test
     fun `sessionId race condition is prevented by local capture`() = runTest {
         coEvery { mockRepo.insert(any()) } returns 1L
@@ -164,12 +160,12 @@ class RecordingManagerTest {
         val manager = RecordingManager(mockRepo, mockUploader, testScope)
         
         // Start session 1
-        manager.startRecording("sess1", tempDir, 4L, createProvider(4L))
+        launch { manager.startRecording("sess1", tempDir, 4L, createProvider(4L)) }
         // Stop immediately
         manager.stopRecording()
         
         // Start session 2
-        manager.startRecording("sess2", tempDir, 4L, createProvider(4L))
+        launch { manager.startRecording("sess2", tempDir, 4L, createProvider(4L)) }
         
         testScope.advanceUntilIdle()
 

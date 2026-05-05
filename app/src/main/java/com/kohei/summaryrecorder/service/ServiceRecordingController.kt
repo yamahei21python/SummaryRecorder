@@ -2,6 +2,7 @@ package com.kohei.summaryrecorder.service
 
 import android.content.Context
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -10,7 +11,7 @@ class ServiceRecordingController @Inject constructor(
 ) : RecordingController {
 
     override fun startRecording(sessionId: String) {
-        context.startService(RecordingService.startIntent(context, sessionId))
+        ContextCompat.startForegroundService(context, RecordingService.startIntent(context, sessionId))
     }
 
     override fun stopRecording() {

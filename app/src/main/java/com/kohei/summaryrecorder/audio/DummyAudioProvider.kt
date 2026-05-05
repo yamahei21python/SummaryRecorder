@@ -52,7 +52,7 @@ class DummyAudioProvider(
     private fun ensureHeaderSkipped() {
         if (!headerSkipped) {
             if (pcmStart < 0) {
-                bufferedStream.mark(Int.MAX_VALUE)
+                bufferedStream.mark(1024 * 1024) // Max 1MB for dummy loop
                 bufferedStream.skip(44)
                 pcmStart = 44
             }

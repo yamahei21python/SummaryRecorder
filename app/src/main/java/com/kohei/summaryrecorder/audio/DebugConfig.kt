@@ -12,7 +12,4 @@ object DebugConfig {
     const val DEBUG_CHUNK_BYTES = 100L * 1024
     /** 本番チャンクサイズ(19MB ≒ 10分) */
     const val PRODUCTION_CHUNK_BYTES = 19L * 1024 * 1024
-
-    val chunkSizeBytes: Long
-        get() = if (debugMode) DEBUG_CHUNK_BYTES else PRODUCTION_CHUNK_BYTES
 }

@@ -48,14 +48,13 @@ class ConfigModuleTest {
     @Test
     fun `ChunkSize value reflects runtime debugMode change`() {
         DebugConfig.debugMode = false
+        val chunkSize = ConfigModule.provideChunkSize()
 
         // 本番モード
-        val production = ConfigModule.provideChunkSize()
-        assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, production.bytes)
+        assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, chunkSize.bytes)
 
         // ランタイム切替
         DebugConfig.debugMode = true
-        val debug = ConfigModule.provideChunkSize()
-        assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, debug.bytes)
+        assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, chunkSize.bytes)
     }
 }

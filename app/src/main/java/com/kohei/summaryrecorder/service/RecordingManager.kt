@@ -18,20 +18,18 @@ class RecordingManager(
 ) {
     private var recorder: GaplessRecorder? = null
 
-    fun startRecording(
+    suspend fun startRecording(
         sessionId: String,
         outputDir: File,
         chunkSizeBytes: Long,
         audioProvider: AudioProvider
     ) {
-        val currentSessionId = sessionId
-
         recorder = GaplessRecorder(
             outputDir = outputDir,
             chunkSizeBytes = chunkSizeBytes,
             onChunkComplete = { chunkIndex, file ->
                 serviceScope.launch {
-                    onChunkRecorded(currentSessionId, chunkIndex, file)
+                    onChunkRecorded(sessionId, chunkIndex, file)
                 }
             },
             audioProvider = audioProvider,

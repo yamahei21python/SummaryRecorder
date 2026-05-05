@@ -27,8 +27,8 @@ class GaplessRecorder(
     @VisibleForTesting internal var currentBytesWritten = 0
     @VisibleForTesting internal var isRecording = false
 
-    fun start() {
-        recordingJob?.cancel()
+    suspend fun start() {
+        recordingJob?.cancelAndJoin()
         if (!audioProvider.start()) {
             throw IllegalStateException("AudioProvider.start() failed")
         }

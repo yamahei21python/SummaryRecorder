@@ -3,6 +3,7 @@ package com.kohei.summaryrecorder.di
 import android.content.Context
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkDao
+import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,7 +18,11 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getInstance(context)
+        return Room.databaseBuilder(
+            context.applicationContext,
+            AppDatabase::class.java,
+            "summary_recorder.db"
+        ).build()
     }
 
     @Provides

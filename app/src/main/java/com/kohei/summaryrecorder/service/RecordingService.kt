@@ -3,7 +3,6 @@ package com.kohei.summaryrecorder.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -11,7 +10,6 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import com.kohei.summaryrecorder.R
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.ChunkSize
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import com.kohei.summaryrecorder.domain.provider.ChunkRepository
@@ -32,7 +30,6 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class RecordingService : Service() {
@@ -51,7 +48,6 @@ class RecordingService : Service() {
         }
     }
 
-    @Inject lateinit var dao: ChunkDao
     @Inject lateinit var chunkRepository: ChunkRepository
     @Inject lateinit var uploader: TranscriptionUploader
     @Inject lateinit var chunkSize: ChunkSize
@@ -63,7 +59,7 @@ class RecordingService : Service() {
     override fun onCreate() {
         super.onCreate()
         recordingManager = RecordingManager(chunkRepository, uploader, serviceScope)
-        serviceScope.launch { dao.resetStuckUploads() }
+        serviceScope.launch { chunkRepository.resetStuckUploads() }
         createNotificationChannel()
         BatteryOptimizer.checkAndNotify(this)
     }
@@ -84,12 +80,14 @@ class RecordingService : Service() {
                 scheduleRetryWorker()
 
                 val outputDir = File(filesDir, "recordings/$sessionId").also { it.mkdirs() }
-                recordingManager.startRecording(
-                    sessionId = sessionId,
-                    outputDir = outputDir,
-                    chunkSizeBytes = chunkSize.bytes,
-                    audioProvider = audioProvider
-                )
+                serviceScope.launch {
+                    recordingManager.startRecording(
+                        sessionId = sessionId,
+                        outputDir = outputDir,
+                        chunkSizeBytes = chunkSize.bytes,
+                        audioProvider = audioProvider
+                    )
+                }
             }
         }
         return START_NOT_STICKY
@@ -98,12 +96,18 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        runBlocking {
-            kotlinx.coroutines.withTimeoutOrNull(2000L) {
-                recordingManager.stopRecording()
+        // serviceScope をキャンセルして録音ループを停止
+        serviceScope.cancel()
+        // 別スコープでファイナライズ処理（WAVヘッダー書込み等）を実行
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                    recordingManager.stopRecording()
+                }
+            } catch (_: Exception) {
+                // ベストエフォートでクリーンアップ
             }
         }
-        serviceScope.cancel()
         super.onDestroy()
     }
 
@@ -125,16 +129,11 @@ class RecordingService : Service() {
             .build()
     }
 
-    private fun updateNotification(text: String) {
-        getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, buildNotification(text))
-    }
-
     private fun scheduleRetryWorker() {
         val request = PeriodicWorkRequestBuilder<RetryWorker>(15, TimeUnit.MINUTES)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
         WorkManager.getInstance(this)
-            .enqueueUniquePeriodicWork("retry_transcription", ExistingPeriodicWorkPolicy.REPLACE, request)
+            .enqueueUniquePeriodicWork("retry_transcription", ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 }
