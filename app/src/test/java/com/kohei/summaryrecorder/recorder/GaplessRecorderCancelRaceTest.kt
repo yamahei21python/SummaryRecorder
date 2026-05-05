@@ -54,7 +54,7 @@ class GaplessRecorderCancelRaceTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = 256L, // 小さくして頻繁にfinalize
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            onChunkComplete = { index, file, _ -> recordedChunks.add(index to file) },
             audioProvider = provider,
             coroutineScope = this
         )

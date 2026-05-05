@@ -3,7 +3,7 @@ package com.kohei.summaryrecorder.recorder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
+suspend fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
     if (currentFile == null) {
         openNewFile()
     }
@@ -13,16 +13,16 @@ fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
     writePcmData(shorts, shortCount)
 
     if (currentBytesWritten >= chunkSizeBytes) {
-        finalizeCurrentChunk()
+        finalizeCurrentChunk(isLast = false)
         currentChunkIndex++
         currentBytesWritten = 0
         openNewFile()
     }
 }
 
-fun GaplessRecorder.stopForTest() {
+suspend fun GaplessRecorder.stopForTest() {
     isRecording = false
     if (currentFile != null) {
-        finalizeCurrentChunk()
+        finalizeCurrentChunk(isLast = true)
     }
 }

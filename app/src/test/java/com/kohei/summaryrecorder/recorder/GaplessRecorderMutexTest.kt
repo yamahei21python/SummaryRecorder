@@ -37,7 +37,7 @@ class GaplessRecorderMutexTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file ->
+            onChunkComplete = { index, file, _ ->
                 synchronized(recordedChunks) {
                     recordedChunks.add(index to file)
                 }

@@ -32,7 +32,7 @@ class GaplessRecorderVolatileTest {
         val recorder = GaplessRecorder(
             outputDir = tempFolder.root,
             chunkSizeBytes = 1024L * 1024,
-            onChunkComplete = { _, _ -> },
+            onChunkComplete = { _, _, _ -> },
             audioProvider = noopProvider,
             coroutineScope = CoroutineScope(Dispatchers.Default)
         )
