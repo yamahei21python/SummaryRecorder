@@ -13,7 +13,21 @@ class TranscriptionUploader(
 
     suspend fun uploadChunk(chunk: ChunkEntity): Result<String> {
         chunkRepository.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-        return processTranscribeResult(chunk)
+        val file = File(chunk.filePath)
+        val result = try {
+            transcriptionProvider.transcribe(file)
+        } catch (e: Exception) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            return Result.failure(e)
+        }
+        return if (result.isSuccess) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
+            file.delete()
+            result
+        } else {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            result
+        }
     }
 
     suspend fun retryFailedChunks(): Int {
