@@ -14,6 +14,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -80,11 +81,9 @@ class SummaryFlowTest {
         )
         chunksFlow.value = doneChunks
         viewModel.stopRecording()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals("要約テキスト", state.summary)
-        }
+        assertEquals("要約テキスト", viewModel.uiState.value.summary)
     }
 
     @Test
@@ -124,6 +123,7 @@ class SummaryFlowTest {
             doneChunk(id = 1, index = 0, text = "テキスト1")
         )
         viewModel.stopRecording()
+        advanceUntilIdle()
 
         val error = viewModel.uiState.value.error
         assertNotNull(error)

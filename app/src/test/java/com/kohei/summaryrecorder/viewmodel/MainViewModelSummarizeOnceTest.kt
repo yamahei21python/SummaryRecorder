@@ -13,6 +13,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -76,10 +77,10 @@ class MainViewModelSummarizeOnceTest {
         chunksFlow.value = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1"),
             doneChunk(id = 2, index = 1, text = "テキスト2")
-        )
         viewModel.stopRecording()
-
-        // UnconfinedTestDispatcherで即時実行
+        advanceUntilIdle()
+        
+        // UnconfinedTestDispatcherでも念のため完了を待機
         val state1 = viewModel.uiState.value
         assertEquals("要約テキスト", state1.summary)
 
