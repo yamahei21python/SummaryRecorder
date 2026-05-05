@@ -1,4 +1,4 @@
-package com.kohei.summaryrecorder.domain.provider
+package com.kohei.summaryrecorder.domain.repository
 
 /** マイク入力抽象化。本番=RealAudioProvider, E2E=DummyAudioProvider */
 interface AudioProvider {

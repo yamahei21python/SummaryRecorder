@@ -1,7 +1,7 @@
 package com.kohei.summaryrecorder.data.repository
 
 import com.kohei.summaryrecorder.data.api.GroqApiService
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody

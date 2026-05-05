@@ -8,10 +8,10 @@ import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
 import com.kohei.summaryrecorder.data.repository.ChunkRepositoryImpl
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.provider.SummaryProvider
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,7 +38,6 @@ object ConfigModule {
     }
 
     @Provides
-    @Singleton
     fun provideTranscriptionProvider(
         repository: TranscriptionRepository
     ): TranscriptionProvider {
@@ -46,7 +45,6 @@ object ConfigModule {
     }
 
     @Provides
-    @Singleton
     fun provideSummaryProvider(
         repository: SummaryRepository
     ): SummaryProvider {
@@ -54,7 +52,6 @@ object ConfigModule {
     }
 
     @Provides
-    @Singleton
     fun provideAudioProvider(
         @ApplicationContext context: Context
     ): AudioProvider {

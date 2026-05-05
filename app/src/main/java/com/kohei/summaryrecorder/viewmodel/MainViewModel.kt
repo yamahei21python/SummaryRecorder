@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -40,15 +40,23 @@ class MainViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var observeJob: Job? = null
+    private var summarized = false
 
     fun startRecording() {
+        // 二重起動防止
+        stopRecording()
+        
         val sessionId = UUID.randomUUID().toString()
+        summarized = false
+        
         _uiState.update {
             it.copy(
                 isRecording = true,
                 sessionId = sessionId,
+                chunks = emptyList(),
                 summary = null,
-                error = null
+                error = null,
+                isLoading = false
             )
         }
         recordingController.startRecording(sessionId)
@@ -56,15 +64,20 @@ class MainViewModel @Inject constructor(
     }
 
     fun stopRecording() {
+        if (!_uiState.value.isRecording) return
+
         _uiState.update { it.copy(isRecording = false, isLoading = true) }
         recordingController.stopRecording()
+
+        if (_uiState.value.chunks.isEmpty()) {
+            _uiState.update { it.copy(isLoading = false) }
+        }
     }
 
     private fun observeChunks(sessionId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            var summarized = false
-            chunkRepository.observeBySession(sessionId)
+            chunkRepository.getChunksFlow(sessionId)
                 .map { chunks ->
                     val items = chunks.map { it.toUiItem() }
                     val allDone = chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
@@ -73,9 +86,14 @@ class MainViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collect { (items, allDone) ->
                     _uiState.update { it.copy(chunks = items) }
+                    
+                    if (!_uiState.value.isRecording && (allDone || items.isEmpty())) {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+
                     if (allDone && !summarized) {
                         summarized = true
-                        launch { summarizeAll(sessionId) }
+                        summarizeAll(sessionId)
                     }
                 }
         }

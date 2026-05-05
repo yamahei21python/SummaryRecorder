@@ -6,8 +6,8 @@ import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.repository.ChunkRepositoryImpl
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll

@@ -1,4 +1,4 @@
-package com.kohei.summaryrecorder.domain.provider
+package com.kohei.summaryrecorder.domain.repository
 
 import java.io.File
 

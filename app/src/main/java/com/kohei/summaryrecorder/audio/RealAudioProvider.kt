@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.audio
 
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import com.kohei.summaryrecorder.recorder.AudioConstants
 import android.media.AudioFormat
 import android.media.AudioRecord

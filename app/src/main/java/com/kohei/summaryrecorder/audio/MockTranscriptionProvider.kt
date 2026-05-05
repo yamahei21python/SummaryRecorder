@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.audio
 
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import java.io.File
 
 /** E2E用: 固定文字起こし結果を返すモック */

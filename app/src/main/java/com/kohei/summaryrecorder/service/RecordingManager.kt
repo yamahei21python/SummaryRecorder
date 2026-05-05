@@ -1,9 +1,9 @@
 package com.kohei.summaryrecorder.service
 
 import android.util.Log
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.recorder.GaplessRecorder
@@ -51,6 +51,10 @@ class RecordingManager(
         )
         try {
             val id = chunkRepository.insert(entity)
+            if (id == -1L) {
+                Log.e("RecordingManager", "Failed to insert chunk $chunkIndex into database")
+                return
+            }
             val result = uploader.uploadChunk(entity.copy(id = id))
             if (result.isFailure) {
                 Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")

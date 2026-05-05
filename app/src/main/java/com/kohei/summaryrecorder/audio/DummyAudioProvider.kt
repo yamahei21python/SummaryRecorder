@@ -1,69 +1,44 @@
 package com.kohei.summaryrecorder.audio
 
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import java.io.BufferedInputStream
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class DummyAudioProvider(
-    inputStream: InputStream,
-    private val readDelayMs: Long = 0L,
-    private val loop: Boolean = true
+    inputStream: InputStream
 ) : AudioProvider {
 
-    private val bufferedStream = if (inputStream is BufferedInputStream) inputStream else BufferedInputStream(inputStream)
+    private val audioData: ByteArray = inputStream.readBytes()
+    private var bais = ByteArrayInputStream(audioData)
     private var isActive = false
-    private var headerSkipped = false
-    private var pcmStart = -1L
 
     override fun start(): Boolean {
         isActive = true
-        headerSkipped = false
-        pcmStart = -1L
         return true
     }
 
     override fun read(buffer: ShortArray, size: Int): Int {
         if (!isActive) return -1
-        ensureHeaderSkipped()
-
-        val byteBuf = ByteArray(size * 2)
-        var read = bufferedStream.read(byteBuf, 0, byteBuf.size)
-
-        if (read <= 0 && loop) {
-            bufferedStream.reset()
-            pcmStart = -1L
-            headerSkipped = false
-            ensureHeaderSkipped()
-            read = bufferedStream.read(byteBuf, 0, byteBuf.size)
+        
+        val bytesToRead = size * 2
+        val tempBuffer = ByteArray(bytesToRead)
+        
+        var readBytes = bais.read(tempBuffer)
+        if (readBytes == -1) {
+            // ループ
+            bais = ByteArrayInputStream(audioData)
+            readBytes = bais.read(tempBuffer)
         }
-        if (read <= 0) return -1
+        
+        if (readBytes <= 0) return -1
 
-        if (readDelayMs > 0) Thread.sleep(readDelayMs)
-
-        ByteBuffer.wrap(byteBuf, 0, read)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .asShortBuffer()
-            .get(buffer, 0, read / 2)
-        return read / 2
-    }
-
-    private fun ensureHeaderSkipped() {
-        if (!headerSkipped) {
-            if (pcmStart < 0) {
-                bufferedStream.mark(1024 * 1024) // Max 1MB for dummy loop
-                bufferedStream.skip(44)
-                pcmStart = 44
-            }
-            headerSkipped = true
-        }
+        val shortsRead = readBytes / 2
+        ByteBuffer.wrap(tempBuffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(buffer, 0, shortsRead)
+        return shortsRead
     }
 
     override fun stop() { isActive = false }
-
-    override fun release() {
-        isActive = false
-        bufferedStream.close()
-    }
+    override fun release() { isActive = false }
 }

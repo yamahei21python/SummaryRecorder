@@ -2,8 +2,8 @@ package com.kohei.summaryrecorder.domain.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.domain.provider.SummaryProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import javax.inject.Inject
 
 class SummarizeUseCase @Inject constructor(

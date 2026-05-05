@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.audio
 
-import com.kohei.summaryrecorder.domain.provider.SummaryProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 
 /** E2E用: 固定要約結果を返すモック */
 class MockSummaryProvider : SummaryProvider {

@@ -15,7 +15,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chunkDao(): ChunkDao
 
     companion object {
-        private const val DB_NAME = "summary_recorder.db"
+        const val DB_NAME = "summary_recorder.db"
 
         /**
          * テスト用: inMemoryインスタンスを生成

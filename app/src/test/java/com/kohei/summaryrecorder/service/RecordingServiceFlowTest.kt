@@ -2,8 +2,8 @@ package com.kohei.summaryrecorder.service
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus

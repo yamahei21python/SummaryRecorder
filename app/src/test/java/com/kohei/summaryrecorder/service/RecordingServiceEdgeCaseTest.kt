@@ -9,9 +9,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.ChunkSize
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication

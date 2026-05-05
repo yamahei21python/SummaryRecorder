@@ -2,7 +2,7 @@ package com.kohei.summaryrecorder.data.repository
 
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
-import com.kohei.summaryrecorder.domain.provider.SummaryProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import kotlinx.coroutines.withTimeout
 
 class SummaryRepository(

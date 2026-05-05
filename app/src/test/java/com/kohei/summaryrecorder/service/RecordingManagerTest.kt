@@ -4,9 +4,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

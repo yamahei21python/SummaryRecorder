@@ -11,9 +11,9 @@ import android.os.Build
 import android.os.IBinder
 import com.kohei.summaryrecorder.R
 import com.kohei.summaryrecorder.di.ChunkSize
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.service.TranscriptionUploader
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -35,8 +35,8 @@ import javax.inject.Inject
 class RecordingService : Service() {
 
     companion object {
-        private const val CHANNEL_ID = "recording_channel"
-        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = NotificationConstants.CHANNEL_ID
+        private const val NOTIFICATION_ID = NotificationConstants.NOTIFICATION_ID
         private const val ACTION_START = "ACTION_START"
         private const val EXTRA_SESSION_ID = "session_id"
 
@@ -98,14 +98,14 @@ class RecordingService : Service() {
     override fun onDestroy() {
         // serviceScope をキャンセルして録音ループを停止
         serviceScope.cancel()
-        // 別スコープでファイナライズ処理（WAVヘッダー書込み等）を実行
-        CoroutineScope(Dispatchers.IO).launch {
+        // 同期的にファイナライズ処理（WAVヘッダー書込み等）を待機
+        kotlinx.coroutines.runBlocking(Dispatchers.IO) {
             try {
                 kotlinx.coroutines.withTimeoutOrNull(2000L) {
                     recordingManager.stopRecording()
                 }
-            } catch (_: Exception) {
-                // ベストエフォートでクリーンアップ
+            } catch (e: Exception) {
+                android.util.Log.w("RecordingService", "Cleanup failed", e)
             }
         }
         super.onDestroy()

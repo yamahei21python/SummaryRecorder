@@ -1,7 +1,7 @@
 package com.kohei.summaryrecorder.recorder
 
 import androidx.annotation.VisibleForTesting
-import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -25,7 +25,7 @@ class GaplessRecorder(
     @VisibleForTesting internal var currentFile: RandomAccessFile? = null
     @VisibleForTesting internal var currentChunkIndex = 0
     @VisibleForTesting internal var currentBytesWritten = 0
-    @VisibleForTesting internal var isRecording = false
+    @Volatile @VisibleForTesting internal var isRecording = false
 
     suspend fun start() {
         recordingJob?.cancelAndJoin()

@@ -2,9 +2,9 @@ package com.kohei.summaryrecorder.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

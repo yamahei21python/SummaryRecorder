@@ -29,13 +29,19 @@ object WavHeaderWriter {
         
         val byteRate = sampleRate * channels * bitsPerSample / 8
         val blockAlign = channels * bitsPerSample / 8
-        val fileSize = HEADER_SIZE + dataLength
+        // RIFF header structure:
+        // "RIFF" (4) + TotalSize (4) + "WAVE" (4) + "fmt " (4) + FmtSize (4) + 
+        // AudioFormat (2) + Channels (2) + SampleRate (4) + ByteRate (4) + 
+        // BlockAlign (2) + BitsPerSample (2) + "data" (4) + DataSize (4)
+        // RIFF chunk size = 4 ("WAVE") + 24 (fmt chunk) + 8 (data header) + DataSize
+        // So RIFF size field = 36 + DataSize
+        val riffSize = 36 + dataLength
 
         file.seek(0)
 
         // RIFF header
         file.writeAsciiBytes("RIFF")
-        file.writeIntLE((fileSize - 8).toInt())
+        file.writeIntLE(riffSize.toInt())
         file.writeAsciiBytes("WAVE")
 
         // fmt sub-chunk

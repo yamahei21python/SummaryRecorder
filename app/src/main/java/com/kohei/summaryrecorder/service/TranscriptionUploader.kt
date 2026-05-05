@@ -1,13 +1,14 @@
-package com.kohei.summaryrecorder.domain.usecase
+package com.kohei.summaryrecorder.service
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.domain.provider.ChunkRepository
-import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import android.util.Log
 import java.io.File
+import javax.inject.Inject
 
-class TranscriptionUploader(
+class TranscriptionUploader @Inject constructor(
     private val chunkRepository: ChunkRepository,
     private val transcriptionProvider: TranscriptionProvider
 ) {
