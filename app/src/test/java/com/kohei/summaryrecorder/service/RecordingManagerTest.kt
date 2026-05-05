@@ -50,17 +50,6 @@ class RecordingManagerTest {
         unmockkAll()
     }
 
-    @After
-    fun tearDown() {
-        unmockkAll()
-        tempDir.deleteRecursively()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        unmockkStatic(android.util.Log::class)
-    }
-
     /** 指定バイト数分のPCMデータを提供後、即終了するAudioProvider */
     private fun createProvider(totalBytes: Long): AudioProvider = object : AudioProvider {
         override fun start(): Boolean = true
