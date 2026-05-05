@@ -1,8 +1,6 @@
 package com.kohei.summaryrecorder.service
  
 import kotlinx.coroutines.ExperimentalCoroutinesApi
- 
-@OptIn(ExperimentalCoroutinesApi::class)
 
 import android.content.Context
 import android.content.Intent
@@ -38,6 +36,7 @@ import kotlin.test.assertTrue
 import java.util.UUID
 import org.robolectric.Shadows.shadowOf
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33], application = HiltTestApplication::class)

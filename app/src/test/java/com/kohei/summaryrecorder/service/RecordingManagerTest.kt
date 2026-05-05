@@ -1,8 +1,6 @@
 package com.kohei.summaryrecorder.service
  
 import kotlinx.coroutines.ExperimentalCoroutinesApi
- 
-@OptIn(ExperimentalCoroutinesApi::class)
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
@@ -39,6 +37,7 @@ import kotlin.test.assertNull
  * - onChunkRecorded: insert失敗時の耐性
  * - onChunkRecorded: upload失敗時の耐性（クラッシュなし）
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class RecordingManagerTest {
 
     @TempDir
