@@ -6,8 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,10 +24,12 @@ import kotlin.test.assertTrue
  */
 class GaplessRecorderCancelRaceTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+    
+    private val tempDir: File by lazy { tempFolder.root }
 
-    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
 
     /** 録音中にデータを供給し続けるprovider */
     private fun createContinuousProvider(readCount: Int): AudioProvider = object : AudioProvider {
@@ -51,7 +56,7 @@ class GaplessRecorderCancelRaceTest {
             chunkSizeBytes = 256L, // 小さくして頻繁にfinalize
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = provider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         recorder.start()

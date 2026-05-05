@@ -31,12 +31,9 @@ class GaplessRecorderRestartTest {
     
     private val tempDir: File by lazy { tempFolder.root }
 
-    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-    @After
-    fun tearDown() {
-        testScope.cancel()
-    }
+
+
 
     /** 何もしないAudioProvider（writeTestPcmData使用時用） */
     private val noopProvider = object : AudioProvider {
@@ -50,7 +47,7 @@ class GaplessRecorderRestartTest {
     fun `start stop start creates new chunk files`() = runTest {
         // セッション1: 100バイト書込み
         val recorder1 = GaplessRecorder(
-            tempDir, 1024L, { _, _ -> }, noopProvider, testScope
+            tempDir, 1024L, { _, _ -> }, noopProvider, this
         )
         recorder1.writeTestPcmData(ByteArray(100) { it.toByte() })
         recorder1.stopForTest()
@@ -61,7 +58,7 @@ class GaplessRecorderRestartTest {
 
         // セッション2: 200バイト書込み（同一ディレクトリ → chunk_0.wav上書き）
         val recorder2 = GaplessRecorder(
-            tempDir, 1024L, { _, _ -> }, noopProvider, testScope
+            tempDir, 1024L, { _, _ -> }, noopProvider, this
         )
         recorder2.writeTestPcmData(ByteArray(200) { it.toByte() })
         recorder2.stopForTest()
@@ -89,7 +86,7 @@ class GaplessRecorderRestartTest {
         filesAfterSession1.forEach { it.delete() }
 
         val recorder2 = GaplessRecorder(
-            tempDir, chunkSize, { _, _ -> }, noopProvider, testScope
+            tempDir, chunkSize, { _, _ -> }, noopProvider, this
         )
         recorder2.writeTestPcmData(ByteArray(512) { 0x02 })  // chunk_0のみ
         recorder2.stopForTest()
@@ -103,7 +100,7 @@ class GaplessRecorderRestartTest {
     fun `restart produces valid WAV after second session`() = runTest {
         // セッション1
         val recorder1 = GaplessRecorder(
-            tempDir, 1024L, { _, _ -> }, noopProvider, testScope
+            tempDir, 1024L, { _, _ -> }, noopProvider, this
         )
         recorder1.writeTestPcmData(ByteArray(50) { 0xAA.toByte() })
         recorder1.stopForTest()
@@ -113,7 +110,7 @@ class GaplessRecorderRestartTest {
 
         // セッション2: WAV妥当性検証
         val recorder2 = GaplessRecorder(
-            tempDir, 1024L, { _, _ -> }, noopProvider, testScope
+            tempDir, 1024L, { _, _ -> }, noopProvider, this
         )
         val data = ByteArray(300) { (it % 256).toByte() }
         recorder2.writeTestPcmData(data)

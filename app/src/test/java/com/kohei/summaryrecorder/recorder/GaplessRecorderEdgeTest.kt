@@ -5,12 +5,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.io.TempDir
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 /**
  * GaplessRecorder: エッジケーステスト。
@@ -23,10 +26,12 @@ import kotlin.test.assertTrue
  */
 class GaplessRecorderEdgeTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+    
+    private val tempDir: File by lazy { tempFolder.root }
 
-    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
 
     /** テスト用: 何もしないAudioProvider（writeTestPcmData使用時用） */
     private val noopProvider = object : AudioProvider {
@@ -52,10 +57,10 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { _, _ -> },
             audioProvider = failingProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             recorder.start()
         }
     }
@@ -84,7 +89,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = provider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         recorder.start()
@@ -105,7 +110,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         // 0バイト書込み → 何もしない
@@ -126,7 +131,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         // 丁度256バイト書込み → 分割トリガー（== chunkSizeBytes）
@@ -148,7 +153,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         // 257バイト書込み → shortCount=128 (257/2=128、最後1バイト切り捨て)
@@ -173,7 +178,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         recorder.writeTestPcmData(ByteArray(100) { it.toByte() })
@@ -207,7 +212,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = provider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         recorder.start()
@@ -226,7 +231,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { _, _ -> },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         recorder.start()
@@ -249,7 +254,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 0L,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         // write 10 bytes -> this will trigger split immediately after writing because 10 >= 0
