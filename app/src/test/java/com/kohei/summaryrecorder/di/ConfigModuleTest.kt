@@ -31,14 +31,14 @@ class ConfigModuleTest {
     @Test
     fun `ChunkSize returns debug bytes when debugMode`() {
         DebugConfig.debugMode = true
-        val chunkSize = ConfigModule.provideChunkSize(true)
+        val chunkSize = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, chunkSize.bytes)
     }
 
     @Test
     fun `ChunkSize returns production bytes when not debugMode`() {
         DebugConfig.debugMode = false
-        val chunkSize = ConfigModule.provideChunkSize(false)
+        val chunkSize = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, chunkSize.bytes)
     }
 

@@ -291,6 +291,6 @@ class GaplessRecorderEdgeTest {
         // Mocking File delete failure is hard without MockK or Robolectric
         // But we can ensure that calling finalizeCurrentChunk directly doesn't crash
         // even if data is 0.
-        recorder.finalizeCurrentChunk()
+        recorder.stopForTest()
     }
 }
