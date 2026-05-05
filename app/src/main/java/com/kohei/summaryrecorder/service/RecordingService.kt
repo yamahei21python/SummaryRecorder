@@ -150,12 +150,11 @@ class RecordingService : Service() {
     }
 
     private fun buildNotification(text: String): Notification {
-        val pendingIntent = androidx.core.app.TaskStackBuilder.create(this).run {
-            addNextIntentWithParentStack(
-                android.content.Intent(this@RecordingService, com.kohei.summaryrecorder.ui.MainActivity::class.java)
-            )
-            getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        }
+        val intent = android.content.Intent(this, com.kohei.summaryrecorder.ui.MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SummaryRecorder")
             .setContentText(text)
