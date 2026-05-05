@@ -52,20 +52,19 @@ class GaplessRecorderRestartTest {
         recorder1.writeTestPcmData(ByteArray(100) { it.toByte() })
         recorder1.stopForTest()
 
-        val chunks1 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
+        val chunks1 = tempDir.listFiles()!!.filter { it.name.matches(Regex("chunk_\\d+_\\d+\\.wav")) }
         assertEquals(1, chunks1.size)
         assertEquals(44 + 100, chunks1[0].length())
 
-        // セッション2: 200バイト書込み（同一ディレクトリ → chunk_0.wav上書き）
+        // セッション2: 200バイト書込み（同一ディレクトリ → 新ファイル生成）
         val recorder2 = GaplessRecorder(
             tempDir, 1024L, { _, _, _ -> }, noopProvider, this
         )
         recorder2.writeTestPcmData(ByteArray(200) { it.toByte() })
         recorder2.stopForTest()
 
-        val chunks2 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
-        assertEquals(1, chunks2.size, "同一ディレクトリではchunk_0.wavが上書きされる")
-        assertEquals(44 + 200, chunks2[0].length(), "上書き後のファイルサイズがセッション2のデータ量")
+        val chunks2 = tempDir.listFiles()!!.filter { it.name.matches(Regex("chunk_\\d+_\\d+\\.wav")) }
+        assertEquals(2, chunks2.size, "セッション1 + セッション2のファイルが共存")
     }
 
     @Test
@@ -78,10 +77,10 @@ class GaplessRecorderRestartTest {
         recorder1.writeTestPcmData(ByteArray(1024) { 0x01 })  // chunk_0
         recorder1.stopForTest()
 
-        val filesAfterSession1 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
+        val filesAfterSession1 = tempDir.listFiles()!!.filter { it.name.matches(Regex("chunk_\\d+_\\d+\\.wav")) }
         assertEquals(2, filesAfterSession1.size, "セッション1: 1データチャンク + 1空チャンク生成")
-        assertTrue(filesAfterSession1.any { it.name == "chunk_0.wav" })
-        assertTrue(filesAfterSession1.any { it.name == "chunk_1.wav" })
+        assertTrue(filesAfterSession1.any { it.name.matches(Regex("chunk_\\d+_0\\.wav")) })
+        assertTrue(filesAfterSession1.any { it.name.matches(Regex("chunk_\\d+_1\\.wav")) })
 
         // ファイルクリアして再起動
         filesAfterSession1.forEach { it.delete() }
@@ -92,9 +91,9 @@ class GaplessRecorderRestartTest {
         recorder2.writeTestPcmData(ByteArray(512) { 0x02 })  // chunk_0のみ
         recorder2.stopForTest()
 
-        val filesAfterSession2 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
+        val filesAfterSession2 = tempDir.listFiles()!!.filter { it.name.matches(Regex("chunk_\\d+_\\d+\\.wav")) }
         assertEquals(1, filesAfterSession2.size, "再起動後: chunkIndex=0から開始")
-        assertEquals("chunk_0.wav", filesAfterSession2[0].name)
+        assertTrue(filesAfterSession2[0].name.matches(Regex("chunk_\\d+_0\\.wav")))
     }
 
     @Test
@@ -117,7 +116,7 @@ class GaplessRecorderRestartTest {
         recorder2.writeTestPcmData(data)
         recorder2.stopForTest()
 
-        val wavFile = tempDir.listFiles()!!.first { it.name.startsWith("chunk_") }
+        val wavFile = tempDir.listFiles()!!.first { it.name.matches(Regex("chunk_\\d+_\\d+\\.wav")) }
         val bytes = wavFile.readBytes()
 
         // RIFFヘッダー検証

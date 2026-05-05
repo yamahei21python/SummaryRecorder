@@ -39,15 +39,13 @@ class ServiceRecordingControllerTest {
     }
 
     @Test
-    fun `stopRecording stops RecordingService`() {
+    fun `stopRecording sends ACTION_STOP intent to RecordingService`() {
         controller.stopRecording()
 
-        // Wait, stopService in Robolectric can be verified differently?
-        // Wait, shadowApp.nextStartedService does not capture stopService.
-        // Is there a way to verify stopService in Robolectric?
-        // Actually, shadowApp has shadowApp.nextStoppedService
-        val intent = shadowApp.nextStoppedService
+        // #5: stopRecording now sends ACTION_STOP intent instead of stopService()
+        val intent = shadowApp.nextStartedService
         assertNotNull(intent)
         assertEquals(RecordingService::class.java.name, intent.component?.className)
+        assertEquals("ACTION_STOP", intent.action)
     }
 }

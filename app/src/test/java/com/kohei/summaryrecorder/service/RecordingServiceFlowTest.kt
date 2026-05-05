@@ -48,7 +48,7 @@ class RecordingServiceFlowTest {
     }
 
     @Test
-    fun `chunk upload succeeds - PENDING to UPLOADING to DONE, file deleted`() = runTest {
+    fun `chunk upload succeeds - PENDING to UPLOADING to DONE, file kept`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("こんにちは世界")
 
         val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
@@ -75,7 +75,8 @@ class RecordingServiceFlowTest {
         assertEquals(1, updated.size)
         assertEquals("こんにちは世界", updated[0].transcriptionText)
 
-        assertTrue(!chunkFile.exists())
+        // #4: WAVファイルは保持される
+        assertTrue(chunkFile.exists())
     }
 
     @Test
@@ -166,6 +167,7 @@ class RecordingServiceFlowTest {
         val updated = chunkRepo.getByStatus(ChunkStatus.DONE)
         assertEquals(1, updated.size)
         assertEquals("録音テキスト", updated[0].transcriptionText)
-        assertTrue(!chunkFile.exists())
+        // #4: WAVファイルは保持される
+        assertTrue(chunkFile.exists())
     }
 }

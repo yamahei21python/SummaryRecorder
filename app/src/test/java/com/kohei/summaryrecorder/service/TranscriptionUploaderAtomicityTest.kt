@@ -138,7 +138,7 @@ class TranscriptionUploaderAtomicityTest {
     }
 
     @Test
-    fun `uploadChunk with 44 bytes file marks DONE and deletes it`() = runTest {
+    fun `uploadChunk with 44 bytes file marks DONE and keeps it`() = runTest {
         val file44 = tempFolder.newFile("header.wav")
         file44.writeBytes(ByteArray(44) { 0 })
         val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = file44.absolutePath, status = ChunkStatus.PENDING)
@@ -149,7 +149,8 @@ class TranscriptionUploaderAtomicityTest {
 
         assertTrue(result.isSuccess)
         coVerify { mockRepo.updateStatus(1L, ChunkStatus.DONE, "", any()) }
-        kotlin.test.assertFalse(file44.exists())
+        // #4: WAVファイルは保持される（再文字起こし可能）
+        kotlin.test.assertTrue(file44.exists())
     }
 
     @Test

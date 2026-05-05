@@ -46,7 +46,7 @@ class RetryWorkerBasicTest {
     }
 
     @Test
-    fun `retry succeeds - FAILED to UPLOADING to DONE, file deleted`() = runTest {
+    fun `retry succeeds - FAILED to UPLOADING to DONE, file kept`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("再送成功テキスト")
 
         val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
@@ -63,7 +63,8 @@ class RetryWorkerBasicTest {
         val chunks = chunkRepo.getByStatus(ChunkStatus.DONE)
         assertEquals(1, chunks.size)
         assertEquals("再送成功テキスト", chunks[0].transcriptionText)
-        assertFalse(chunkFile.exists())
+        // #4: WAVファイルは保持される
+        assertTrue(chunkFile.exists())
     }
 
     @Test
