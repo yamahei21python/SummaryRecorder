@@ -114,6 +114,7 @@ class MainViewModelEdgeTest {
             sessionFlows.getOrPut(sid) { MutableStateFlow(emptyList()) }
         }
         
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約")
         val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
 
         // Session 1

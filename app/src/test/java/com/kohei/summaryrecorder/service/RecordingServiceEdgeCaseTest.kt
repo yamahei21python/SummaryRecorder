@@ -14,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import androidx.work.testing.WorkManagerTestInitHelper
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -37,6 +38,7 @@ class RecordingServiceEdgeCaseTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
     }
 
     @After
