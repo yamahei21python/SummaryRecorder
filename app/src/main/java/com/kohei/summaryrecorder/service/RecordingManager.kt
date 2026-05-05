@@ -23,6 +23,7 @@ class RecordingManager(
     private val recorderScope = CoroutineScope(baseScope.coroutineContext + Job())
     private val uploadScope = CoroutineScope(baseScope.coroutineContext + SupervisorJob())
     private val mutex = Mutex()
+    private val recorderRef = AtomicReference<GaplessRecorder?>(null)
 
     suspend fun startRecording(
         sessionId: String,
