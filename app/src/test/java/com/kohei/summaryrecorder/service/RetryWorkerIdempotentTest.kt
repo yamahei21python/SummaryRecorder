@@ -140,7 +140,7 @@ class RetryWorkerIdempotentTest {
     }
 
     @Test
-    fun `DONE and PENDING chunks are not processed`() = runTest {
+    fun `DONE chunk is not processed, PENDING and FAILED are retried`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
@@ -156,11 +156,13 @@ class RetryWorkerIdempotentTest {
                 transcriptionText = "完了済"
             )
         )
+        // PENDING also needs a real file — retryFailedChunks now processes PENDING too
+        val pendingFile = File(tempDir, "pending.wav").also { it.writeBytes(ByteArray(100)) }
         chunkRepo.insert(
             ChunkEntity(
                 sessionId = sessionId,
                 chunkIndex = 1,
-                filePath = "/tmp/pending.wav",
+                filePath = pendingFile.absolutePath,
                 status = ChunkStatus.PENDING
             )
         )
@@ -179,11 +181,15 @@ class RetryWorkerIdempotentTest {
         val allChunks = chunkRepo.getBySession(sessionId)
         assertEquals(3, allChunks.size)
 
+        // DONE is untouched
         assertEquals(ChunkStatus.DONE, allChunks[0].status)
         assertEquals("完了済", allChunks[0].transcriptionText)
 
-        assertEquals(ChunkStatus.PENDING, allChunks[1].status)
+        // PENDING is now processed and becomes DONE
+        assertEquals(ChunkStatus.DONE, allChunks[1].status)
+        assertEquals("テキスト", allChunks[1].transcriptionText)
 
+        // FAILED is retried and becomes DONE
         assertEquals(ChunkStatus.DONE, allChunks[2].status)
         assertEquals("テキスト", allChunks[2].transcriptionText)
     }

@@ -33,7 +33,9 @@ class TranscriptionUploaderAtomicityTest {
 
     @Test
     fun `transcribe exception after UPLOADING status properly reverts to FAILED`() = runTest {
-        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = "/path.wav", status = ChunkStatus.PENDING)
+        val realFile = tempFolder.newFile("exception_test.wav")
+        realFile.writeBytes(ByteArray(100) { 0 })
+        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.PENDING)
 
         // casToUploading は成功(1)を返す
         coEvery { mockRepo.casToUploading(1L, any()) } returns 1
@@ -75,6 +77,9 @@ class TranscriptionUploaderAtomicityTest {
 
     @Test
     fun `concurrent upload same chunk - only one succeeds`() = runTest {
+        val realFile = tempFolder.newFile("concurrent.wav")
+        realFile.writeBytes(ByteArray(100) { 0 })
+
         var casCounter = 0
         coEvery { mockRepo.casToUploading(1L, any()) } coAnswers {
             casCounter++
@@ -83,7 +88,7 @@ class TranscriptionUploaderAtomicityTest {
         coEvery { mockProvider.transcribe(any()) } returns Result.success("テキスト")
         coEvery { mockRepo.updateStatus(any(), any(), any(), any()) } returns Unit
 
-        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = "/path.wav", status = ChunkStatus.FAILED)
+        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.FAILED)
 
         val results = mutableListOf<Result<String>>()
         coroutineScope {

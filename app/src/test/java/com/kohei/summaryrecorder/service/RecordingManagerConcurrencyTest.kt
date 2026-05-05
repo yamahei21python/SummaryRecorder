@@ -6,6 +6,7 @@ import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import io.mockk.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -13,6 +14,7 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RecordingManagerConcurrencyTest {
 
     @Test

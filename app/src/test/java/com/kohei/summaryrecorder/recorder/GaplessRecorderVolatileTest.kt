@@ -12,6 +12,7 @@ import java.io.File
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GaplessRecorderVolatileTest {
 
     @get:Rule

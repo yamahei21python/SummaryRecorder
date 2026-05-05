@@ -44,7 +44,7 @@ class RetryWorkerMixedTest {
     }
 
     @Test
-    fun `FAILED and PENDING mixed - only FAILED retried`() = runTest {
+    fun `FAILED and PENDING mixed - both are retried`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
@@ -68,10 +68,12 @@ class RetryWorkerMixedTest {
         val all = chunkRepo.getBySession(sessionId)
         assertEquals(2, all.size)
 
+        // Both FAILED and PENDING are now processed
         assertEquals(ChunkStatus.DONE, all[0].status)
         assertEquals("テキスト", all[0].transcriptionText)
 
-        assertEquals(ChunkStatus.PENDING, all[1].status)
+        assertEquals(ChunkStatus.DONE, all[1].status)
+        assertEquals("テキスト", all[1].transcriptionText)
     }
 
     @Test
