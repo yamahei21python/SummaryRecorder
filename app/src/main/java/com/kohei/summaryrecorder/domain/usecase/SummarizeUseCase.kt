@@ -13,8 +13,7 @@ class SummarizeUseCase @Inject constructor(
     suspend fun execute(sessionId: String): Result<String> {
         val chunks = chunkRepository.getBySession(sessionId)
         
-        // 失敗したチャンクがあっても、成功した分だけで要約を試みる (REF-004)
-
+        val hasFailed = chunks.any { it.status == ChunkStatus.FAILED }
         val combinedText = chunks
             .filter { it.status == ChunkStatus.DONE }
             .sortedBy { it.chunkIndex }
@@ -25,6 +24,12 @@ class SummarizeUseCase @Inject constructor(
             return Result.success("録音データがありません")
         }
 
-        return summaryRepo.summarize(combinedText)
+        val result = summaryRepo.summarize(combinedText)
+        
+        return if (hasFailed && result.isSuccess) {
+            Result.success("【注意】一部の音声解析に失敗したため、不完全な要約の可能性があります。\n\n${result.getOrThrow()}")
+        } else {
+            result
+        }
     }
 }

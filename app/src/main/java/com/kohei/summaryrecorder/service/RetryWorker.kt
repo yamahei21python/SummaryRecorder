@@ -16,7 +16,9 @@ class RetryWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val remainingFailedCount = uploader.retryFailedChunks()
-        return if (remainingFailedCount > 0) Result.retry() else Result.success()
+        uploader.retryFailedChunks()
+        // BUG-005: PeriodicWork で Result.retry() を返すと不規則なリトライループに陥るため、
+        // 今回の試行は success で終え、リトライは次回の定期実行スケジュール（15分後等）に委ねる。
+        return Result.success()
     }
 }

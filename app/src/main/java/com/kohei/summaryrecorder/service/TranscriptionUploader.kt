@@ -39,27 +39,30 @@ class TranscriptionUploader @Inject constructor(
             }
             result
         } else {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            // BUG-004: 状態の不整合を防ぐため、単純なupdateStatusではなくcasToFailedを使用
+            chunkRepository.casToFailed(chunk.id)
             result
         }
     }
 
     /**
      * 失敗チャンクを再アップロード。残失敗数を返す。
+     * REF-002: 直列処理を並列処理に変更
      */
-    suspend fun retryFailedChunks(): Int {
+    suspend fun retryFailedChunks(): Int = kotlinx.coroutines.coroutineScope {
         val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
 
-        failedChunks.forEach { chunk ->
-            val file = File(chunk.filePath)
-            if (!file.exists()) {
-                chunkRepository.deleteById(chunk.id)
-                return@forEach
+        failedChunks.map { chunk ->
+            kotlinx.coroutines.async {
+                val file = File(chunk.filePath)
+                if (!file.exists()) {
+                    chunkRepository.deleteById(chunk.id)
+                } else {
+                    uploadChunk(chunk)
+                }
             }
+        }.kotlinx.coroutines.awaitAll()
 
-            uploadChunk(chunk)
-        }
-
-        return chunkRepository.getByStatus(ChunkStatus.FAILED).size
+        chunkRepository.getByStatus(ChunkStatus.FAILED).size
     }
 }

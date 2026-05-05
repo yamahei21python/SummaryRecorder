@@ -99,7 +99,7 @@ class RecordingService : Service() {
         // 先にファイナライズ（WAVヘッダー書込み等）→ その後にスコープキャンセル
         kotlinx.coroutines.runBlocking(Dispatchers.IO) {
             try {
-                kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                kotlinx.coroutines.withTimeoutOrNull(10000L) {
                     recordingManager.stopRecording()
                 }
             } catch (e: Exception) {

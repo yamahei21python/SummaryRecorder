@@ -32,14 +32,13 @@ object ConfigModule {
 
     @Provides
     @Singleton
-    @Named("debugMode")
-    fun provideDebugMode(): Boolean = DebugConfig.debugMode
-
-    @Provides
-    @Singleton
-    fun provideChunkSize(@Named("debugMode") debugMode: Boolean): ChunkSize {
+    fun provideChunkSize(): ChunkSize {
         return ChunkSize(bytesProvider = {
-            if (debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+            if (com.kohei.summaryrecorder.audio.DebugConfig.debugMode) {
+                com.kohei.summaryrecorder.audio.DebugConfig.DEBUG_CHUNK_BYTES
+            } else {
+                com.kohei.summaryrecorder.audio.DebugConfig.PRODUCTION_CHUNK_BYTES
+            }
         })
     }
 

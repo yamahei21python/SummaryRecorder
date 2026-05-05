@@ -4,16 +4,17 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 suspend fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
-    if (currentFile == null) {
-        openNewFile()
-    }
+    val raf = currentFile ?: openNewFile()
     val shortCount = data.size / 2
     val shorts = ShortArray(shortCount)
     ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
-    writePcmData(shorts, shortCount)
+    writePcmData(raf, shorts, shortCount)
 
     if (currentBytesWritten >= chunkSizeBytes) {
-        finalizeCurrentChunk(isLast = false)
+        val bytes = currentBytesWritten
+        val index = currentChunkIndex
+        currentFile = null
+        finalizeChunk(raf, bytes, index, isLast = false)
         currentChunkIndex++
         currentBytesWritten = 0
         openNewFile()
@@ -22,7 +23,11 @@ suspend fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
 
 suspend fun GaplessRecorder.stopForTest() {
     isRecording = false
-    if (currentFile != null) {
-        finalizeCurrentChunk(isLast = true)
+    val raf = currentFile
+    val bytes = currentBytesWritten
+    val index = currentChunkIndex
+    if (raf != null) {
+        currentFile = null
+        finalizeChunk(raf, bytes, index, isLast = true)
     }
 }

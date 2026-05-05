@@ -28,13 +28,7 @@ class GaplessRecorder(
     @Volatile @VisibleForTesting internal var isRecording = false
 
     suspend fun start() {
-        val oldJob = mutex.withLock {
-            val job = recordingJob
-            recordingJob = null
-            isRecording = false
-            job
-        }
-        oldJob?.cancelAndJoin()
+        ensureStopped()
 
         if (!audioProvider.start()) {
             throw IllegalStateException("AudioProvider.start() failed")
@@ -47,78 +41,111 @@ class GaplessRecorder(
 
             recordingJob = coroutineScope.launch {
                 try {
-                    mutex.withLock { openNewFile() }
-
+                    // 最初のファイルオープン
+                    val firstFile = mutex.withLock { openNewFile() }
+                    
                     val buffer = ShortArray(AudioConstants.READ_BUFFER)
                     while (isRecording) {
                         val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
                         if (read < 0) break
                         if (read == 0) continue
 
+                        var shouldSplit = false
+                        var fileToFinalize: RandomAccessFile? = null
+                        var bytesToFinalize = 0
+                        var indexToFinalize = 0
+
                         mutex.withLock {
                             if (!isRecording) return@withLock
-                            writePcmData(buffer, read)
-
+                            
+                            val file = currentFile ?: return@withLock
+                            writePcmData(file, buffer, read)
+                            
                             if (currentBytesWritten >= chunkSizeBytes) {
-                                finalizeCurrentChunk(isLast = false)
+                                shouldSplit = true
+                                fileToFinalize = currentFile
+                                bytesToFinalize = currentBytesWritten
+                                indexToFinalize = currentChunkIndex
+                                
+                                currentFile = null // ロック内で参照を切り離す
                                 currentChunkIndex++
                                 currentBytesWritten = 0
                                 openNewFile()
                             }
                         }
+
+                        if (shouldSplit) {
+                            finalizeChunk(fileToFinalize, bytesToFinalize, indexToFinalize, isLast = false)
+                        }
                     }
                 } finally {
+                    val fileToFinalize: RandomAccessFile?
+                    val bytesToFinalize: Int
+                    val indexToFinalize: Int
+                    
                     mutex.withLock {
-                        finalizeCurrentChunk(isLast = true)
+                        fileToFinalize = currentFile
+                        bytesToFinalize = currentBytesWritten
+                        indexToFinalize = currentChunkIndex
+                        currentFile = null
                     }
+                    
+                    finalizeChunk(fileToFinalize, bytesToFinalize, indexToFinalize, isLast = true)
                 }
             }
         }
     }
 
     suspend fun stop() {
+        ensureStopped()
+        audioProvider.release()
+    }
+
+    private suspend fun ensureStopped() {
         val jobToCancel = mutex.withLock {
-            if (!isRecording) return@withLock null
+            val wasRecording = isRecording
             isRecording = false
-            audioProvider.stop()
+            // BUG-001: cancelAndJoin の前に stop() を呼んでブロッキングIOを解除する
+            if (wasRecording) {
+                audioProvider.stop()
+            }
             val job = recordingJob
             recordingJob = null
             job
         }
-        
         jobToCancel?.cancelAndJoin()
-        audioProvider.release()
     }
 
     @VisibleForTesting
-    internal fun openNewFile() {
+    internal fun openNewFile(): RandomAccessFile {
         val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
-        currentFile = RandomAccessFile(file, "rw").also {
+        val raf = RandomAccessFile(file, "rw").also {
             WavHeaderWriter.writeDummyHeader(it)
         }
+        currentFile = raf
+        return raf
     }
 
     @VisibleForTesting
-    internal fun writePcmData(buffer: ShortArray, readCount: Int) {
-        val file = currentFile ?: return
+    internal fun writePcmData(raf: RandomAccessFile, buffer: ShortArray, readCount: Int) {
         val byteBuf = ByteArray(readCount * 2)
         ByteBuffer.wrap(byteBuf).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(buffer, 0, readCount)
-        file.write(byteBuf)
+        raf.write(byteBuf)
         currentBytesWritten += readCount * 2
     }
 
     @VisibleForTesting
-    internal suspend fun finalizeCurrentChunk(isLast: Boolean = false) {
-        currentFile?.let { raf ->
-            val dataLength = currentBytesWritten.toLong()
-            WavHeaderWriter.writeHeader(raf, dataLength)
-            raf.close()
-            currentFile = null
+    internal suspend fun finalizeChunk(raf: RandomAccessFile?, bytesWritten: Int, index: Int, isLast: Boolean) {
+        raf?.let {
+            val dataLength = bytesWritten.toLong()
+            WavHeaderWriter.writeHeader(it, dataLength)
+            it.close()
 
-            val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
+            val file = File(outputDir, "chunk_${index}.wav")
+            // BUG-003: 0バイトかつisLast=trueなら保存（セッション終了の目印）、それ以外で0バイトなら削除
             if (dataLength > 0 || isLast) {
                 if (file.exists()) {
-                    onChunkComplete(currentChunkIndex, file, isLast)
+                    onChunkComplete(index, file, isLast)
                 }
             } else {
                 if (file.exists()) file.delete()
