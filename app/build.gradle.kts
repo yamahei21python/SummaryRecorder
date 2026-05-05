@@ -66,7 +66,7 @@ android {
             it.useJUnitPlatform()
             it.maxParallelForks = 1
             it.forkEvery = 5
-            it.setJvmArgs(listOf("-Xmx2048m", "-XX:MaxMetaspaceSize=512m"))
+            it.setJvmArgs(listOf("-Xmx1536m", "-XX:MaxMetaspaceSize=1024m"))
         }
         unitTests {
             isReturnDefaultValues = true
