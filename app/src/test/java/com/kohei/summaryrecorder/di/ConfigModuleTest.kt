@@ -5,6 +5,8 @@ import android.content.res.AssetManager
 import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.audio.DummyAudioProvider
 import com.kohei.summaryrecorder.audio.RealAudioProvider
+import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
+import com.kohei.summaryrecorder.audio.MockSummaryProvider
 import io.mockk.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

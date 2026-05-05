@@ -67,7 +67,7 @@ class RecordingServiceSelfHealTest {
             transcriptionText = "完了済み"
         ))
 
-        dao.resetStuckUploads()
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
 
         val failed = dao.getByStatus(ChunkStatus.FAILED)
         assertEquals(2, failed.size)
@@ -153,7 +153,7 @@ class RecordingServiceSelfHealTest {
             transcriptionText = "正常完了"
         ))
 
-        dao.resetStuckUploads()
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
 
         val crashed = dao.getBySession("crashed-session")
         assertEquals(1, crashed.size)
