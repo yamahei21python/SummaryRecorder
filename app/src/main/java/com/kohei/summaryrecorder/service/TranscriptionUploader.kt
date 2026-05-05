@@ -29,9 +29,8 @@ class TranscriptionUploader @Inject constructor(
             return Result.failure(FileNotFoundException("File not found: ${file.absolutePath}"))
         }
         
-        if (file.exists() && file.length() <= 44L) {
+        if (file.length() <= 44L) {
             chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, "")
-            file.delete()
             return Result.success("")
         }
 
@@ -43,9 +42,6 @@ class TranscriptionUploader @Inject constructor(
         }
         return if (result.isSuccess) {
             chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
-            if (file.exists() && !file.delete()) {
-                Log.w("TranscriptionUploader", "Failed to delete file: ${file.absolutePath}")
-            }
             result
         } else {
             // BUG-004: 状態の不整合を防ぐため、単純なupdateStatusではなくcasToFailedを使用

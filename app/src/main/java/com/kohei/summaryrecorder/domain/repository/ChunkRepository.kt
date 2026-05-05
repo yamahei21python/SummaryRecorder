@@ -17,4 +17,9 @@ interface ChunkRepository {
     suspend fun resetStuckUploads(now: Long = System.currentTimeMillis())
     fun observeBySession(sessionId: String): Flow<List<ChunkEntity>>
     fun getChunksFlow(sessionId: String): Flow<List<ChunkEntity>> = observeBySession(sessionId)
+
+    // Session history & cleanup
+    suspend fun getSessionHistory(): List<com.kohei.summaryrecorder.data.db.SessionHistory>
+    suspend fun getFilePathsBySession(sessionId: String): List<String>
+    suspend fun deleteSessionData(sessionId: String)
 }

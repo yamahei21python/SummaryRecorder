@@ -77,4 +77,18 @@ interface ChunkDao {
 
     @Query("DELETE FROM chunks WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    // ===== SESSION HISTORY =====
+
+    @Query("""
+        SELECT session_id AS sessionId, MIN(created_at) AS createdAt,
+               COUNT(*) AS totalChunks,
+               SUM(CASE WHEN status = 'DONE' THEN 1 ELSE 0 END) AS doneChunks,
+               SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) AS failedChunks
+        FROM chunks GROUP BY session_id ORDER BY MIN(created_at) DESC
+    """)
+    suspend fun getSessionHistory(): List<SessionHistory>
+
+    @Query("SELECT file_path FROM chunks WHERE session_id = :sessionId")
+    suspend fun getFilePathsBySession(sessionId: String): List<String>
 }

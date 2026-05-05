@@ -13,8 +13,9 @@ suspend fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
     if (currentBytesWritten >= chunkSizeBytes) {
         val bytes = currentBytesWritten
         val index = currentChunkIndex
+        val fileName = currentFileName
         currentFile = null
-        finalizeChunk(raf, bytes, index, isLast = false)
+        finalizeChunk(raf, fileName, bytes, index, isLast = false)
         currentChunkIndex++
         currentBytesWritten = 0
         openNewFile()
@@ -26,8 +27,9 @@ suspend fun GaplessRecorder.stopForTest() {
     val raf = currentFile
     val bytes = currentBytesWritten
     val index = currentChunkIndex
+    val fileName = currentFileName
     if (raf != null) {
         currentFile = null
-        finalizeChunk(raf, bytes, index, isLast = true)
+        finalizeChunk(raf, fileName, bytes, index, isLast = true)
     }
 }

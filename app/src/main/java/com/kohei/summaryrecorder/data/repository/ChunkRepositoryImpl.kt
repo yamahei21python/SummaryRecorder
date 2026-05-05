@@ -1,10 +1,13 @@
 package com.kohei.summaryrecorder.data.repository
 
+import android.util.Log
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.db.SessionHistory
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 import javax.inject.Inject
 
 class ChunkRepositoryImpl @Inject constructor(
@@ -21,14 +24,29 @@ class ChunkRepositoryImpl @Inject constructor(
     override suspend fun casToUploading(id: Long, now: Long): Int = 
         dao.casStatus(id, listOf(ChunkStatus.FAILED, ChunkStatus.PENDING), ChunkStatus.UPLOADING, now)
     
-    override suspend fun casToFailed(id: Long, now: Long): Int = 
-        dao.casStatus(id, listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED, now)
+    override suspend fun casToFailed(id: Long, now: Long): Int =
+        dao.casStatus(id, listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING, ChunkStatus.FAILED), ChunkStatus.FAILED, now)
     
     override suspend fun deleteBySession(sessionId: String) = dao.deleteBySession(sessionId)
     override suspend fun deleteById(id: Long) = dao.deleteById(id)
     
-    override suspend fun resetStuckUploads(now: Long) = 
-        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED, now)
+    override suspend fun resetStuckUploads(now: Long) =
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED, now)
     
     override fun observeBySession(sessionId: String): Flow<List<ChunkEntity>> = dao.observeBySession(sessionId)
+
+    override suspend fun getSessionHistory(): List<SessionHistory> = dao.getSessionHistory()
+
+    override suspend fun getFilePathsBySession(sessionId: String): List<String> = dao.getFilePathsBySession(sessionId)
+
+    override suspend fun deleteSessionData(sessionId: String) {
+        val filePaths = getFilePathsBySession(sessionId)
+        filePaths.forEach { path ->
+            val file = File(path)
+            if (file.exists() && !file.delete()) {
+                Log.w("ChunkRepository", "Failed to delete: $path")
+            }
+        }
+        deleteBySession(sessionId)
+    }
 }

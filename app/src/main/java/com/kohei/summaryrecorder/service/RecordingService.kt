@@ -38,12 +38,19 @@ class RecordingService : Service() {
         private const val CHANNEL_ID = NotificationConstants.CHANNEL_ID
         private const val NOTIFICATION_ID = NotificationConstants.NOTIFICATION_ID
         private const val ACTION_START = "ACTION_START"
+        private const val ACTION_STOP = "ACTION_STOP"
         private const val EXTRA_SESSION_ID = "session_id"
 
         fun startIntent(context: Context, sessionId: String): Intent {
             return Intent(context, RecordingService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_SESSION_ID, sessionId)
+            }
+        }
+
+        fun stopIntent(context: Context): Intent {
+            return Intent(context, RecordingService::class.java).apply {
+                action = ACTION_STOP
             }
         }
     }
@@ -59,7 +66,11 @@ class RecordingService : Service() {
     override fun onCreate() {
         super.onCreate()
         recordingManager = RecordingManager(chunkRepository, uploader, serviceScope)
-        serviceScope.launch { chunkRepository.resetStuckUploads() }
+        // #3: クラッシュ残留UPLOADINGをFAILEDにリセット後、即時リトライ
+        serviceScope.launch {
+            chunkRepository.resetStuckUploads()
+            uploader.retryFailedChunks()
+        }
         createNotificationChannel()
         BatteryOptimizer.checkAndNotify(this)
     }
@@ -94,6 +105,17 @@ class RecordingService : Service() {
                     }
                 }
             }
+            ACTION_STOP -> {
+                serviceScope.launch {
+                    try {
+                        recordingManager.stopRecording()
+                    } catch (e: Exception) {
+                        android.util.Log.w("RecordingService", "stopRecording failed", e)
+                    }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+            }
         }
         return START_NOT_STICKY
     }
@@ -112,6 +134,8 @@ class RecordingService : Service() {
             }
         }
         serviceScope.cancel()
+        // #1: WorkManagerのRetryWorkerをキャンセル（不要な定期実行を防止）
+        WorkManager.getInstance(this).cancelUniqueWork("retry_transcription")
         super.onDestroy()
     }
 

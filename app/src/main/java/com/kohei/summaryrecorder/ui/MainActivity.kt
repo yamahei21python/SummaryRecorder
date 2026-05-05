@@ -12,17 +12,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.db.SessionHistory
 import com.kohei.summaryrecorder.ui.theme.SummaryRecorderTheme
 import com.kohei.summaryrecorder.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -64,22 +65,48 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val tabs = listOf("録音", "履歴")
 
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("SummaryRecorder") })
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            TabRow(selectedTabIndex = uiState.selectedTab) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = uiState.selectedTab == index,
+                        onClick = { viewModel.onTabSelected(index) },
+                        text = { Text(title) }
+                    )
+                }
+            }
+
+            when (uiState.selectedTab) {
+                0 -> RecordingTab(viewModel = viewModel, uiState = uiState)
+                1 -> HistoryTab(viewModel = viewModel, uiState = uiState)
+            }
+        }
+    }
+}
+
+@Composable
+fun RecordingTab(viewModel: MainViewModel, uiState: MainViewModel.UiState) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // タイトル
-        Text(
-            text = "SummaryRecorder",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
         // 録音ボタン
         Button(
             onClick = {
@@ -142,6 +169,110 @@ fun MainScreen(viewModel: MainViewModel) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun HistoryTab(viewModel: MainViewModel, uiState: MainViewModel.UiState) {
+    // タブ表示時に履歴を読込
+    LaunchedEffect(Unit) {
+        viewModel.loadSessions()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (uiState.isSessionsLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.sessions.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("履歴がありません", style = MaterialTheme.typography.bodyLarge)
+            }
+        } else {
+            Text("過去の録音 (${uiState.sessions.size}件)", style = MaterialTheme.typography.titleMedium)
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.sessions) { session ->
+                    SessionCard(
+                        session = session,
+                        viewModel = viewModel
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SessionCard(session: SessionHistory, viewModel: MainViewModel) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = viewModel.formatDate(session.createdAt),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = viewModel.formatSessionStatus(session),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (session.failedChunks > 0) Color(0xFFF44336) else Color(0xFF4CAF50)
+                )
+            }
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Text("🗑", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("削除確認") },
+            text = {
+                Text("この録音データを削除しますか？\n日時: ${viewModel.formatDate(session.createdAt)}")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteSession(session.sessionId)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("削除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("キャンセル")
+                }
+            }
+        )
     }
 }
 

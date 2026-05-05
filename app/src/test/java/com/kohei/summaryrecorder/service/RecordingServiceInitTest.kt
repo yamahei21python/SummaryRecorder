@@ -20,6 +20,7 @@ import kotlin.test.assertEquals
  * 検証項目:
  * - onCreate() で resetStuckUploads() が呼ばれ、
  *   残留UPLOADINGレコードがFAILEDにリセットされること
+ * - PENDINGレコードはリセット対象外（#6 修正）
  *
  * ※ @AndroidEntryPoint環境でRobolectric.buildService不可のため、
  *    DAOのresetStatusBulk()を直接呼び出して検証。
@@ -60,8 +61,8 @@ class RecordingServiceInitTest {
             status = ChunkStatus.UPLOADING
         ))
 
-        // Act: onCreateで呼ばれるロジックを直接実行
-        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
+        // Act: #6 修正後はUPLOADINGのみをリセット
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED)
 
         // Assert: 全UPLOADINGがFAILEDにリセットされている
         val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
@@ -86,7 +87,7 @@ class RecordingServiceInitTest {
             transcriptionText = "already done"
         ))
 
-        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED)
 
         // Assert: DONEはそのまま
         val doneChunks = dao.getByStatus(ChunkStatus.DONE)
@@ -95,7 +96,7 @@ class RecordingServiceInitTest {
     }
 
     @Test
-    fun `resetStatusBulk resets PENDING records to FAILED`() = runTest {
+    fun `resetStatusBulk does NOT reset PENDING records (#6 fix)`() = runTest {
         val dao = db.chunkDao()
         dao.insert(ChunkEntity(
             sessionId = "pending-session",
@@ -104,11 +105,12 @@ class RecordingServiceInitTest {
             status = ChunkStatus.PENDING
         ))
 
-        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
+        // #6: PENDINGはリセット対象外
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED)
 
-        // Assert: PENDINGもFAILEDにリセットされる（BUG-01修正の検証）
-        val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
-        assertEquals(1, failedChunks.size)
-        assertEquals(ChunkStatus.FAILED, failedChunks[0].status)
+        // Assert: PENDINGはそのまま保持される
+        val pendingChunks = dao.getByStatus(ChunkStatus.PENDING)
+        assertEquals(1, pendingChunks.size)
+        assertEquals(ChunkStatus.PENDING, pendingChunks[0].status)
     }
 }

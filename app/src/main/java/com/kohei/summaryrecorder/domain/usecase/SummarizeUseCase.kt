@@ -21,7 +21,11 @@ class SummarizeUseCase @Inject constructor(
             .trim()
 
         if (combinedText.isEmpty()) {
-            return Result.success("録音データがありません")
+            return if (hasFailed) {
+                Result.failure(IllegalStateException("文字起こしに全て失敗しました"))
+            } else {
+                Result.success("録音データがありません")
+            }
         }
 
         val result = summaryRepo.summarize(combinedText)

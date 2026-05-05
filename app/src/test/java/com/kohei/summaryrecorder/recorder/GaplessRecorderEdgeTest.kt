@@ -289,7 +289,7 @@ class GaplessRecorderEdgeTest {
         file.writeBytes(ByteArray(44) { 0 }) 
         val raf = java.io.RandomAccessFile(file, "rw")
         
-        recorder.finalizeChunk(raf, 0, 10, false)
+        recorder.finalizeChunk(raf, "chunk_10.wav", 0, 10, false)
         
         kotlin.test.assertFalse(file.exists(), "0バイトかつisLast=falseならファイルは削除されるべき")
     }
@@ -309,7 +309,7 @@ class GaplessRecorderEdgeTest {
         file.writeBytes(ByteArray(44) { 0 })
         val raf = java.io.RandomAccessFile(file, "rw")
         
-        recorder.finalizeChunk(raf, 0, 11, true)
+        recorder.finalizeChunk(raf, "chunk_11.wav", 0, 11, true)
         
         assertTrue(file.exists(), "0バイトでもisLast=trueならファイルは保持されるべき")
         assertEquals(1, recordedChunks.size)

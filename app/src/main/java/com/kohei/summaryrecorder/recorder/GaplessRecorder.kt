@@ -26,6 +26,7 @@ class GaplessRecorder(
     @VisibleForTesting internal var currentChunkIndex = 0
     @VisibleForTesting internal var currentBytesWritten = 0
     @Volatile @VisibleForTesting internal var isRecording = false
+    @VisibleForTesting internal var currentFileName: String = ""
 
     suspend fun start() {
         stopInternal()
@@ -52,6 +53,7 @@ class GaplessRecorder(
 
                         var shouldSplit = false
                         var fileToFinalize: RandomAccessFile? = null
+                        var fileNameToFinalize: String = ""
                         var bytesToFinalize = 0
                         var indexToFinalize = 0
 
@@ -64,6 +66,7 @@ class GaplessRecorder(
                             if (currentBytesWritten >= chunkSizeBytes) {
                                 shouldSplit = true
                                 fileToFinalize = currentFile
+                                fileNameToFinalize = currentFileName
                                 bytesToFinalize = currentBytesWritten
                                 indexToFinalize = currentChunkIndex
                                 
@@ -75,22 +78,24 @@ class GaplessRecorder(
                         }
 
                         if (shouldSplit) {
-                            finalizeChunk(fileToFinalize, bytesToFinalize, indexToFinalize, isLast = false)
+                            finalizeChunk(fileToFinalize, fileNameToFinalize, bytesToFinalize, indexToFinalize, isLast = false)
                         }
                     }
                 } finally {
                     val fileToFinalize: RandomAccessFile?
+                    val fileNameToFinalize: String
                     val bytesToFinalize: Int
                     val indexToFinalize: Int
                     
                     mutex.withLock {
                         fileToFinalize = currentFile
+                        fileNameToFinalize = currentFileName
                         bytesToFinalize = currentBytesWritten
                         indexToFinalize = currentChunkIndex
                         currentFile = null
                     }
                     
-                    finalizeChunk(fileToFinalize, bytesToFinalize, indexToFinalize, isLast = true)
+                    finalizeChunk(fileToFinalize, fileNameToFinalize, bytesToFinalize, indexToFinalize, isLast = true)
                 }
             }
         }
@@ -118,11 +123,13 @@ class GaplessRecorder(
 
     @VisibleForTesting
     internal fun openNewFile(): RandomAccessFile {
-        val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
+        val fileName = "chunk_${System.currentTimeMillis() % 1_000_000}_${currentChunkIndex}.wav"
+        val file = File(outputDir, fileName)
         val raf = RandomAccessFile(file, "rw").also {
             WavHeaderWriter.writeDummyHeader(it)
         }
         currentFile = raf
+        currentFileName = fileName
         return raf
     }
 
@@ -135,13 +142,13 @@ class GaplessRecorder(
     }
 
     @VisibleForTesting
-    internal suspend fun finalizeChunk(raf: RandomAccessFile?, bytesWritten: Int, index: Int, isLast: Boolean) {
+    internal suspend fun finalizeChunk(raf: RandomAccessFile?, fileName: String, bytesWritten: Int, index: Int, isLast: Boolean) {
         raf?.let {
             val dataLength = bytesWritten.toLong()
             WavHeaderWriter.writeHeader(it, dataLength)
             it.close()
 
-            val file = File(outputDir, "chunk_${index}.wav")
+            val file = File(outputDir, fileName)
             // BUG-003: 0バイトかつisLast=trueなら保存（セッション終了の目印）、それ以外で0バイトなら削除
             if (dataLength > 0 || isLast) {
                 if (file.exists()) {

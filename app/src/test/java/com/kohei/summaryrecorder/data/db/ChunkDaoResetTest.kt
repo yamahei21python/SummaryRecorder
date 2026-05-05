@@ -35,23 +35,23 @@ class ChunkDaoResetTest {
     }
 
     @Test
-    fun `resetStatusBulk converts UPLOADING and PENDING to FAILED`() = runTest {
+    fun `resetStatusBulk converts UPLOADING to FAILED only (#6 fix)`() = runTest {
         dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/a", status = ChunkStatus.UPLOADING))
         dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.PENDING))
         dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 2, filePath = "/c", status = ChunkStatus.DONE))
 
-        // Repository level method was renamed to reflect DAO change or keeps old name but calls new DAO
-        // In ChunkRepositoryImpl: resetStuckUploads calls dao.resetStatusBulk(listOf(UPLOADING, PENDING), FAILED)
-        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
+        // #6: PENDINGはリセット対象外
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED)
 
         val failed = dao.getByStatus(ChunkStatus.FAILED)
-        assertEquals(2, failed.size)
+        assertEquals(1, failed.size)
 
         val uploading = dao.getByStatus(ChunkStatus.UPLOADING)
         assertEquals(0, uploading.size)
         
+        // PENDING はそのまま保持
         val pending = dao.getByStatus(ChunkStatus.PENDING)
-        assertEquals(0, pending.size)
+        assertEquals(1, pending.size)
 
         // DONE は影響なし
         assertEquals(1, dao.getByStatus(ChunkStatus.DONE).size)
