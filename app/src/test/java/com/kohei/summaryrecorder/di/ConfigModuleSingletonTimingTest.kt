@@ -7,7 +7,7 @@ import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
 import com.kohei.summaryrecorder.audio.RealAudioProvider
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import com.kohei.summaryrecorder.audio.DebugConfig
-import io.mockk.mockk
+import io.mockk.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
