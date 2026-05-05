@@ -14,14 +14,12 @@ import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.assertIs
 
 class SummaryRepoTest {
 
     private lateinit var generativeModel: GenerativeModel
     private lateinit var repository: SummaryRepository
 
-    // テスト用システムプロンプト
     private val testSystemPrompt = "テスト用システムプロンプト"
 
     @Before
@@ -36,16 +34,32 @@ class SummaryRepoTest {
     }
 
     @Test
-    fun `summarize success returns text`() = runTest {
+    fun `summarize success returns SummaryResult from JSON`() = runTest {
+        val jsonResponse = """{"title":"テストタイトル","summaryText":"要約テキスト"}"""
         val mockResponse = mockk<GenerateContentResponse>()
-        every { mockResponse.text } returns "要約テキスト"
+        every { mockResponse.text } returns jsonResponse
         coEvery { generativeModel.generateContent(any<Content>()) } returns mockResponse
 
         val result = repository.summarize("テスト入力テキスト")
 
         assertTrue(result.isSuccess)
-        assertEquals("要約テキスト", result.getOrThrow())
+        assertEquals("テストタイトル", result.getOrThrow().title)
+        assertEquals("要約テキスト", result.getOrThrow().summaryText)
         coVerify(exactly = 1) { generativeModel.generateContent(any<Content>()) }
+    }
+
+    @Test
+    fun `summarize invalid JSON triggers fallback`() = runTest {
+        val mockResponse = mockk<GenerateContentResponse>()
+        every { mockResponse.text } returns "这不是JSON"
+        coEvery { generativeModel.generateContent(any<Content>()) } returns mockResponse
+
+        val result = repository.summarize("テスト入力テキスト")
+
+        assertTrue(result.isSuccess)
+        // フォールバック: summaryText = 生レスポンス
+        assertEquals("这不是JSON", result.getOrThrow().summaryText)
+        assertTrue(result.getOrThrow().title.contains("録音"))
     }
 
     @Test
@@ -87,9 +101,9 @@ class SummaryRepoTest {
     @Test
     fun `summarize times out after 60s`() = runTest {
         coEvery { generativeModel.generateContent(any<Content>()) } coAnswers {
-            kotlinx.coroutines.delay(65_000L) // Delay longer than TIMEOUT_MS
+            kotlinx.coroutines.delay(65_000L)
             val mockResponse = mockk<GenerateContentResponse>()
-            every { mockResponse.text } returns "要約テキスト"
+            every { mockResponse.text } returns """{"title":"t","summaryText":"s"}"""
             mockResponse
         }
 

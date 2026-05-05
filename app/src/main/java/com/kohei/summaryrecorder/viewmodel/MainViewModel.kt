@@ -158,9 +158,10 @@ class MainViewModel @Inject constructor(
         val result = summarizeUseCase.execute(sessionId)
 
         if (result.isSuccess) {
+            val output = result.getOrThrow()
             _uiState.update {
                 it.copy(
-                    summary = result.getOrThrow(),
+                    summary = output.summaryResult.summaryText,
                     isLoading = false
                 )
             }

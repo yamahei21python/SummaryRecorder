@@ -2,6 +2,7 @@ package com.kohei.summaryrecorder.domain.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import io.mockk.coEvery
@@ -9,7 +10,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SummarizeUseCaseMixedStatusTest {
@@ -26,7 +26,7 @@ class SummarizeUseCaseMixedStatusTest {
     }
 
     @Test
-    fun `execute with all DONE and some null transcriptionText returns empty data message`() = runTest {
+    fun `execute with all null transcriptionText returns failure`() = runTest {
         val chunk1 = ChunkEntity(id=1, sessionId="s", chunkIndex=0, filePath="", status=ChunkStatus.DONE, transcriptionText=null)
         val chunk2 = ChunkEntity(id=2, sessionId="s", chunkIndex=1, filePath="", status=ChunkStatus.DONE, transcriptionText="")
         
@@ -34,8 +34,7 @@ class SummarizeUseCaseMixedStatusTest {
         
         val result = useCase.execute("s")
         
-        assertTrue(result.isSuccess)
-        assertEquals("録音データがありません", result.getOrThrow())
+        assertTrue(result.isFailure)
     }
 
     @Test
@@ -44,13 +43,13 @@ class SummarizeUseCaseMixedStatusTest {
         val chunkFailed = ChunkEntity(id=2, sessionId="s", chunkIndex=1, filePath="", status=ChunkStatus.FAILED, transcriptionText=null)
         
         coEvery { mockRepo.getBySession("s") } returns listOf(chunkDone, chunkFailed)
-        coEvery { mockSummary.summarize("Hello") } returns Result.success("Summary")
+        coEvery { mockSummary.summarize(any()) } returns Result.success(SummaryResult("タイトル", "Summary"))
         
         val result = useCase.execute("s")
         
         assertTrue(result.isSuccess)
-        val text = result.getOrThrow()
-        assertTrue(text.contains("一部の音声解析に失敗したため"))
-        assertTrue(text.contains("Summary"))
+        val output = result.getOrThrow()
+        assertTrue(output.summaryResult.summaryText.contains("一部の音声解析に失敗したため"))
+        assertTrue(output.summaryResult.summaryText.contains("Summary"))
     }
 }

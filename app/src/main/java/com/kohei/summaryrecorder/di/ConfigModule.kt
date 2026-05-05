@@ -6,6 +6,7 @@ import com.kohei.summaryrecorder.audio.DummyAudioProvider
 import com.kohei.summaryrecorder.audio.MockSummaryProvider
 import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
 import com.kohei.summaryrecorder.audio.RealAudioProvider
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.data.repository.ChunkRepositoryImpl
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
@@ -76,7 +77,7 @@ private class LazyTranscriptionProvider(
 private class LazySummaryProvider(
     private val real: SummaryRepository
 ) : SummaryProvider {
-    override suspend fun summarize(text: String): Result<String> {
+    override suspend fun summarize(text: String): Result<SummaryResult> {
         return if (DebugConfig.debugMode) MockSummaryProvider().summarize(text)
         else real.summarize(text)
     }

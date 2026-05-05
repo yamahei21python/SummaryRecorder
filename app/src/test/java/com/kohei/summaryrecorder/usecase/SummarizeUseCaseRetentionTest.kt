@@ -2,6 +2,7 @@ package com.kohei.summaryrecorder.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
@@ -18,10 +19,6 @@ import kotlin.test.assertTrue
 
 /**
  * Bug fix verify: execute()成功時のdeleteBySession()削除
- *
- * 要約成功後にdeleteBySession()を呼ぶとDBからチャンクが消え、
- * 再要約や履歴参照が不可能になるバグ。
- * deleteBySession()呼び出し自体を削除してチャンクを保持するよう修正済。
  */
 class SummarizeUseCaseRetentionTest {
 
@@ -48,14 +45,15 @@ class SummarizeUseCaseRetentionTest {
             ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/c1.wav", status = ChunkStatus.DONE, transcriptionText = "世界")
         )
         coEvery { mockRepo.getBySession("s1") } returns chunks
-        coEvery { mockSummaryRepo.summarize(any()) } returns Result.success("要約結果")
+        coEvery { mockSummaryRepo.summarize(any()) } returns Result.success(SummaryResult("タイトル", "要約結果"))
 
         val result = useCase.execute("s1")
 
         assertTrue(result.isSuccess)
-        assertEquals("要約結果", result.getOrThrow())
+        assertEquals("要約結果", result.getOrThrow().summaryResult.summaryText)
+        assertEquals("こんにちは\n\n世界", result.getOrThrow().transcriptionText)
 
-        // deleteBySessionが呼ばれていないこと（バグ修正の核心）
+        // deleteBySessionが呼ばれていないこと
         coVerify(exactly = 0) { mockRepo.deleteBySession(any()) }
     }
 
@@ -80,7 +78,7 @@ class SummarizeUseCaseRetentionTest {
             ChunkEntity(sessionId = "s3", chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "1番目")
         )
         coEvery { mockRepo.getBySession("s3") } returns chunks
-        coEvery { mockSummaryRepo.summarize(any()) } returns Result.success("要約")
+        coEvery { mockSummaryRepo.summarize(any()) } returns Result.success(SummaryResult("タイトル", "要約"))
 
         useCase.execute("s3")
 
@@ -89,7 +87,7 @@ class SummarizeUseCaseRetentionTest {
     }
 
     @Test
-    fun `execute returns early when combinedText is empty`() = runTest {
+    fun `execute returns failure when combinedText is empty`() = runTest {
         val chunks = listOf(
             ChunkEntity(sessionId = "s4", chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "   ")
         )
@@ -97,8 +95,7 @@ class SummarizeUseCaseRetentionTest {
 
         val result = useCase.execute("s4")
 
-        assertTrue(result.isSuccess)
-        assertEquals("録音データがありません", result.getOrThrow())
+        assertTrue(result.isFailure)
         coVerify(exactly = 0) { mockSummaryRepo.summarize(any()) }
     }
 }

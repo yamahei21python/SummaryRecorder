@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.SessionHistory
+import com.kohei.summaryrecorder.data.model.SummaryResult
+import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
@@ -170,7 +172,7 @@ class MainViewModelTabSessionTest {
 
     @Test
     fun `retryLastSummary retries summarizeAll with current sessionId`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success("リトライ要約")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "リトライ要約"), "転写"))
 
         val vm = createViewModel()
         vm.startRecording()
@@ -199,7 +201,7 @@ class MainViewModelTabSessionTest {
         assertTrue(vm.uiState.value.error!!.contains("err"))
 
         // リトライ成功
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success("OK")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "OK"), "転写"))
         vm.retryLastSummary()
         advanceUntilIdle()
 
@@ -218,7 +220,7 @@ class MainViewModelTabSessionTest {
 
     @Test
     fun `retryLastSummary resets summarized flag allowing re-summarization`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約1") andThen Result.success("要約2")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "要約1"), "転写")) andThen Result.success(SummarizeOutput(SummaryResult("タイトル", "要約2"), "転写"))
 
         val vm = createViewModel()
         vm.startRecording()

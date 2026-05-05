@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
+import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
@@ -80,7 +82,7 @@ class SummaryFlowTest {
 
     @Test
     fun `all done triggers summarize`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約テキスト")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "要約テキスト"), "転写"))
 
         val viewModel = createViewModel()
         viewModel.startRecording()

@@ -4,6 +4,8 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
+import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import com.kohei.summaryrecorder.service.ServiceRecordingController
@@ -95,7 +97,7 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `stopRecording with chunks - isLoading stays true until allDone`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約")
+        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "要約"), "転写"))
 
         viewModel.startRecording()
 

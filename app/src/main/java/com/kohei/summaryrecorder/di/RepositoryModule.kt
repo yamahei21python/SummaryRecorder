@@ -2,10 +2,10 @@ package com.kohei.summaryrecorder.di
 
 import android.content.Context
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.generationConfig
 import com.kohei.summaryrecorder.BuildConfig
 import com.kohei.summaryrecorder.R
 import com.kohei.summaryrecorder.data.api.GroqApiService
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import dagger.Module
@@ -28,7 +28,18 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideSummaryRepository(@ApplicationContext context: Context): SummaryRepository {
-        val model = GenerativeModel("gemini-3.1-flash-lite-preview", BuildConfig.GEMINI_API_KEY)
-        return SummaryRepository(model, context.getString(R.string.system_prompt_summary))
+        val config = generationConfig {
+            responseMimeType = "application/json"
+        }
+        val model = GenerativeModel(
+            modelName = "gemini-3.1-flash-lite-preview",
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            systemInstruction = com.google.ai.client.generativeai.type.content {
+                text(context.getString(R.string.system_prompt_summary))
+                text("出力は必ずJSON形式で、\"title\"(20文字以内)と\"summaryText\"の2フィールドを含めること。")
+            },
+            generationConfig = config
+        )
+        return SummaryRepository(model, "")
     }
 }

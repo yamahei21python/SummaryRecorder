@@ -5,6 +5,7 @@ import android.content.res.AssetManager
 import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -92,18 +93,18 @@ class ConfigModuleTest {
         val provider = ConfigModule.provideSummaryProvider(mockk())
         val result = provider.summarize("test input")
         assertTrue(result.isSuccess)
-        assertTrue(result.getOrThrow().contains("E2Eテスト要約"))
+        assertTrue(result.getOrThrow().summaryText.contains("E2Eテスト要約"))
     }
 
     @Test
     fun `provideSummaryProvider delegates to real when not debugMode`() = runBlocking {
         DebugConfig.debugMode = false
         val mockRepo = mockk<SummaryRepository> {
-            coEvery { summarize(any()) } returns Result.success("real summary")
+            coEvery { summarize(any()) } returns Result.success(SummaryResult("タイトル", "real summary"))
         }
         val provider = ConfigModule.provideSummaryProvider(mockRepo)
         val result = provider.summarize("test input")
         assertTrue(result.isSuccess)
-        assertEquals("real summary", result.getOrThrow())
+        assertEquals("real summary", result.getOrThrow().summaryText)
     }
 }
