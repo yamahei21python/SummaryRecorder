@@ -7,6 +7,9 @@ import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import android.util.Log
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class TranscriptionUploader @Inject constructor(
     private val chunkRepository: ChunkRepository,
@@ -49,11 +52,11 @@ class TranscriptionUploader @Inject constructor(
      * 失敗チャンクを再アップロード。残失敗数を返す。
      * REF-002: 直列処理を並列処理に変更
      */
-    suspend fun retryFailedChunks(): Int = kotlinx.coroutines.coroutineScope {
+    suspend fun retryFailedChunks(): Int = coroutineScope {
         val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
 
         failedChunks.map { chunk ->
-            kotlinx.coroutines.async {
+            async {
                 val file = File(chunk.filePath)
                 if (!file.exists()) {
                     chunkRepository.deleteById(chunk.id)
@@ -61,7 +64,7 @@ class TranscriptionUploader @Inject constructor(
                     uploadChunk(chunk)
                 }
             }
-        }.kotlinx.coroutines.awaitAll()
+        }.awaitAll()
 
         chunkRepository.getByStatus(ChunkStatus.FAILED).size
     }
