@@ -28,7 +28,7 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideSummaryRepository(@ApplicationContext context: Context): SummaryRepository {
-        val model = GenerativeModel("gemini-2.0-flash", BuildConfig.GEMINI_API_KEY)
+        val model = GenerativeModel("gemini-3.1-flash-lite-preview", BuildConfig.GEMINI_API_KEY)
         return SummaryRepository(model, context.getString(R.string.system_prompt_summary))
     }
 }

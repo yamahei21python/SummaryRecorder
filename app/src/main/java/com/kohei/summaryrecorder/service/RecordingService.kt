@@ -81,12 +81,17 @@ class RecordingService : Service() {
 
                 val outputDir = File(filesDir, "recordings/$sessionId").also { it.mkdirs() }
                 serviceScope.launch {
-                    recordingManager.startRecording(
-                        sessionId = sessionId,
-                        outputDir = outputDir,
-                        chunkSizeBytes = chunkSize.bytes,
-                        audioProvider = audioProvider
-                    )
+                    try {
+                        recordingManager.startRecording(
+                            sessionId = sessionId,
+                            outputDir = outputDir,
+                            chunkSizeBytes = chunkSize.bytes,
+                            audioProvider = audioProvider
+                        )
+                    } catch (e: Exception) {
+                        android.util.Log.e("RecordingService", "startRecording failed, stopping service", e)
+                        stopSelf()
+                    }
                 }
             }
         }
@@ -99,7 +104,7 @@ class RecordingService : Service() {
         // 先にファイナライズ（WAVヘッダー書込み等）→ その後にスコープキャンセル
         kotlinx.coroutines.runBlocking(Dispatchers.IO) {
             try {
-                kotlinx.coroutines.withTimeoutOrNull(10000L) {
+                kotlinx.coroutines.withTimeoutOrNull(2000L) {
                     recordingManager.stopRecording()
                 }
             } catch (e: Exception) {

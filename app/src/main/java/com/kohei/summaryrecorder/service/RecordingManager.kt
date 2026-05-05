@@ -23,7 +23,6 @@ class RecordingManager(
     private val recorderScope = CoroutineScope(baseScope.coroutineContext + Job())
     private val uploadScope = CoroutineScope(baseScope.coroutineContext + SupervisorJob())
     private val mutex = Mutex()
-    private val recorderRef = AtomicReference<GaplessRecorder?>(null)
 
     suspend fun startRecording(
         sessionId: String,
@@ -43,7 +42,13 @@ class RecordingManager(
                 coroutineScope = recorderScope
             )
             recorderRef.set(recorder)
-            recorder.start()
+            try {
+                recorder.start()
+            } catch (e: Exception) {
+                recorderRef.set(null)
+                Log.e("RecordingManager", "startRecording failed", e)
+                throw e
+            }
         }
     }
 
