@@ -274,6 +274,46 @@ class GaplessRecorderEdgeTest {
     // ===== file delete() 失敗 =====
 
     @Test
+    fun `finalizeChunk deletes file when dataLength 0 and not isLast`() = runTest {
+        val recorder = GaplessRecorder(
+            outputDir = tempDir,
+            chunkSizeBytes = 1024,
+            onChunkComplete = { _, _, _ -> },
+            audioProvider = noopProvider,
+            coroutineScope = this
+        )
+
+        val file = File(tempDir, "chunk_10.wav")
+        file.writeBytes(ByteArray(44) { 0 }) 
+        val raf = java.io.RandomAccessFile(file, "rw")
+        
+        recorder.finalizeChunk(raf, 0, 10, false)
+        
+        kotlin.test.assertFalse(file.exists(), "0バイトかつisLast=falseならファイルは削除されるべき")
+    }
+
+    @Test
+    fun `finalizeChunk keeps file when dataLength 0 and isLast`() = runTest {
+        val recordedChunks = mutableListOf<Pair<Int, File>>()
+        val recorder = GaplessRecorder(
+            outputDir = tempDir,
+            chunkSizeBytes = 1024,
+            onChunkComplete = { index, file, isLast -> recordedChunks.add(index to file) },
+            audioProvider = noopProvider,
+            coroutineScope = this
+        )
+
+        val file = File(tempDir, "chunk_11.wav")
+        file.writeBytes(ByteArray(44) { 0 })
+        val raf = java.io.RandomAccessFile(file, "rw")
+        
+        recorder.finalizeChunk(raf, 0, 11, true)
+        
+        assertTrue(file.exists(), "0バイトでもisLast=trueならファイルは保持されるべき")
+        assertEquals(1, recordedChunks.size)
+    }
+
+    @Test
     fun `finalizeCurrentChunk does not crash when file delete fails`() = runTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
@@ -283,14 +323,10 @@ class GaplessRecorderEdgeTest {
             coroutineScope = this
         )
 
-        // Setup a situation where delete() is needed (dataLength == 0)
         recorder.start()
-        Thread.sleep(50) // wait for file creation
+        Thread.sleep(50) 
         recorder.isRecording = false
         
-        // Mocking File delete failure is hard without MockK or Robolectric
-        // But we can ensure that calling finalizeCurrentChunk directly doesn't crash
-        // even if data is 0.
         recorder.stopForTest()
     }
 }

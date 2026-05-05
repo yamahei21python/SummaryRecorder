@@ -6,6 +6,7 @@ import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import android.util.Log
 import java.io.File
+import java.io.FileNotFoundException
 import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,6 +23,11 @@ class TranscriptionUploader @Inject constructor(
             return Result.failure(IllegalStateException("Chunk ${chunk.id} already being processed"))
         }
         val file = File(chunk.filePath)
+        
+        if (!file.exists()) {
+            chunkRepository.casToFailed(chunk.id)
+            return Result.failure(FileNotFoundException("File not found: ${file.absolutePath}"))
+        }
         
         if (file.exists() && file.length() <= 44L) {
             chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, "")
@@ -53,9 +59,11 @@ class TranscriptionUploader @Inject constructor(
      * REF-002: 直列処理を並列処理に変更
      */
     suspend fun retryFailedChunks(): Int = coroutineScope {
-        val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
+        // BUG-01: FAILEDだけでなくPENDINGチャンクも救済対象に含める
+        val targets = chunkRepository.getByStatus(ChunkStatus.FAILED) + 
+                      chunkRepository.getByStatus(ChunkStatus.PENDING)
 
-        failedChunks.map { chunk ->
+        targets.map { chunk ->
             async {
                 val file = File(chunk.filePath)
                 if (!file.exists()) {
@@ -66,6 +74,7 @@ class TranscriptionUploader @Inject constructor(
             }
         }.awaitAll()
 
-        chunkRepository.getByStatus(ChunkStatus.FAILED).size
+        chunkRepository.getByStatus(ChunkStatus.FAILED).size +
+        chunkRepository.getByStatus(ChunkStatus.PENDING).size
     }
 }

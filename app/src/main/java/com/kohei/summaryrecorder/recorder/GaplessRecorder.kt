@@ -28,7 +28,7 @@ class GaplessRecorder(
     @Volatile @VisibleForTesting internal var isRecording = false
 
     suspend fun start() {
-        ensureStopped()
+        stopInternal()
 
         if (!audioProvider.start()) {
             throw IllegalStateException("AudioProvider.start() failed")
@@ -42,7 +42,7 @@ class GaplessRecorder(
             recordingJob = coroutineScope.launch {
                 try {
                     // 最初のファイルオープン
-                    val firstFile = mutex.withLock { openNewFile() }
+                    mutex.withLock { openNewFile() }
                     
                     val buffer = ShortArray(AudioConstants.READ_BUFFER)
                     while (isRecording) {
@@ -97,11 +97,11 @@ class GaplessRecorder(
     }
 
     suspend fun stop() {
-        ensureStopped()
+        stopInternal()
         audioProvider.release()
     }
 
-    private suspend fun ensureStopped() {
+    private suspend fun stopInternal() {
         val jobToCancel = mutex.withLock {
             val wasRecording = isRecording
             isRecording = false

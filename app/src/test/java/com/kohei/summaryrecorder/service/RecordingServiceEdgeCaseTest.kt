@@ -128,4 +128,29 @@ class RecordingServiceEdgeCaseTest {
         // Timeout is 10000ms.
         assertTrue(elapsed < 15000L, "destroy took too long: $elapsed ms")
     }
+
+    @Test
+    fun `onDestroy completes normally when stopRecording is fast`() = runTest {
+        val serviceController = Robolectric.buildService(RecordingService::class.java)
+        val service = serviceController.get()
+        
+        service.chunkRepository = mockk(relaxed = true)
+        service.uploader = mockk(relaxed = true)
+        service.chunkSize = ChunkSize { 1024L }
+        service.audioProvider = mockk(relaxed = true)
+
+        serviceController.create()
+        
+        val mockManager = mockk<RecordingManager>(relaxed = true)
+        coEvery { mockManager.stopRecording() } returns Unit
+        val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
+        recordingManagerField.isAccessible = true
+        recordingManagerField.set(service, mockManager)
+
+        val startTime = System.currentTimeMillis()
+        serviceController.destroy()
+        val elapsed = System.currentTimeMillis() - startTime
+        
+        assertTrue(elapsed < 2000L, "destroy should be fast: $elapsed ms")
+    }
 }

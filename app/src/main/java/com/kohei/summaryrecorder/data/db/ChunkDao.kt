@@ -49,24 +49,26 @@ interface ChunkDao {
 
     @Query("""
         UPDATE chunks
-        SET status = 'UPLOADING', updated_at = :now
-        WHERE id = :id AND status IN ('FAILED', 'PENDING')
+        SET status = :targetStatus, updated_at = :now
+        WHERE id = :id AND status IN (:sourceStatuses)
     """)
-    suspend fun casToUploading(id: Long, now: Long = System.currentTimeMillis()): Int
+    suspend fun casStatus(
+        id: Long,
+        sourceStatuses: List<ChunkStatus>,
+        targetStatus: ChunkStatus,
+        now: Long = System.currentTimeMillis()
+    ): Int
 
     @Query("""
         UPDATE chunks
-        SET status = 'FAILED', updated_at = :now
-        WHERE id = :id AND status = 'UPLOADING'
+        SET status = :targetStatus, updated_at = :now
+        WHERE status IN (:sourceStatuses)
     """)
-    suspend fun casToFailed(id: Long, now: Long = System.currentTimeMillis()): Int
-
-    @Query("""
-        UPDATE chunks
-        SET status = 'FAILED', updated_at = :now
-        WHERE status = 'UPLOADING'
-    """)
-    suspend fun resetStuckUploads(now: Long = System.currentTimeMillis())
+    suspend fun resetStatusBulk(
+        sourceStatuses: List<ChunkStatus>,
+        targetStatus: ChunkStatus,
+        now: Long = System.currentTimeMillis()
+    )
 
     // ===== DELETE =====
 

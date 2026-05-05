@@ -65,4 +65,32 @@ class ConfigModuleTest {
 
         assertTrue(provider is RealAudioProvider, "本番モードではRealAudioProviderが返ること")
     }
+
+    @Test
+    fun `provideTranscriptionProvider returns mock when debugMode`() {
+        DebugConfig.debugMode = true
+        val provider = ConfigModule.provideTranscriptionProvider(mockk())
+        assertTrue(provider is MockTranscriptionProvider)
+    }
+
+    @Test
+    fun `provideTranscriptionProvider returns real when not debugMode`() {
+        DebugConfig.debugMode = false
+        val provider = ConfigModule.provideTranscriptionProvider(mockk())
+        assertFalse(provider is MockTranscriptionProvider)
+    }
+
+    @Test
+    fun `provideSummaryProvider returns mock when debugMode`() {
+        DebugConfig.debugMode = true
+        val provider = ConfigModule.provideSummaryProvider(mockk())
+        assertTrue(provider is MockSummaryProvider)
+    }
+
+    @Test
+    fun `provideSummaryProvider returns real when not debugMode`() {
+        DebugConfig.debugMode = false
+        val provider = ConfigModule.provideSummaryProvider(mockk())
+        assertFalse(provider is MockSummaryProvider)
+    }
 }

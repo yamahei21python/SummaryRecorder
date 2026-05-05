@@ -106,6 +106,7 @@ class TranscriptionUploaderAtomicityTest {
         val chunk1 = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.FAILED)
 
         coEvery { mockRepo.getByStatus(ChunkStatus.FAILED) } returns listOf(chunk1)
+        coEvery { mockRepo.getByStatus(ChunkStatus.PENDING) } returns emptyList()
         coEvery { mockRepo.casToUploading(1L, any()) } returns 1
         coEvery { mockProvider.transcribe(any()) } returns Result.success("テキスト")
 
@@ -113,5 +114,49 @@ class TranscriptionUploaderAtomicityTest {
 
         // chunk1 のみ処理
         coVerify(exactly = 1) { mockProvider.transcribe(any()) }
+    }
+
+    @Test
+    fun `retryFailedChunks includes PENDING chunks`() = runTest {
+        val realFile = tempFolder.newFile("pending.wav")
+        realFile.writeBytes(ByteArray(100) { 0 })
+        val chunkPending = ChunkEntity(id = 10L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.PENDING)
+
+        coEvery { mockRepo.getByStatus(ChunkStatus.FAILED) } returns emptyList()
+        coEvery { mockRepo.getByStatus(ChunkStatus.PENDING) } returns listOf(chunkPending)
+        coEvery { mockRepo.casToUploading(10L, any()) } returns 1
+        coEvery { mockProvider.transcribe(any()) } returns Result.success("テキスト")
+
+        uploader.retryFailedChunks()
+
+        coVerify(exactly = 1) { mockProvider.transcribe(any()) }
+    }
+
+    @Test
+    fun `uploadChunk with 44 bytes file marks DONE and deletes it`() = runTest {
+        val file44 = tempFolder.newFile("header.wav")
+        file44.writeBytes(ByteArray(44) { 0 })
+        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = file44.absolutePath, status = ChunkStatus.PENDING)
+
+        coEvery { mockRepo.casToUploading(1L, any()) } returns 1
+
+        val result = uploader.uploadChunk(chunk)
+
+        assertTrue(result.isSuccess)
+        coVerify { mockRepo.updateStatus(1L, ChunkStatus.DONE, "", any()) }
+        kotlin.test.assertFalse(file44.exists())
+    }
+
+    @Test
+    fun `uploadChunk with missing file marks FAILED`() = runTest {
+        val missingFile = File(tempFolder.root, "missing.wav")
+        val chunk = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = missingFile.absolutePath, status = ChunkStatus.PENDING)
+
+        coEvery { mockRepo.casToUploading(1L, any()) } returns 1
+
+        val result = uploader.uploadChunk(chunk)
+
+        assertTrue(result.isFailure)
+        coVerify { mockRepo.casToFailed(1L, any()) }
     }
 }

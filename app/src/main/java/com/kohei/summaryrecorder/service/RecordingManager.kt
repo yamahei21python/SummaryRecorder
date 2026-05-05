@@ -11,13 +11,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class RecordingManager(
     private val chunkRepository: ChunkRepository,
     private val uploader: TranscriptionUploader,
-    private val serviceScope: CoroutineScope
+    baseScope: CoroutineScope
 ) {
+    private val recorderScope = CoroutineScope(baseScope.coroutineContext + Job())
+    private val uploadScope = CoroutineScope(baseScope.coroutineContext + SupervisorJob())
     private val mutex = Mutex()
     private val recorderRef = AtomicReference<GaplessRecorder?>(null)
 
@@ -36,7 +40,7 @@ class RecordingManager(
                     onChunkRecorded(sessionId, chunkIndex, file, isLast)
                 },
                 audioProvider = audioProvider,
-                coroutineScope = serviceScope
+                coroutineScope = recorderScope
             )
             recorderRef.set(recorder)
             recorder.start()
@@ -63,7 +67,7 @@ class RecordingManager(
                 Log.e("RecordingManager", "Failed to insert chunk $chunkIndex into database")
                 return
             }
-            serviceScope.launch {
+            uploadScope.launch {
                 val result = uploader.uploadChunk(entity.copy(id = id))
                 if (result.isFailure) {
                     Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")

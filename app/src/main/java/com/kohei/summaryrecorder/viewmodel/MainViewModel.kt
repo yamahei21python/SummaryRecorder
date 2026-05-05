@@ -79,10 +79,6 @@ class MainViewModel @Inject constructor(
         val hasChunks = _uiState.value.chunks.isNotEmpty()
         _uiState.update { it.copy(isRecording = false, isLoading = hasChunks) }
         recordingController.stopRecording()
-
-        if (!hasChunks) {
-            _uiState.update { it.copy(isLoading = false) }
-        }
     }
 
     private fun observeChunks(sessionId: String) {
