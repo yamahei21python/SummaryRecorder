@@ -9,8 +9,8 @@ class DummyAudioProviderLargeFileTest {
 
     @Test
     fun `loop with large audio data works correctly`() {
-        // 2MBのダミーデータ (mark/resetの1MB制限を超えるサイズ)
-        val largeData = ByteArray(2 * 1024 * 1024) { it.toByte() }
+        // 1.1MBのダミーデータ (mark/resetの1MB制限を超えるサイズ)
+        val largeData = ByteArray(1126 * 1024) { it.toByte() }
         val provider = DummyAudioProvider(ByteArrayInputStream(largeData))
 
         provider.start()
