@@ -1,34 +1,38 @@
 package com.kohei.summaryrecorder.service
 
-import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [31], manifest = Config.NONE)
+@Config(sdk = [33], application = HiltTestApplication::class)
 class RecordingServiceDestroyFinalizationTest {
+
+    @get:Rule
+    val hiltRule = HiltAndroidRule(this)
 
     private lateinit var controller: ServiceController<RecordingService>
     private lateinit var service: RecordingService
-    private lateinit var tempDir: File
+    private lateinit var tempDir: java.io.File
 
     @Before
     fun setUp() {
+        hiltRule.inject()
         tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("test_finalization").also { it.mkdirs() }
 
-        // create() + attach() でonCreateが呼ばれ、Hilt依存が注入される
         controller = Robolectric.buildService(RecordingService::class.java)
         service = controller.create().get()
     }

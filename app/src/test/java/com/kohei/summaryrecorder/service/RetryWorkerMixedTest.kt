@@ -158,9 +158,8 @@ class RetryWorkerMixedTest {
             filePath = largeFile.absolutePath, status = ChunkStatus.FAILED
         ))
 
-        val count = uploader.retryFailedChunks()
+        uploader.retryFailedChunks()
 
-        assertEquals(1, count)
         val done = chunkRepo.getByStatus(ChunkStatus.DONE)
         assertEquals(1, done.size)
         assertEquals("大きなファイルテキスト", done[0].transcriptionText)

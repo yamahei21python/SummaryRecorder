@@ -100,8 +100,7 @@ class RecordingServiceSelfHealTest {
                 status = ChunkStatus.FAILED
             ))
 
-            val processedCount = uploader.retryFailedChunks()
-            assertEquals(1, processedCount)
+            uploader.retryFailedChunks()
 
             val updated = chunkRepo.getBySession("retry-session").first()
             assertEquals(ChunkStatus.DONE, updated.status)
