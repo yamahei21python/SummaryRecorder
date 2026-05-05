@@ -77,21 +77,20 @@ class MainViewModel @Inject constructor(
     private fun observeChunks(sessionId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
+            val isRecordingFlow = _uiState.map { it.isRecording }.distinctUntilChanged()
+            
             chunkRepository.getChunksFlow(sessionId)
-                .map { chunks ->
+                .combine(isRecordingFlow) { chunks, isRecording ->
                     val items = chunks.map { it.toUiItem() }
-                    // すべてのチャンクが最終状態（DONE or FAILED）になったかを確認
                     val allTerminal = chunks.isNotEmpty() && chunks.all { 
                         it.status == ChunkStatus.DONE || it.status == ChunkStatus.FAILED 
                     }
-                    items to allTerminal
+                    Triple(items, allTerminal, isRecording)
                 }
                 .distinctUntilChanged()
-                .collect { (items, allTerminal) ->
+                .collect { (items, allTerminal, isRecording) ->
                     _uiState.update { it.copy(chunks = items) }
                     
-                    val isRecording = _uiState.value.isRecording
-
                     if (!isRecording && (allTerminal || items.isEmpty())) {
                         _uiState.update { it.copy(isLoading = false) }
                     }
