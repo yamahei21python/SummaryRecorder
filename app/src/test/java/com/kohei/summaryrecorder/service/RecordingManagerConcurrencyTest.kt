@@ -35,7 +35,7 @@ class RecordingManagerConcurrencyTest {
                 // RecordingManager.onChunkRecorded と同等の処理が走ることを期待
                 val entity = ChunkEntity(sessionId = "session-1", chunkIndex = i, filePath = "path$i.wav", status = ChunkStatus.PENDING)
                 mockRepo.insert(entity)
-                mockUploader.uploadChunk(any())
+                mockUploader.uploadChunk(entity)
             }
         }
         
