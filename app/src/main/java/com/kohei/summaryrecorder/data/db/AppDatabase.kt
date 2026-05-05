@@ -4,22 +4,41 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [ChunkEntity::class],
-    version = 1,
+    entities = [ChunkEntity::class, SummaryEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun chunkDao(): ChunkDao
+    abstract fun summaryDao(): SummaryDao
 
     companion object {
         const val DB_NAME = "summary_recorder.db"
 
-        /**
-         * テスト用: inMemoryインスタンスを生成
-         */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS summaries (
+                        session_id TEXT NOT NULL PRIMARY KEY,
+                        created_at INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        summary_text TEXT NOT NULL,
+                        transcription_text TEXT NOT NULL,
+                        audio_file_path TEXT NOT NULL,
+                        duration_ms INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        is_read INTEGER NOT NULL DEFAULT 0,
+                        error_message TEXT DEFAULT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun createInMemory(context: Context): AppDatabase {
             return Room.inMemoryDatabaseBuilder(
                 context.applicationContext,
