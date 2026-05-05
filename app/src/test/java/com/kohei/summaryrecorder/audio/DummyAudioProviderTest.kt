@@ -235,4 +235,52 @@ class DummyAudioProviderTest {
 
         provider.release()
     }
+
+    // B5: 奇数バイト端数テスト
+
+    @Test
+    fun `read odd byte count - no data loss`() {
+        // 5byte PCMデータ（2short + 1byte余り）を含むWAV
+        val baos = ByteArrayOutputStream()
+        baos.write(ByteArray(44)) // dummy WAV header
+        baos.write(byteArrayOf(0x01, 0x00, 0x02, 0x00, 0x03)) // 5 bytes = 2 short + 1 余り
+
+        val provider = DummyAudioProvider(
+            inputStream = ByteArrayInputStream(baos.toByteArray()),
+            loop = false
+        )
+        provider.start()
+
+        val buffer = ShortArray(10)
+        val read = provider.read(buffer, 4)
+        // 5byte読込 → alignedBytes=4 → shortsRead=2
+        assertEquals(2, read)
+        assertEquals(0x0001.toShort(), buffer[0])
+        assertEquals(0x0002.toShort(), buffer[1])
+
+        provider.stop()
+        provider.release()
+    }
+
+    @Test
+    fun `read single byte data returns 0`() {
+        // 1byte PCMデータを含むWAV
+        val baos = ByteArrayOutputStream()
+        baos.write(ByteArray(44)) // dummy WAV header
+        baos.write(byteArrayOf(0xFF.toByte())) // 1 byte only
+
+        val provider = DummyAudioProvider(
+            inputStream = ByteArrayInputStream(baos.toByteArray()),
+            loop = false
+        )
+        provider.start()
+
+        val buffer = ShortArray(10)
+        val read = provider.read(buffer, 4)
+        // 1byte読込 → alignedBytes=0 → 戻り値=0
+        assertEquals(0, read)
+
+        provider.stop()
+        provider.release()
+    }
 }

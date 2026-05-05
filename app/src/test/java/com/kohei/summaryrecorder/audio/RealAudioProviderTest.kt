@@ -55,9 +55,12 @@ class RealAudioProviderTest {
 
         mockkConstructor(AudioRecord::class)
         every { anyConstructed<AudioRecord>().state } returns AudioRecord.STATE_UNINITIALIZED
+        every { anyConstructed<AudioRecord>().release() } returns Unit
 
         val result = provider.start()
         assertFalse(result)
+        // B6: 初期化失敗時にrelease()が呼ばれることを検証
+        verify(exactly = 1) { anyConstructed<AudioRecord>().release() }
     }
 
     @Test

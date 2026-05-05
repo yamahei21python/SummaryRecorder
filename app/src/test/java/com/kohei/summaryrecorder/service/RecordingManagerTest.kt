@@ -87,10 +87,11 @@ class RecordingManagerTest {
         val manager = RecordingManager(mockRepo, mockUploader, testScope)
         manager.startRecording("sess", tempDir, 1024L, noopProvider)
 
-        // recorder != null をリフレクションで確認
-        val recorderField = RecordingManager::class.java.getDeclaredField("recorder")
+        // recorderRef != null をリフレクションで確認
+        val recorderField = RecordingManager::class.java.getDeclaredField("recorderRef")
         recorderField.isAccessible = true
-        assertNotNull(recorderField.get(manager))
+        val ref = recorderField.get(manager) as java.util.concurrent.atomic.AtomicReference<*>
+        assertNotNull(ref.get())
     }
 
     @Test
@@ -99,9 +100,10 @@ class RecordingManagerTest {
         manager.startRecording("sess", tempDir, 1024L, noopProvider)
         manager.stopRecording()
 
-        val recorderField = RecordingManager::class.java.getDeclaredField("recorder")
+        val recorderField = RecordingManager::class.java.getDeclaredField("recorderRef")
         recorderField.isAccessible = true
-        assertNull(recorderField.get(manager))
+        val ref = recorderField.get(manager) as java.util.concurrent.atomic.AtomicReference<*>
+        assertNull(ref.get())
     }
 
     // ===== onChunkRecorded 正常系 =====

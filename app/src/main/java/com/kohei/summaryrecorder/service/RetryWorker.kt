@@ -16,8 +16,7 @@ class RetryWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        uploader.retryFailedChunks()
-        val remainingFailedCount = uploader.getFailedChunkCount()
+        val remainingFailedCount = uploader.retryFailedChunks()
         return if (remainingFailedCount > 0) Result.retry() else Result.success()
     }
 }

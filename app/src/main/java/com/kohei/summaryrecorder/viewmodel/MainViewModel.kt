@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkEntity
@@ -18,8 +19,14 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val chunkRepository: ChunkRepository,
     private val summarizeUseCase: SummarizeUseCase,
-    private val recordingController: RecordingController
+    private val recordingController: RecordingController,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    companion object {
+        private const val KEY_SUMMARIZED = "summarized"
+        private const val KEY_SESSION_ID = "session_id"
+    }
 
     data class UiState(
         val isRecording: Boolean = false,
@@ -40,7 +47,9 @@ class MainViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var observeJob: Job? = null
-    private var summarized = false
+    private var summarized: Boolean
+        get() = savedStateHandle[KEY_SUMMARIZED] ?: false
+        set(value) { savedStateHandle[KEY_SUMMARIZED] = value }
 
     fun startRecording() {
         // 二重起動防止
@@ -48,6 +57,7 @@ class MainViewModel @Inject constructor(
         
         val sessionId = UUID.randomUUID().toString()
         summarized = false
+        savedStateHandle[KEY_SESSION_ID] = sessionId
         
         _uiState.update {
             it.copy(
@@ -66,10 +76,11 @@ class MainViewModel @Inject constructor(
     fun stopRecording() {
         if (!_uiState.value.isRecording) return
 
-        _uiState.update { it.copy(isRecording = false, isLoading = true) }
+        val hasChunks = _uiState.value.chunks.isNotEmpty()
+        _uiState.update { it.copy(isRecording = false, isLoading = hasChunks) }
         recordingController.stopRecording()
 
-        if (_uiState.value.chunks.isEmpty()) {
+        if (!hasChunks) {
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -77,25 +88,22 @@ class MainViewModel @Inject constructor(
     private fun observeChunks(sessionId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            val isRecordingFlow = _uiState.map { it.isRecording }.distinctUntilChanged()
-            
             chunkRepository.getChunksFlow(sessionId)
-                .combine(isRecordingFlow) { chunks, isRecording ->
+                .collect { chunks ->
                     val items = chunks.map { it.toUiItem() }
-                    val allTerminal = chunks.isNotEmpty() && chunks.all { 
-                        it.status == ChunkStatus.DONE || it.status == ChunkStatus.FAILED 
+                    val allDone = chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
+                    val allTerminal = chunks.isNotEmpty() && chunks.all {
+                        it.status == ChunkStatus.DONE || it.status == ChunkStatus.FAILED
                     }
-                    Triple(items, allTerminal, isRecording)
-                }
-                .distinctUntilChanged()
-                .collect { (items, allTerminal, isRecording) ->
+
                     _uiState.update { it.copy(chunks = items) }
-                    
-                    if (!isRecording && (allTerminal || items.isEmpty())) {
+
+                    val recording = _uiState.value.isRecording
+                    if (!recording && (allTerminal || items.isEmpty())) {
                         _uiState.update { it.copy(isLoading = false) }
                     }
 
-                    if (!isRecording && allTerminal && !summarized) {
+                    if (!recording && allDone && !summarized) {
                         summarized = true
                         summarizeAll(sessionId)
                     }

@@ -51,7 +51,9 @@ class DummyAudioProvider(
         
         if (readBytes <= 0) return -1
 
-        val shortsRead = readBytes / 2
+        val alignedBytes = readBytes - (readBytes % 2)
+        if (alignedBytes == 0) return 0
+        val shortsRead = alignedBytes / 2
         ByteBuffer.wrap(tempBuffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(buffer, 0, shortsRead)
         return shortsRead
     }

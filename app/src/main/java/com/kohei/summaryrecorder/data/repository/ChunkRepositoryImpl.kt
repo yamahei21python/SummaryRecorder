@@ -17,9 +17,10 @@ class ChunkRepositoryImpl @Inject constructor(
         dao.countByStatus(sessionId, status)
     override suspend fun updateStatus(id: Long, newStatus: ChunkStatus, text: String?, now: Long) =
         dao.updateStatus(id, newStatus, text, now)
+    override suspend fun casToUploading(id: Long, now: Long): Int = dao.casToUploading(id, now)
+    override suspend fun casToFailed(id: Long, now: Long): Int = dao.casToFailed(id, now)
     override suspend fun deleteBySession(sessionId: String) = dao.deleteBySession(sessionId)
     override suspend fun deleteById(id: Long) = dao.deleteById(id)
     override suspend fun resetStuckUploads(now: Long) = dao.resetStuckUploads(now)
     override fun observeBySession(sessionId: String): Flow<List<ChunkEntity>> = dao.observeBySession(sessionId)
-    override fun getChunksFlow(sessionId: String): Flow<List<ChunkEntity>> = dao.observeBySession(sessionId)
 }

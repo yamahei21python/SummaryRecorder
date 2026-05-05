@@ -14,12 +14,15 @@ class TranscriptionUploader @Inject constructor(
 ) {
 
     suspend fun uploadChunk(chunk: ChunkEntity): Result<String> {
-        chunkRepository.updateStatus(chunk.id, ChunkStatus.UPLOADING)
+        val casResult = chunkRepository.casToUploading(chunk.id)
+        if (casResult == 0) {
+            return Result.failure(IllegalStateException("Chunk ${chunk.id} already being processed"))
+        }
         val file = File(chunk.filePath)
         val result = try {
             transcriptionProvider.transcribe(file)
         } catch (e: Exception) {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            chunkRepository.casToFailed(chunk.id)
             return Result.failure(e)
         }
         return if (result.isSuccess) {
@@ -34,26 +37,22 @@ class TranscriptionUploader @Inject constructor(
         }
     }
 
+    /**
+     * 失敗チャンクを再アップロード。残失敗数を返す。
+     */
     suspend fun retryFailedChunks(): Int {
         val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
-        var processedCount = 0
 
         failedChunks.forEach { chunk ->
             val file = File(chunk.filePath)
             if (!file.exists()) {
-                // ファイル欠損: 当該チャンクのみ削除。セッション全体は維持。
                 chunkRepository.deleteById(chunk.id)
                 return@forEach
             }
 
-            if (uploadChunk(chunk).isSuccess) {
-                processedCount++
-            }
+            uploadChunk(chunk)
         }
 
-        return processedCount
+        return chunkRepository.getByStatus(ChunkStatus.FAILED).size
     }
-
-    suspend fun getFailedChunkCount(): Int =
-        chunkRepository.getByStatus(ChunkStatus.FAILED).size
 }

@@ -1,22 +1,20 @@
 package com.kohei.summaryrecorder.di
 
+import android.content.Context
+import android.content.res.AssetManager
 import com.kohei.summaryrecorder.audio.DebugConfig
+import com.kohei.summaryrecorder.audio.DummyAudioProvider
+import com.kohei.summaryrecorder.audio.RealAudioProvider
+import io.mockk.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
+import java.io.FileNotFoundException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * DebugModeHolder / ChunkSize: デバッグモード反映検証。
- *
- * 検証項目:
- * - DebugModeHolder: debugMode=true → isDebugMode=true
- * - DebugModeHolder: debugMode=false → isDebugMode=false
- * - ChunkSize: デバッグモード時 → DEBUG_CHUNK_BYTES
- * - ChunkSize: 本番モード時 → PRODUCTION_CHUNK_BYTES
- */
 class ConfigModuleTest {
 
     @BeforeEach
@@ -27,34 +25,44 @@ class ConfigModuleTest {
     @AfterEach
     fun tearDown() {
         DebugConfig.debugMode = false
+        unmockkAll()
     }
-
-
 
     @Test
     fun `ChunkSize returns debug bytes when debugMode`() {
         DebugConfig.debugMode = true
-        val chunkSize = ConfigModule.provideChunkSize()
+        val chunkSize = ConfigModule.provideChunkSize(true)
         assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, chunkSize.bytes)
     }
 
     @Test
     fun `ChunkSize returns production bytes when not debugMode`() {
         DebugConfig.debugMode = false
-        val chunkSize = ConfigModule.provideChunkSize()
+        val chunkSize = ConfigModule.provideChunkSize(false)
         assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, chunkSize.bytes)
     }
 
+    // B7: assets ファイル欠落時テスト
     @Test
-    fun `ChunkSize value reflects runtime debugMode change`() {
-        DebugConfig.debugMode = false
-        val chunkSize = ConfigModule.provideChunkSize()
-
-        // 本番モード
-        assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, chunkSize.bytes)
-
-        // ランタイム切替
+    fun `provideAudioProvider debugMode missing asset returns DummyWithEmptyData`() {
         DebugConfig.debugMode = true
-        assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, chunkSize.bytes)
+        val mockContext = mockk<Context>()
+        val mockAssets = mockk<AssetManager>()
+        every { mockContext.assets } returns mockAssets
+        every { mockAssets.open("dummy_audio.wav") } throws FileNotFoundException("not found")
+
+        val provider = ConfigModule.provideAudioProvider(mockContext)
+
+        assertTrue(provider is DummyAudioProvider, "FileNotFoundException時はDummyAudioProviderが返ること")
+    }
+
+    @Test
+    fun `provideAudioProvider productionMode returns RealAudioProvider`() {
+        DebugConfig.debugMode = false
+        val mockContext = mockk<Context>()
+
+        val provider = ConfigModule.provideAudioProvider(mockContext)
+
+        assertTrue(provider is RealAudioProvider, "本番モードではRealAudioProviderが返ること")
     }
 }

@@ -110,4 +110,77 @@ class ChunkDaoStatusTest {
         assertEquals(1, dao.countByStatus(sessionId, ChunkStatus.PENDING))
         assertEquals(0, dao.countByStatus(sessionId, ChunkStatus.FAILED))
     }
+
+    // B3+R4: CAS原子性テスト
+
+    @Test
+    fun `casToUploading returns 1 when status is FAILED`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.FAILED
+        ))
+
+        val result = dao.casToUploading(id)
+        assertEquals(1, result)
+        assertEquals(ChunkStatus.UPLOADING, dao.getById(id)!!.status)
+    }
+
+    @Test
+    fun `casToUploading returns 1 when status is PENDING`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.PENDING
+        ))
+
+        val result = dao.casToUploading(id)
+        assertEquals(1, result)
+        assertEquals(ChunkStatus.UPLOADING, dao.getById(id)!!.status)
+    }
+
+    @Test
+    fun `casToUploading returns 0 when status is UPLOADING`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.UPLOADING
+        ))
+
+        val result = dao.casToUploading(id)
+        assertEquals(0, result)
+        assertEquals(ChunkStatus.UPLOADING, dao.getById(id)!!.status)
+    }
+
+    @Test
+    fun `casToUploading returns 0 when status is DONE`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.DONE
+        ))
+
+        val result = dao.casToUploading(id)
+        assertEquals(0, result)
+        assertEquals(ChunkStatus.DONE, dao.getById(id)!!.status)
+    }
+
+    @Test
+    fun `casToFailed returns 1 when status is UPLOADING`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.UPLOADING
+        ))
+
+        val result = dao.casToFailed(id)
+        assertEquals(1, result)
+        assertEquals(ChunkStatus.FAILED, dao.getById(id)!!.status)
+    }
+
+    @Test
+    fun `casToFailed returns 0 when status is FAILED`() = runTest {
+        val id = dao.insert(ChunkEntity(
+            sessionId = "s1", chunkIndex = 0,
+            filePath = "/a", status = ChunkStatus.FAILED
+        ))
+
+        val result = dao.casToFailed(id)
+        assertEquals(0, result)
+    }
 }

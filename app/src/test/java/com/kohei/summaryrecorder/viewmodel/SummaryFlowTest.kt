@@ -1,6 +1,7 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.kohei.summaryrecorder.data.db.ChunkEntity
@@ -33,6 +34,7 @@ class SummaryFlowTest {
     private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
+    private lateinit var savedStateHandle: SavedStateHandle
 
     @Before
     fun setUp() {
@@ -41,6 +43,7 @@ class SummaryFlowTest {
         summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
+        savedStateHandle = SavedStateHandle()
         every { chunkRepository.observeBySession(any()) } returns chunksFlow
         every { recordingController.startRecording(any()) } returns Unit
         every { recordingController.stopRecording() } returns Unit
@@ -68,19 +71,32 @@ class SummaryFlowTest {
         status = ChunkStatus.PENDING
     )
 
+    private fun createViewModel() = MainViewModel(
+        chunkRepository, summarizeUseCase, recordingController, savedStateHandle
+    )
+
     @Test
     fun `all done triggers summarize`() = runTest {
         coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約テキスト")
 
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
         val doneChunks = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1"),
             doneChunk(id = 2, index = 1, text = "テキスト2")
         )
+
+        // 録音中にDONEチャンクを流す
         chunksFlow.value = doneChunks
+        advanceUntilIdle()
+
+        // 録音停止
         viewModel.stopRecording()
+        advanceUntilIdle()
+
+        // stop後に再emit → isRecording=false + allDone で要約発火
+        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 1) }
         advanceUntilIdle()
 
         assertEquals("要約テキスト", viewModel.uiState.value.summary)
@@ -88,7 +104,7 @@ class SummaryFlowTest {
 
     @Test
     fun `partial done does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
         val partialChunks = listOf(
@@ -102,7 +118,7 @@ class SummaryFlowTest {
 
     @Test
     fun `empty chunks does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
         chunksFlow.value = emptyList()
@@ -116,13 +132,23 @@ class SummaryFlowTest {
             RuntimeException("API error")
         )
 
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
-        chunksFlow.value = listOf(
+        val doneChunks = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1")
         )
+
+        // 録音中にDONEチャンクを流す
+        chunksFlow.value = doneChunks
+        advanceUntilIdle()
+
+        // 録音停止
         viewModel.stopRecording()
+        advanceUntilIdle()
+
+        // stop後に再emit → isRecording=false + allDone で要約発火（失敗）
+        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 1) }
         advanceUntilIdle()
 
         val error = viewModel.uiState.value.error

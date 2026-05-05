@@ -21,13 +21,16 @@ class RealAudioProvider(
         val minBuf = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
         if (minBuf == AudioRecord.ERROR_BAD_VALUE || minBuf == AudioRecord.ERROR) return false
         val buf = maxOf(minBuf, bufferSize)
-        audioRecord = AudioRecord(
+        val record = AudioRecord(
             MediaRecorder.AudioSource.MIC, sampleRate,
             channelConfig, audioFormat, buf
-        ).also {
-            if (it.state != AudioRecord.STATE_INITIALIZED) return false
-            it.startRecording()
+        )
+        if (record.state != AudioRecord.STATE_INITIALIZED) {
+            record.release()
+            return false
         }
+        record.startRecording()
+        audioRecord = record
         return true
     }
 

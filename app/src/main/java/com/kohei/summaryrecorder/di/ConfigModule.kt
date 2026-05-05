@@ -17,6 +17,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Named
 import javax.inject.Singleton
 
 
@@ -31,9 +32,14 @@ object ConfigModule {
 
     @Provides
     @Singleton
-    fun provideChunkSize(): ChunkSize {
+    @Named("debugMode")
+    fun provideDebugMode(): Boolean = DebugConfig.debugMode
+
+    @Provides
+    @Singleton
+    fun provideChunkSize(@Named("debugMode") debugMode: Boolean): ChunkSize {
         return ChunkSize(bytesProvider = {
-            if (DebugConfig.debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+            if (debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
         })
     }
 
@@ -56,7 +62,13 @@ object ConfigModule {
         @ApplicationContext context: Context
     ): AudioProvider {
         return if (DebugConfig.debugMode) {
-            DummyAudioProvider(inputStream = context.assets.open("dummy_audio.wav"))
+            val stream = try {
+                context.assets.open("dummy_audio.wav")
+            } catch (e: Exception) {
+                android.util.Log.w("ConfigModule", "dummy_audio.wav not found, using empty data", e)
+                byteArrayOf().inputStream()
+            }
+            DummyAudioProvider(inputStream = stream)
         } else {
             com.kohei.summaryrecorder.audio.RealAudioProvider()
         }

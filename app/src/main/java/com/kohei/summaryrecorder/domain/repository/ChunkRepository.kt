@@ -10,6 +10,8 @@ interface ChunkRepository {
     suspend fun getByStatus(status: ChunkStatus): List<ChunkEntity>
     suspend fun countByStatus(sessionId: String, status: ChunkStatus): Int
     suspend fun updateStatus(id: Long, newStatus: ChunkStatus, text: String? = null, now: Long = System.currentTimeMillis())
+    suspend fun casToUploading(id: Long, now: Long = System.currentTimeMillis()): Int
+    suspend fun casToFailed(id: Long, now: Long = System.currentTimeMillis()): Int
     suspend fun deleteBySession(sessionId: String)
     suspend fun deleteById(id: Long)
     suspend fun resetStuckUploads(now: Long = System.currentTimeMillis())

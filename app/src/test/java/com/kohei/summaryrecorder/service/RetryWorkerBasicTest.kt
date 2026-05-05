@@ -124,4 +124,60 @@ class RetryWorkerBasicTest {
 
         assertEquals(1, chunkRepo.getByStatus(ChunkStatus.DONE).size)
     }
+
+    // R6: retryFailedChunks が残失敗数を返すことを検証
+
+    @Test
+    fun `retryFailedChunks returns remaining failed count - all succeed`() = runTest {
+        coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
+
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
+        val sessionId = "retry-return-001"
+
+        for (i in 0..1) {
+            val chunkFile = File(tempDir, "chunk_$i.wav").also { it.writeBytes(ByteArray(100)) }
+            chunkRepo.insert(ChunkEntity(
+                sessionId = sessionId, chunkIndex = i,
+                filePath = chunkFile.absolutePath, status = ChunkStatus.FAILED
+            ))
+        }
+
+        val remaining = uploader.retryFailedChunks()
+        assertEquals(0, remaining, "全件成功時は残失敗数0")
+    }
+
+    @Test
+    fun `retryFailedChunks returns remaining failed count - some fail`() = runTest {
+        val results = mutableListOf<Result<String>>()
+        results.add(Result.success("テキスト"))
+        results.add(Result.failure(java.io.IOException("fail")))
+        results.add(Result.failure(java.io.IOException("fail")))
+        val iter = results.iterator()
+        coEvery { mockProvider.transcribe(any<File>()) } answers { iter.next() }
+
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
+        val sessionId = "retry-return-002"
+
+        for (i in 0..2) {
+            val chunkFile = File(tempDir, "chunk_mix_$i.wav").also { it.writeBytes(ByteArray(100)) }
+            chunkRepo.insert(ChunkEntity(
+                sessionId = sessionId, chunkIndex = i,
+                filePath = chunkFile.absolutePath, status = ChunkStatus.FAILED
+            ))
+        }
+
+        val remaining = uploader.retryFailedChunks()
+        assertEquals(2, remaining, "2件失敗時は残失敗数2")
+    }
+
+    @Test
+    fun `retryFailedChunks returns 0 when no failed chunks`() = runTest {
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
+
+        val remaining = uploader.retryFailedChunks()
+        assertEquals(0, remaining)
+    }
 }

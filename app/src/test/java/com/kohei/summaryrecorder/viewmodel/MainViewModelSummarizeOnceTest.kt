@@ -1,6 +1,7 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
@@ -24,14 +25,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
-/**
- * Bug fix verify: summarizeAll多重呼出し防止（take(1)）
- *
- * observeChunks()内でallDoneフィルタ分岐にtake(1)がないと、
- * DB再更新等で同じセッションのチャンクが再emitされた際に
- * summarizeAllが複数回走るバグ。
- * take(1)で最初のallDone検知時に1回のみ実行するよう修正済。
- */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [31], application = Application::class)
 class MainViewModelSummarizeOnceTest {
@@ -40,6 +33,7 @@ class MainViewModelSummarizeOnceTest {
     private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
+    private lateinit var savedStateHandle: SavedStateHandle
 
     @Before
     fun setUp() {
@@ -48,6 +42,7 @@ class MainViewModelSummarizeOnceTest {
         summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
+        savedStateHandle = SavedStateHandle()
         every { chunkRepository.observeBySession(any()) } returns chunksFlow
         every { recordingController.startRecording(any()) } returns Unit
     }
@@ -66,40 +61,48 @@ class MainViewModelSummarizeOnceTest {
         transcriptionText = text
     )
 
+    private fun createViewModel() = MainViewModel(
+        chunkRepository, summarizeUseCase, recordingController, savedStateHandle
+    )
+
     @Test
     fun `summarizeAll is called exactly once even when chunks re-updated`() = runTest {
         coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約テキスト")
 
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
-        // 1回目: 全チャンクDONE
-        chunksFlow.value = listOf(
+        val doneChunks = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1"),
             doneChunk(id = 2, index = 1, text = "テキスト2")
         )
+
+        // 録音中にDONEチャンクを流す → isRecording=true なので要約は発火しない
+        chunksFlow.value = doneChunks
+        advanceUntilIdle()
+
+        // 録音停止
         viewModel.stopRecording()
         advanceUntilIdle()
-        
-        // UnconfinedTestDispatcherでも念のため完了を待機
-        val state1 = viewModel.uiState.value
-        assertEquals("要約テキスト", state1.summary)
 
+        // stopRecording後にchunksFlowを再emit → collect再発火、isRecording=false + allDone で要約
+        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 1) }
+        advanceUntilIdle()
+
+        assertEquals("要約テキスト", viewModel.uiState.value.summary)
         io.mockk.coVerify(exactly = 1) { summarizeUseCase.execute(any()) }
 
         // 2回目: 同じ内容を再emit（DB再更新をシミュレーション）
-        chunksFlow.value = listOf(
-            doneChunk(id = 1, index = 0, text = "テキスト1"),
-            doneChunk(id = 2, index = 1, text = "テキスト2")
-        )
+        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 2) }
+        advanceUntilIdle()
 
-        // まだ1回のみ — 2回目のsummarizeは発火しない
+        // まだ1回のみ — summarized=true でガード
         io.mockk.coVerify(exactly = 1) { summarizeUseCase.execute(any()) }
     }
 
     @Test
     fun `summarizeAll not called when chunks are not all done`() = runTest {
-        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+        val viewModel = createViewModel()
         viewModel.startRecording()
 
         chunksFlow.value = listOf(

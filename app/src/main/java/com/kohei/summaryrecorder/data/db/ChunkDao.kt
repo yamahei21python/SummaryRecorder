@@ -49,6 +49,20 @@ interface ChunkDao {
 
     @Query("""
         UPDATE chunks
+        SET status = 'UPLOADING', updated_at = :now
+        WHERE id = :id AND status IN ('FAILED', 'PENDING')
+    """)
+    suspend fun casToUploading(id: Long, now: Long = System.currentTimeMillis()): Int
+
+    @Query("""
+        UPDATE chunks
+        SET status = 'FAILED', updated_at = :now
+        WHERE id = :id AND status = 'UPLOADING'
+    """)
+    suspend fun casToFailed(id: Long, now: Long = System.currentTimeMillis()): Int
+
+    @Query("""
+        UPDATE chunks
         SET status = 'FAILED', updated_at = :now
         WHERE status = 'UPLOADING'
     """)

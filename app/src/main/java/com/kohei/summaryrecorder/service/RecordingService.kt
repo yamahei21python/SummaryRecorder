@@ -96,9 +96,7 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        // serviceScope をキャンセルして録音ループを停止
-        serviceScope.cancel()
-        // 同期的にファイナライズ処理（WAVヘッダー書込み等）を待機
+        // 先にファイナライズ（WAVヘッダー書込み等）→ その後にスコープキャンセル
         kotlinx.coroutines.runBlocking(Dispatchers.IO) {
             try {
                 kotlinx.coroutines.withTimeoutOrNull(2000L) {
@@ -108,6 +106,7 @@ class RecordingService : Service() {
                 android.util.Log.w("RecordingService", "Cleanup failed", e)
             }
         }
+        serviceScope.cancel()
         super.onDestroy()
     }
 

@@ -31,7 +31,7 @@ class RecordingServiceDestroyFinalizationTest {
     fun setUp() {
         tempDir = ApplicationProvider.getApplicationContext<android.content.Context>()
             .filesDir.resolve("test_finalization").also { it.mkdirs() }
-        
+
         controller = Robolectric.buildService(RecordingService::class.java)
         service = controller.get()
     }
@@ -44,18 +44,68 @@ class RecordingServiceDestroyFinalizationTest {
 
     @Test
     fun `onDestroy finalizes WAV header before returning`() = runTest {
-        // RecordingManagerをモックして、stopRecordingの終了をエミュレート
         val mockManager = mockk<RecordingManager>(relaxed = true)
-        
-        // Reflectionでモックを差し込み (DIのタイミングを避けるため)
+
         val field = RecordingService::class.java.getDeclaredField("recordingManager")
         field.isAccessible = true
         field.set(service, mockManager)
 
-        // onDestroyを呼び出し
         controller.destroy()
 
-        // stopRecordingが呼ばれたことを確認
+        coVerify(exactly = 1) { mockManager.stopRecording() }
+    }
+
+    @Test
+    fun `onDestroy calls stopRecording before scope cancel`() = runTest {
+        val mockManager = mockk<RecordingManager>(relaxed = true)
+        val callOrder = mutableListOf<String>()
+
+        coEvery { mockManager.stopRecording() } coAnswers {
+            callOrder.add("stopRecording")
+        }
+
+        val field = RecordingService::class.java.getDeclaredField("recordingManager")
+        field.isAccessible = true
+        field.set(service, mockManager)
+
+        controller.destroy()
+
+        // stopRecording が呼ばれたことを確認
+        coVerify(exactly = 1) { mockManager.stopRecording() }
+        assertEquals(listOf("stopRecording"), callOrder)
+    }
+
+    @Test
+    fun `onDestroy stopRecording completes within timeout`() = runTest {
+        val mockManager = mockk<RecordingManager>(relaxed = true)
+        // 1.5秒で完了するモック
+        coEvery { mockManager.stopRecording() } coAnswers {
+            delay(100)
+        }
+
+        val field = RecordingService::class.java.getDeclaredField("recordingManager")
+        field.isAccessible = true
+        field.set(service, mockManager)
+
+        // 例外なく完了すること
+        controller.destroy()
+        coVerify(exactly = 1) { mockManager.stopRecording() }
+    }
+
+    @Test
+    fun `onDestroy stopRecording timeout triggers graceful shutdown`() = runTest {
+        val mockManager = mockk<RecordingManager>(relaxed = true)
+        // ハングするモック（3秒）
+        coEvery { mockManager.stopRecording() } coAnswers {
+            delay(3000)
+        }
+
+        val field = RecordingService::class.java.getDeclaredField("recordingManager")
+        field.isAccessible = true
+        field.set(service, mockManager)
+
+        // 2秒タイムアウトで終了、例外はキャッチされる
+        controller.destroy()
         coVerify(exactly = 1) { mockManager.stopRecording() }
     }
 }

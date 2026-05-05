@@ -3,20 +3,20 @@ package com.kohei.summaryrecorder.service
 import android.util.Log
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import com.kohei.summaryrecorder.service.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.recorder.GaplessRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.atomic.AtomicReference
 
 class RecordingManager(
     private val chunkRepository: ChunkRepository,
     private val uploader: TranscriptionUploader,
     private val serviceScope: CoroutineScope
 ) {
-    private var recorder: GaplessRecorder? = null
+    private val recorderRef = AtomicReference<GaplessRecorder?>(null)
 
     suspend fun startRecording(
         sessionId: String,
@@ -24,7 +24,8 @@ class RecordingManager(
         chunkSizeBytes: Long,
         audioProvider: AudioProvider
     ) {
-        recorder = GaplessRecorder(
+        recorderRef.get()?.stop()
+        val recorder = GaplessRecorder(
             outputDir = outputDir,
             chunkSizeBytes = chunkSizeBytes,
             onChunkComplete = { chunkIndex, file ->
@@ -34,12 +35,13 @@ class RecordingManager(
             },
             audioProvider = audioProvider,
             coroutineScope = serviceScope
-        ).also { it.start() }
+        )
+        recorderRef.set(recorder)
+        recorder.start()
     }
 
     suspend fun stopRecording() {
-        recorder?.stop()
-        recorder = null
+        recorderRef.getAndSet(null)?.stop()
     }
 
     private suspend fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File) {
