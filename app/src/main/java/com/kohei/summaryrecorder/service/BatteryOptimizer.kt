@@ -44,7 +44,8 @@ object BatteryOptimizer {
     fun shouldRequestBatteryOptimization(context: Context): Boolean {
         return try {
             val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-            !pm.isIgnoringBatteryOptimizations(context.packageName)
+            val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
+            !isIgnoring
         } catch (_: Exception) {
             false
         }
