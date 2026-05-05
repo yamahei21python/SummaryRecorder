@@ -94,7 +94,7 @@ class GaplessRecorderRestartTest {
         val recorder1 = GaplessRecorder(
             tempDir, 1024L, { _, _ -> }, noopProvider, testScope
         )
-        recorder1.writeTestPcmData(ByteArray(50) { 0xAA })
+        recorder1.writeTestPcmData(ByteArray(50) { 0xAA.toByte() })
         recorder1.stopForTest()
 
         // ファイルクリア
