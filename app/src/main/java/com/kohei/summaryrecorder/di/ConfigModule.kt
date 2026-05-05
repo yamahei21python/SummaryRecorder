@@ -34,6 +34,7 @@ object ConfigModule {
     fun provideDebugModeHolder(): DebugModeHolder = DebugModeHolder()
 
     @Provides
+    @Singleton
     fun provideChunkSize(holder: DebugModeHolder): ChunkSize {
         return ChunkSize(
             bytes = if (holder.isDebugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES

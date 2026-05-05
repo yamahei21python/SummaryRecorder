@@ -26,6 +26,7 @@ class GaplessRecorder(
     private var currentBytesWritten = 0L
     private var isRecording = false
     private val writeBuffer = ByteBuffer.allocate(AudioConstants.READ_BUFFER * 2).order(ByteOrder.LITTLE_ENDIAN)
+    private val shortBuffer = writeBuffer.asShortBuffer()
 
     fun start() {
         if (!audioProvider.start()) {
@@ -63,10 +64,11 @@ class GaplessRecorder(
         isRecording = false
 
         audioProvider.stop()
-        audioProvider.release()
 
         recordingJob?.cancelAndJoin()
         recordingJob = null
+
+        audioProvider.release()
 
         mutex.withLock {
             finalizeCurrentChunk()
@@ -82,8 +84,8 @@ class GaplessRecorder(
 
     private fun writePcmData(buffer: ShortArray, readCount: Int) {
         val file = currentFile ?: return
-        writeBuffer.clear()
-        writeBuffer.asShortBuffer().put(buffer, 0, readCount)
+        shortBuffer.clear()
+        shortBuffer.put(buffer, 0, readCount)
         file.write(writeBuffer.array(), 0, readCount * 2)
         currentBytesWritten += readCount * 2L
     }
@@ -96,8 +98,12 @@ class GaplessRecorder(
             currentFile = null
 
             val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
-            if (file.exists() && dataLength > 0) {
-                onChunkComplete(currentChunkIndex, file)
+            if (dataLength > 0) {
+                if (file.exists()) {
+                    onChunkComplete(currentChunkIndex, file)
+                }
+            } else {
+                if (file.exists()) file.delete()
             }
         }
     }

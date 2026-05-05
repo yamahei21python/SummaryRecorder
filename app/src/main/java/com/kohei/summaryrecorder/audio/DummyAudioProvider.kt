@@ -52,7 +52,6 @@ class DummyAudioProvider(
         if (!headerSkipped) {
             if (pcmStart < 0) {
                 bufferedStream.mark(Int.MAX_VALUE)
-                @Suppress("KotlinConstantNowInFuture")
                 bufferedStream.skip(44)
                 pcmStart = 44
             }

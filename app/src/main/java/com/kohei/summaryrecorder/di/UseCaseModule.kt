@@ -1,6 +1,6 @@
 package com.kohei.summaryrecorder.di
 
-import com.kohei.summaryrecorder.data.repository.SummaryRepository
+import com.kohei.summaryrecorder.domain.provider.SummaryProvider
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
@@ -29,7 +29,7 @@ object UseCaseModule {
     @Singleton
     fun provideSummarizeUseCase(
         chunkRepository: ChunkRepository,
-        summaryRepo: SummaryRepository
+        summaryRepo: SummaryProvider
     ): SummarizeUseCase {
         return SummarizeUseCase(chunkRepository, summaryRepo)
     }

@@ -42,8 +42,9 @@ class TranscriptionUploader(
                 return@forEach
             }
 
-            val success = processTranscribeResult(chunk, updateUploading = true)
-            if (success) processedCount++
+            if (uploadChunk(chunk).isSuccess) {
+                processedCount++
+            }
         }
 
         return processedCount
@@ -51,30 +52,4 @@ class TranscriptionUploader(
 
     suspend fun getFailedChunkCount(): Int =
         chunkRepository.getByStatus(ChunkStatus.FAILED).size
-
-    private suspend fun processTranscribeResult(
-        chunk: ChunkEntity,
-        updateUploading: Boolean = false
-    ): Boolean {
-        val file = File(chunk.filePath)
-        if (updateUploading) {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-        }
-
-        val result = try {
-            transcriptionProvider.transcribe(file)
-        } catch (e: Exception) {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
-            return false
-        }
-
-        return if (result.isSuccess) {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
-            file.delete()
-            true
-        } else {
-            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
-            false
-        }
-    }
 }

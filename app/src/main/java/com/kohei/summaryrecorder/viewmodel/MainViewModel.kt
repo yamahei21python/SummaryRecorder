@@ -63,6 +63,7 @@ class MainViewModel @Inject constructor(
     private fun observeChunks(sessionId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
+            var summarized = false
             chunkRepository.observeBySession(sessionId)
                 .map { chunks ->
                     val items = chunks.map { it.toUiItem() }
@@ -70,18 +71,13 @@ class MainViewModel @Inject constructor(
                     items to allDone
                 }
                 .distinctUntilChanged()
-                .onEach { (items, _) ->
+                .collect { (items, allDone) ->
                     _uiState.update { it.copy(chunks = items) }
-                }
-                .also { flow ->
-                    // 全チャンクDONEを検知した時のみ1回summarize。observeは継続。
-                    launch {
-                        flow.filter { (_, allDone) -> allDone }
-                            .take(1)
-                            .collect { summarizeAll(sessionId) }
+                    if (allDone && !summarized) {
+                        summarized = true
+                        launch { summarizeAll(sessionId) }
                     }
                 }
-                .collect {}
         }
     }
 

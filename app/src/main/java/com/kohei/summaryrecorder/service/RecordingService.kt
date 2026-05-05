@@ -99,13 +99,15 @@ class RecordingService : Service() {
                 )
             }
             ACTION_STOP -> {
-                serviceScope.launch { recordingManager.stopRecording() }
-                updateNotification("文字起こし処理中...")
-                stopForeground(STOP_FOREGROUND_DETACH)
-                stopSelf()
+                serviceScope.launch {
+                    recordingManager.stopRecording()
+                    updateNotification("文字起こし処理中...")
+                    stopForeground(STOP_FOREGROUND_DETACH)
+                    stopSelf()
+                }
             }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
