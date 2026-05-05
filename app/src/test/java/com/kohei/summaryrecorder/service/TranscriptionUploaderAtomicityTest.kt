@@ -8,12 +8,17 @@ import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TranscriptionUploaderAtomicityTest {
+
+    @get:Rule
+    val tempFolder = TemporaryFolder()
 
     private lateinit var mockRepo: ChunkRepository
     private lateinit var mockProvider: TranscriptionProvider
@@ -95,8 +100,9 @@ class TranscriptionUploaderAtomicityTest {
 
     @Test
     fun `retryFailedChunks skips already processing chunks`() = runTest {
-        // chunk1: FAILED, chunk2: UPLOADING (getByStatus は FAILED のみ返す)
-        val chunk1 = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = "/exists.wav", status = ChunkStatus.FAILED)
+        // 実ファイル作成（file.exists() チェック通過のため）
+        val realFile = tempFolder.newFile("exists.wav")
+        val chunk1 = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.FAILED)
 
         coEvery { mockRepo.getByStatus(ChunkStatus.FAILED) } returns listOf(chunk1)
         coEvery { mockRepo.casToUploading(1L, any()) } returns 1
