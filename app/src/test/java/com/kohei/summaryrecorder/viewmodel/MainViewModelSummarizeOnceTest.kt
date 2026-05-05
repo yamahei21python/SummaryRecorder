@@ -1,8 +1,6 @@
 package com.kohei.summaryrecorder.viewmodel
 
-import android.app.Application
 import androidx.lifecycle.SavedStateHandle
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
@@ -21,12 +19,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [31], application = Application::class)
 class MainViewModelSummarizeOnceTest {
 
     private lateinit var chunkRepository: ChunkRepository

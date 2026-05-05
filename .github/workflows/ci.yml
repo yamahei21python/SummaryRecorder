@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  test-core:
     runs-on: ubuntu-latest
 
     steps:
@@ -42,15 +42,91 @@ jobs:
           echo "gemini.api.key=dummy_key_for_ci" >> local.properties
           echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
-      - name: Run unit tests
-        run: set -o pipefail && gradle testDebugUnitTest --stacktrace 2>&1 | tee test-output.txt
+      - name: Run core tests (non-Robolectric)
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelEdgeTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
+            --tests "com.kohei.summaryrecorder.recorder.*" \
+            --tests "com.kohei.summaryrecorder.audio.DummyAudioProvider*" \
+            --tests "com.kohei.summaryrecorder.data.api.*" \
+            --tests "com.kohei.summaryrecorder.data.repository.SummaryRepositoryPromptTest" \
+            --tests "com.kohei.summaryrecorder.data.repository.SummaryRepoTest" \
+            --tests "com.kohei.summaryrecorder.data.repository.TranscriptionRepoTest" \
+            --tests "com.kohei.summaryrecorder.di.ConfigModuleTest" \
+            --tests "com.kohei.summaryrecorder.usecase.*" \
+            --tests "com.kohei.summaryrecorder.service.RecordingManager*" \
+            --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderAtomicityTest" \
+            --stacktrace 2>&1 | tee test-core-output.txt
 
-      - name: Upload test results
+      - name: Upload core test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-core-results
           path: |
             app/build/reports/tests/
             app/build/test-results/
-            test-output.txt
+            test-core-output.txt
+
+  test-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: gradle-
+
+      - name: Create local.properties
+        run: |
+          echo "groq.api.key=dummy_key_for_ci" > local.properties
+          echo "gemini.api.key=dummy_key_for_ci" >> local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> local.properties
+
+      - name: Run Robolectric tests
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest \
+            --tests "com.kohei.summaryrecorder.data.db.*" \
+            --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteByIdTest" \
+            --tests "com.kohei.summaryrecorder.service.RecordingService*" \
+            --tests "com.kohei.summaryrecorder.service.RetryWorker*" \
+            --tests "com.kohei.summaryrecorder.service.BatteryOptimizerTest" \
+            --tests "com.kohei.summaryrecorder.service.ServiceRecordingControllerTest" \
+            --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderDeleteScopeTest" \
+            --tests "com.kohei.summaryrecorder.audio.RealAudioProviderTest" \
+            --tests "com.kohei.summaryrecorder.di.ConfigModuleSingletonTimingTest" \
+            --stacktrace 2>&1 | tee test-android-output.txt
+
+      - name: Upload Robolectric test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-android-results
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            test-android-output.txt
