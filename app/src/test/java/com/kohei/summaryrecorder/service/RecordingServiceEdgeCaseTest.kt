@@ -114,22 +114,18 @@ class RecordingServiceEdgeCaseTest {
         val mockManager = mockk<RecordingManager>(relaxed = true)
         // Simulate a long-running stopRecording
         coEvery { mockManager.stopRecording() } coAnswers {
-            kotlinx.coroutines.delay(10000L)
+            kotlinx.coroutines.delay(30000L) // Longer than the 10s timeout
         }
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
         recordingManagerField.set(service, mockManager)
 
-        // onDestroy uses runBlocking + withTimeoutOrNull(2000L).
-        // In Robolectric/runTest, we need to be careful with real vs virtual time.
-        // We just want to ensure it doesn't crash and returns within a reasonable real time.
+        // onDestroy uses runBlocking + withTimeoutOrNull(10000L).
         val startTime = System.currentTimeMillis()
         serviceController.destroy()
         val elapsed = System.currentTimeMillis() - startTime
         
-        // Timeout is 2000ms. So it should take at least ~2000ms real time if it waits,
-        // OR it might return immediately if virtual time advances.
-        // The important thing is it DOES return and doesn't wait 10000ms.
-        assertTrue(elapsed < 5000L, "destroy took too long: $elapsed ms")
+        // Timeout is 10000ms.
+        assertTrue(elapsed < 15000L, "destroy took too long: $elapsed ms")
     }
 }
