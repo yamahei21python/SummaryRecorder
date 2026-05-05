@@ -28,7 +28,7 @@ import java.util.UUID
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [33])
+@Config(sdk = [33], application = android.app.Application::class)
 class RecordingServiceEdgeCaseTest {
 
 
