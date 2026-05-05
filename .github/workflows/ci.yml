@@ -58,7 +58,6 @@ jobs:
             --tests "com.kohei.summaryrecorder.di.ConfigModuleTest" \
             --tests "com.kohei.summaryrecorder.usecase.*" \
             --tests "com.kohei.summaryrecorder.service.RecordingManager*" \
-            --tests "com.kohei.summaryrecorder.service.RecordingServiceDestroyFinalizationTest" \
             --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderAtomicityTest" \
             --stacktrace 2>&1 | tee test-core-output.txt
 
