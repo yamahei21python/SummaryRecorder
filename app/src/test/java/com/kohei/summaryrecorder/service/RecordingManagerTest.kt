@@ -10,6 +10,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,7 +53,6 @@ class RecordingManagerTest {
     @AfterEach
     fun tearDown() {
         unmockkStatic(android.util.Log::class)
-        unmockkAll()
     }
 
     /** 指定バイト数分のPCMデータを提供後、即終了するAudioProvider */
