@@ -46,8 +46,8 @@ class RecordingManagerTest {
     @BeforeEach
     fun setUp() {
         mockkStatic(android.util.Log::class)
+        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
         every { android.util.Log.w(any<String>(), any()) } returns 0
-        every { android.util.Log.w(any<String>(), any<Throwable>()) } returns 0
     }
 
     @AfterEach
