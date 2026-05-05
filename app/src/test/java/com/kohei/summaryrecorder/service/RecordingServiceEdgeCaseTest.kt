@@ -10,6 +10,9 @@ import com.kohei.summaryrecorder.di.ChunkSize
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -31,9 +34,13 @@ import kotlin.test.assertTrue
 import java.util.UUID
 import org.robolectric.Shadows.shadowOf
 
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = HiltTestApplication::class)
 class RecordingServiceEdgeCaseTest {
+    
+    @get:Rule
+    var hiltRule = HiltAndroidRule(this)
 
 
 
@@ -41,6 +48,7 @@ class RecordingServiceEdgeCaseTest {
 
     @Before
     fun setUp() {
+        hiltRule.inject()
         Dispatchers.setMain(UnconfinedTestDispatcher())
         context = ApplicationProvider.getApplicationContext()
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
