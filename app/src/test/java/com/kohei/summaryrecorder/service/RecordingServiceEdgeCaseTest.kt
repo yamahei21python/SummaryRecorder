@@ -1,4 +1,8 @@
 package com.kohei.summaryrecorder.service
+ 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+ 
+@OptIn(ExperimentalCoroutinesApi::class)
 
 import android.content.Context
 import android.content.Intent

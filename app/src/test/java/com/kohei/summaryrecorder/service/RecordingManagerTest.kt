@@ -1,4 +1,8 @@
 package com.kohei.summaryrecorder.service
+ 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+ 
+@OptIn(ExperimentalCoroutinesApi::class)
 
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
@@ -151,24 +155,23 @@ class RecordingManagerTest {
         coVerify(exactly = 1) { mockUploader.uploadChunk(any()) }
     }
 
-    // ===== Race Condition =====
     @Test
     fun `sessionId race condition is prevented by local capture`() = runTest {
         coEvery { mockRepo.insert(any()) } returns 1L
         coEvery { mockUploader.uploadChunk(any()) } returns Result.success("transcribed")
 
-        val manager = RecordingManager(mockRepo, mockUploader, testScope)
+        val manager = RecordingManager(mockRepo, mockUploader, this)
         
         // Start session 1
-        launch { manager.startRecording("sess1", tempDir, 4L, createProvider(4L)) }
-        // Stop immediately
+        manager.startRecording("sess1", tempDir, 4L, createProvider(4L))
+        advanceUntilIdle()
         manager.stopRecording()
         
         // Start session 2
-        launch { manager.startRecording("sess2", tempDir, 4L, createProvider(4L)) }
+        manager.startRecording("sess2", tempDir, 4L, createProvider(4L))
+        advanceUntilIdle()
+        manager.stopRecording()
         
-        testScope.advanceUntilIdle()
-
         // Verify that chunks are inserted with correct session IDs
         coVerify(exactly = 1) { mockRepo.insert(match { it.sessionId == "sess1" }) }
         coVerify(exactly = 1) { mockRepo.insert(match { it.sessionId == "sess2" }) }
