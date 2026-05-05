@@ -145,7 +145,7 @@ class MainViewModelEdgeTest {
         
         // Should update chunks
         assertEquals(1, viewModel.uiState.value.chunks.size)
-        assertEquals("新しいセッション", viewModel.uiState.value.chunks[0].transcriptionText)
+        assertEquals("新しいセッション", viewModel.uiState.value.chunks[0].transcription)
     }
 
     @Test

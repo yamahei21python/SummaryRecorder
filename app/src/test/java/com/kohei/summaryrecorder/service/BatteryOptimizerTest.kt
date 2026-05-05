@@ -30,11 +30,11 @@ class BatteryOptimizerTest {
         val shadowNotificationManager = shadowOf(notificationManager)
 
         // Verify channel creation
-        val channel = shadowNotificationManager.getNotificationChannel("battery_opt")
+        val channel = notificationManager.getNotificationChannel("battery_optimization_channel")
         assertNotNull(channel, "Battery optimization channel should be created")
 
         // Verify notification was shown
         val notifications = shadowNotificationManager.allNotifications
-        assertNotNull(notifications.find { it.channelId == "battery_opt" }, "Battery optimization notification should be shown")
+        assertNotNull(notifications.find { it.channelId == "battery_optimization_channel" }, "Battery optimization notification should be shown")
     }
 }

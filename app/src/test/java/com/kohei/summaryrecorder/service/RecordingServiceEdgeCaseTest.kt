@@ -70,7 +70,7 @@ class RecordingServiceEdgeCaseTest {
             // No session_id extra
         }
 
-        serviceController.startCommand(0, 1, intent)
+        serviceController.withIntent(intent).startCommand(0, 1)
 
         // Verify that a directory with a valid UUID was created
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
