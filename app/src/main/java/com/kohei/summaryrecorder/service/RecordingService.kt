@@ -7,9 +7,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.ServiceCompat
 import com.kohei.summaryrecorder.R
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.ChunkSize
@@ -83,7 +83,7 @@ class RecordingService : Service() {
 
                 startForeground(NOTIFICATION_ID, buildNotification("録音中..."),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        ServiceCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     } else {
                         0
                     }
