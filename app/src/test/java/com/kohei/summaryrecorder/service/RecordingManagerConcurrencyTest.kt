@@ -37,7 +37,7 @@ class RecordingManagerConcurrencyTest {
                     status = ChunkStatus.PENDING
                 )
                 mockRepo.insert(entity)
-                mockUploader.uploadChunk(any())
+                mockUploader.uploadChunk(entity)
             }
         }
         
