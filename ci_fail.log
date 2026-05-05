@@ -1,0 +1,646 @@
+test-core	Run core tests (non-Robolectric)	﻿2026-05-05T09:56:44.1905188Z ##[group]Run set -o pipefail
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1905787Z [36;1mset -o pipefail[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1906533Z [36;1mgradle testDebugUnitTest \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1907430Z [36;1m  --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelEdgeTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1908401Z [36;1m  --tests "com.kohei.summaryrecorder.recorder.*" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1909281Z [36;1m  --tests "com.kohei.summaryrecorder.audio.DummyAudioProvider*" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1910168Z [36;1m  --tests "com.kohei.summaryrecorder.data.api.*" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1911166Z [36;1m  --tests "com.kohei.summaryrecorder.data.repository.SummaryRepositoryPromptTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1912598Z [36;1m  --tests "com.kohei.summaryrecorder.data.repository.SummaryRepoTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1913849Z [36;1m  --tests "com.kohei.summaryrecorder.data.repository.TranscriptionRepoTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1914941Z [36;1m  --tests "com.kohei.summaryrecorder.di.ConfigModuleTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1915839Z [36;1m  --tests "com.kohei.summaryrecorder.usecase.*" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1916722Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingManager*" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1917869Z [36;1m  --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderAtomicityTest" \[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1918893Z [36;1m  --stacktrace 2>&1 | tee test-core-output.txt[0m
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1949671Z shell: /usr/bin/bash -e {0}
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1950188Z env:
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1950960Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1952654Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1953879Z   ANDROID_HOME: /usr/local/lib/android/sdk
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1976931Z   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1977598Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1978139Z   GRADLE_USER_HOME: /home/runner/.gradle
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1978661Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1979327Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1980382Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1981245Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1981827Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:44.1982705Z ##[endgroup]
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:56:46.3314457Z Starting a Gradle Daemon (subsequent builds will be faster)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:02.4464008Z > Task :app:preBuild UP-TO-DATE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:02.4473073Z > Task :app:preDebugBuild UP-TO-DATE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:02.5289784Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:02.6306726Z > Task :app:generateDebugBuildConfig FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:03.9284561Z > Task :app:generateDebugResValues FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.0323614Z > Task :app:checkDebugAarMetadata
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.0325363Z > Task :app:mapDebugSourceSetPaths
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.1318174Z > Task :app:generateDebugResources FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.4289489Z > Task :app:mergeDebugResources FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.4298201Z > Task :app:packageDebugResources FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.7304573Z > Task :app:parseDebugLocalResources FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.7326870Z > Task :app:createDebugCompatibleScreenManifests
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.8300285Z > Task :app:extractDeepLinksDebug FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:04.9298337Z > Task :app:processDebugMainManifest FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:05.0293919Z > Task :app:processDebugManifest FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:05.0302962Z > Task :app:processDebugManifestForPackage FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:05.4293488Z > Task :app:processDebugResources FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:07.3312787Z > Task :app:javaPreCompileDebug FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:07.3332846Z > Task :app:preDebugUnitTestBuild UP-TO-DATE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:07.3345885Z > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:19.2323562Z > Task :app:kspDebugKotlin
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:35.3474810Z > Task :app:compileDebugKotlin
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:39.3280826Z > Task :app:compileDebugJavaWithJavac
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:40.1287056Z > Task :app:hiltAggregateDepsDebug FROM-CACHE
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:43.8285227Z > Task :app:hiltJavaCompileDebug
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:43.9284732Z > Task :app:processDebugJavaRes
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:44.1304245Z > Task :app:bundleDebugClassesToCompileJar
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:44.4281228Z > Task :app:transformDebugClassesWithAsm
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:46.3314148Z > Task :app:bundleDebugClassesToRuntimeJar
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:48.8284303Z > Task :app:kspDebugUnitTestKotlin
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7313205Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7347468Z > Task :app:compileDebugUnitTestKotlin FAILED
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7350311Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:43:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7372830Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:60:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7394310Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:76:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7414294Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:123:26 Unresolved reference 'casToUploading'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7434145Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:135:26 Unresolved reference 'casToUploading'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7453824Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:147:26 Unresolved reference 'casToUploading'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7473352Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:159:26 Unresolved reference 'casToUploading'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7476592Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:171:26 Unresolved reference 'casToFailed'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7494374Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:183:26 Unresolved reference 'casToFailed'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7506612Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:73:32 Unresolved reference 'MockTranscriptionProvider'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7510360Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:80:33 Unresolved reference 'MockTranscriptionProvider'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7513927Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:87:32 Unresolved reference 'MockSummaryProvider'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7516553Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:94:33 Unresolved reference 'MockSummaryProvider'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7519191Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:64:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7521895Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:89:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7525700Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:107:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7528761Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceSelfHealTest.kt:70:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7533228Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceSelfHealTest.kt:156:13 Unresolved reference 'resetStuckUploads'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.7542286Z gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1777975010900.json
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8312986Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8393425Z FAILURE: Build failed with an exception.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8422511Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8472807Z * What went wrong:
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8560709Z Execution failed for task ':app:compileDebugUnitTestKotlin'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8615959Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8695545Z    > Compilation error. See log for more details
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8712563Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8712849Z * Try:
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8713503Z > Run with --info or --debug option to get more log output.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8714516Z > Run with --scan to get full insights.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8715279Z > Get more help at https://help.gradle.org.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8715675Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8715889Z * Exception is:
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8717229Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugUnitTestKotlin'.
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8719738Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8721765Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8723951Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8726387Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8728344Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8729926Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8731588Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8752478Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8755070Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8757597Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8760021Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8762467Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8764985Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8767848Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8770531Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8803082Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8805353Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8807572Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8810426Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8812782Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8814651Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8816769Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8858470Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8861827Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8864409Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8867022Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8870510Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8883787Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8885955Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8888030Z 	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8890264Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8892905Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8904748Z 	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8907184Z 	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8909866Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8933399Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8936455Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8939820Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8945067Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8947854Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8950556Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8984168Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8985895Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8987573Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8989971Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.8991705Z 	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9004562Z 	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9007402Z 	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9009827Z 	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9082868Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9085002Z 	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9087096Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9089621Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9092780Z 	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9095553Z 	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9098294Z 	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9101117Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9143681Z 	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9145697Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9147546Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9150722Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9157702Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9160463Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9182811Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9184243Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9186053Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9187812Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9189722Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9191890Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9193765Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9195452Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9197104Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9198937Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9201216Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9243610Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9246090Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9248140Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9249927Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9251645Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9253445Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9255046Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9273400Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9275297Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9276846Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9278151Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9279348Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9280498Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9302974Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9305479Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9307594Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9309730Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9311655Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9314120Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9315941Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9317877Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9319132Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9320414Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9321925Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9335146Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9336804Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9338823Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9340703Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9342762Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9344681Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9347116Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9349820Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9378281Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9381042Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9383867Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9385815Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9387903Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeAndStoreInCache(BuildCacheStep.java:145)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9389889Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$4(BuildCacheStep.java:101)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9412335Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$5(BuildCacheStep.java:101)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9413954Z 	at org.gradle.internal.Try$Success.map(Try.java:175)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9415354Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithCache(BuildCacheStep.java:85)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9416993Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$0(BuildCacheStep.java:74)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9418331Z 	at org.gradle.internal.Either$Left.fold(Either.java:115)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9419404Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9420722Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9422339Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9424211Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9426188Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9428044Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9429940Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9431888Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9453834Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9455926Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9458419Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9460825Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9464061Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9466743Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9469168Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9471154Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9493121Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9494404Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9495867Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9497506Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9499519Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9502200Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9504051Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9505632Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9507411Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9509268Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9511015Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9533240Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9535168Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9537559Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9539693Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9541808Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9544410Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9546629Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9548627Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9551044Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9574093Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9576844Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9579023Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9580732Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9588382Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9590008Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9591819Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9612459Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9615021Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9617488Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9620196Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9623189Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9625684Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9628238Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9631270Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9674073Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9676431Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9678968Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9681486Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9684262Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9686461Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9688657Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9690810Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9733457Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9735928Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9738160Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9740668Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9743635Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9746754Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9749482Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9792581Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9795550Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9798371Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9800712Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9802920Z 	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9805289Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9807597Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9809842Z 	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9811971Z 	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9854778Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9857429Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9860234Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9863662Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9865928Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9868037Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9870133Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9902926Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9905294Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9907863Z 	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9910608Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9913576Z 	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9915860Z 	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9917960Z 	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:46)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9920086Z 	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9934112Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9936796Z 	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9939000Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9940931Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9943091Z 	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9945215Z 	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9947623Z 	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9949948Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9977103Z 	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9979108Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9980856Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9983191Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9985825Z 	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9988474Z 	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:57.9991450Z 	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0021693Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0023833Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0026068Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0028301Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0030380Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0032266Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0033586Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0053966Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0056590Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0058874Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0060945Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0063269Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0065338Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0067360Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0069342Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0071225Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0093435Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0095450Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0097846Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0100288Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0101992Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0103907Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0105915Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0107998Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0110268Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0147199Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0148468Z 	... 2 more
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0148701Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0148716Z 
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0149012Z BUILD FAILED in 1m 13s
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.0149629Z 27 actionable tasks: 13 executed, 14 from cache
+test-core	Run core tests (non-Robolectric)	2026-05-05T09:57:58.5353969Z ##[error]Process completed with exit code 1.
+test-android	Run Robolectric tests	﻿2026-05-05T09:56:43.0368652Z ##[group]Run set -o pipefail
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0369062Z [36;1mset -o pipefail[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0369357Z [36;1mgradle testDebugUnitTest \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0369904Z [36;1m  --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0370572Z [36;1m  --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0371077Z [36;1m  --tests "com.kohei.summaryrecorder.data.db.*" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0371674Z [36;1m  --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteByIdTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0372372Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingServiceInitTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0372973Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingServiceFlowTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0373580Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingServiceIntentTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0374207Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingServiceSelfHealTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0374840Z [36;1m  --tests "com.kohei.summaryrecorder.service.RecordingServiceEdgeCaseTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0375387Z [36;1m  --tests "com.kohei.summaryrecorder.service.RetryWorker*" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0375908Z [36;1m  --tests "com.kohei.summaryrecorder.service.BatteryOptimizerTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0376509Z [36;1m  --tests "com.kohei.summaryrecorder.service.ServiceRecordingControllerTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0377190Z [36;1m  --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderDeleteScopeTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0378100Z [36;1m  --tests "com.kohei.summaryrecorder.audio.RealAudioProviderTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0378690Z [36;1m  --tests "com.kohei.summaryrecorder.di.ConfigModuleSingletonTimingTest" \[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0379237Z [36;1m  --stacktrace 2>&1 | tee test-android-output.txt[0m
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0401309Z shell: /usr/bin/bash -e {0}
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0401593Z env:
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0401955Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0402490Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0402932Z   ANDROID_HOME: /usr/local/lib/android/sdk
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0403276Z   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0403652Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0404216Z   GRADLE_USER_HOME: /home/runner/.gradle
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0404671Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0405333Z   GRADLE_BUILD_ACTION_CACHE_RESTORED: true
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0430363Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0431201Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0431825Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+test-android	Run Robolectric tests	2026-05-05T09:56:43.0432266Z ##[endgroup]
+test-android	Run Robolectric tests	2026-05-05T09:56:45.9178983Z Starting a Gradle Daemon (subsequent builds will be faster)
+test-android	Run Robolectric tests	2026-05-05T09:57:01.1248999Z > Task :app:preBuild UP-TO-DATE
+test-android	Run Robolectric tests	2026-05-05T09:57:01.1258146Z > Task :app:preDebugBuild UP-TO-DATE
+test-android	Run Robolectric tests	2026-05-05T09:57:01.1328928Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+test-android	Run Robolectric tests	2026-05-05T09:57:01.3158593Z > Task :app:generateDebugBuildConfig FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:02.3178803Z > Task :app:generateDebugResValues FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:02.4165617Z > Task :app:checkDebugAarMetadata
+test-android	Run Robolectric tests	2026-05-05T09:57:02.5188577Z > Task :app:mapDebugSourceSetPaths
+test-android	Run Robolectric tests	2026-05-05T09:57:02.5189826Z > Task :app:generateDebugResources FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:02.8149114Z > Task :app:mergeDebugResources FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:02.8153579Z > Task :app:packageDebugResources FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.2162997Z > Task :app:parseDebugLocalResources FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.2178759Z > Task :app:createDebugCompatibleScreenManifests
+test-android	Run Robolectric tests	2026-05-05T09:57:03.2180850Z > Task :app:extractDeepLinksDebug FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.4150940Z > Task :app:processDebugMainManifest FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.4168304Z > Task :app:processDebugManifest FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.4172958Z > Task :app:processDebugManifestForPackage FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:03.9168166Z > Task :app:processDebugResources FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:05.7151007Z > Task :app:javaPreCompileDebug FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:05.7188614Z > Task :app:preDebugUnitTestBuild UP-TO-DATE
+test-android	Run Robolectric tests	2026-05-05T09:57:05.7208465Z > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:17.6152524Z > Task :app:kspDebugKotlin
+test-android	Run Robolectric tests	2026-05-05T09:57:31.2148386Z > Task :app:compileDebugKotlin
+test-android	Run Robolectric tests	2026-05-05T09:57:34.8159580Z > Task :app:compileDebugJavaWithJavac
+test-android	Run Robolectric tests	2026-05-05T09:57:35.5150715Z > Task :app:hiltAggregateDepsDebug FROM-CACHE
+test-android	Run Robolectric tests	2026-05-05T09:57:38.7168783Z > Task :app:hiltJavaCompileDebug
+test-android	Run Robolectric tests	2026-05-05T09:57:38.8155411Z > Task :app:processDebugJavaRes
+test-android	Run Robolectric tests	2026-05-05T09:57:39.0148943Z > Task :app:bundleDebugClassesToCompileJar
+test-android	Run Robolectric tests	2026-05-05T09:57:39.2147516Z > Task :app:transformDebugClassesWithAsm
+test-android	Run Robolectric tests	2026-05-05T09:57:41.0158677Z > Task :app:bundleDebugClassesToRuntimeJar
+test-android	Run Robolectric tests	2026-05-05T09:57:43.6159916Z > Task :app:kspDebugUnitTestKotlin
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8207078Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8237634Z > Task :app:compileDebugUnitTestKotlin FAILED
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8259416Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:43:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8289630Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:60:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8329367Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoResetTest.kt:76:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8359314Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:123:26 Unresolved reference 'casToUploading'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8386269Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:135:26 Unresolved reference 'casToUploading'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8409297Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:147:26 Unresolved reference 'casToUploading'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8429612Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:159:26 Unresolved reference 'casToUploading'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8449222Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:171:26 Unresolved reference 'casToFailed'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8480069Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/data/db/ChunkDaoStatusTest.kt:183:26 Unresolved reference 'casToFailed'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8499603Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:73:32 Unresolved reference 'MockTranscriptionProvider'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8502695Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:80:33 Unresolved reference 'MockTranscriptionProvider'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8529381Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:87:32 Unresolved reference 'MockSummaryProvider'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8549449Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/di/ConfigModuleTest.kt:94:33 Unresolved reference 'MockSummaryProvider'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8569419Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:64:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8577280Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:89:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8599493Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceInitTest.kt:107:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8619674Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceSelfHealTest.kt:70:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.8639661Z e: file:///home/runner/work/SummaryRecorder/SummaryRecorder/app/src/test/java/com/kohei/summaryrecorder/service/RecordingServiceSelfHealTest.kt:156:13 Unresolved reference 'resetStuckUploads'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9184390Z gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1777975010656.json
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9207809Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9208461Z FAILURE: Build failed with an exception.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9232902Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9248365Z * What went wrong:
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9276391Z Execution failed for task ':app:compileDebugUnitTestKotlin'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9280855Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9321322Z    > Compilation error. See log for more details
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9327696Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9358052Z * Try:
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9378041Z > Run with --info or --debug option to get more log output.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9397965Z > Run with --scan to get full insights.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9407981Z > Get more help at https://help.gradle.org.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9437823Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9479191Z * Exception is:
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9511099Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugUnitTestKotlin'.
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9528729Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9548412Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9588765Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9609555Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9611789Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9628928Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9648883Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9701157Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9704891Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9748658Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9779492Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9809352Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9812465Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9839295Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9871521Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9918577Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9938534Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9964096Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9965963Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9969251Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9970999Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9972908Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9975054Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9977515Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9979597Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9981665Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9984078Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9986122Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9987912Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9989576Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9991047Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9993438Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+test-android	Run Robolectric tests	2026-05-05T09:57:50.9995814Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0013189Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0014753Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0016211Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0018178Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0019995Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0021800Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0023820Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0025661Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0027864Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0029688Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0031385Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0033242Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0035106Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0036966Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0038834Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0041386Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0043326Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0045034Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0063632Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0065966Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0083590Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0100490Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0109182Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0128478Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0148448Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0168886Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0174511Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0198662Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0209116Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0228673Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0248695Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0261203Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0278522Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0308426Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0309832Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0337277Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0338891Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0368759Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0388557Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0406109Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0440130Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0474127Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0479331Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0482044Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0484178Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0486096Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0487940Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0492864Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0494660Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeAndStoreInCache(BuildCacheStep.java:145)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0496396Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$4(BuildCacheStep.java:101)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0498368Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$5(BuildCacheStep.java:101)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0499548Z 	at org.gradle.internal.Try$Success.map(Try.java:175)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0500784Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithCache(BuildCacheStep.java:85)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0502371Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$0(BuildCacheStep.java:74)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0503574Z 	at org.gradle.internal.Either$Left.fold(Either.java:115)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0504709Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0506348Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0507765Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0509350Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0510941Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0512406Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0513905Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0515331Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0516641Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0518777Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0520909Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0523081Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0525247Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0527470Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0529457Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0531611Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0533456Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0534910Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0536283Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0538671Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0541115Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0543454Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0545462Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0547281Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0549521Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0551612Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0557955Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0559845Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0561582Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0563327Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0565004Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0566525Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0568521Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0570561Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0572131Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0574136Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0576444Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0579017Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0580875Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0582346Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0583754Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0585097Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0586599Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0588617Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0590546Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0592748Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0594984Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0597010Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0599077Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0600833Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0602631Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0604367Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0605929Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0610069Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0612365Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0614488Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0616285Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0618271Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0620080Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0621804Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0623574Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0625138Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0626893Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0628997Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0631114Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0633023Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0634925Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0637147Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0639120Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0640599Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0642221Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0643837Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0645513Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0647720Z 	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0649693Z 	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0651814Z 	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0653715Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0655258Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0656893Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0658738Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0660499Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0662050Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0663276Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0665084Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0667611Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0669544Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0671268Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0676017Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0678051Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0679826Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0681490Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0683151Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0684852Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0686703Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0689016Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0691169Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0692684Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0694044Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0695796Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0697778Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0699790Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0701898Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0703387Z 	... 2 more
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0703672Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0703774Z 
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0704067Z BUILD FAILED in 1m 7s
+test-android	Run Robolectric tests	2026-05-05T09:57:51.0704665Z 27 actionable tasks: 13 executed, 14 from cache
+test-android	Run Robolectric tests	2026-05-05T09:57:51.5304348Z ##[error]Process completed with exit code 1.

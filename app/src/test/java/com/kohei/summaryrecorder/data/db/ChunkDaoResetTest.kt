@@ -35,36 +35,30 @@ class ChunkDaoResetTest {
     }
 
     @Test
-    fun `resetStuckUploads converts UPLOADING to FAILED`() = runTest {
+    fun `resetStatusBulk converts UPLOADING and PENDING to FAILED`() = runTest {
         dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/a", status = ChunkStatus.UPLOADING))
-        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.UPLOADING))
+        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.PENDING))
         dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 2, filePath = "/c", status = ChunkStatus.DONE))
 
-        dao.resetStuckUploads()
+        // Repository level method was renamed to reflect DAO change or keeps old name but calls new DAO
+        // In ChunkRepositoryImpl: resetStuckUploads calls dao.resetStatusBulk(listOf(UPLOADING, PENDING), FAILED)
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING, ChunkStatus.PENDING), ChunkStatus.FAILED)
 
         val failed = dao.getByStatus(ChunkStatus.FAILED)
         assertEquals(2, failed.size)
 
         val uploading = dao.getByStatus(ChunkStatus.UPLOADING)
         assertEquals(0, uploading.size)
+        
+        val pending = dao.getByStatus(ChunkStatus.PENDING)
+        assertEquals(0, pending.size)
 
         // DONE は影響なし
         assertEquals(1, dao.getByStatus(ChunkStatus.DONE).size)
     }
 
     @Test
-    fun `resetStuckUploads does not affect PENDING or DONE`() = runTest {
-        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 0, filePath = "/a", status = ChunkStatus.PENDING))
-        dao.insert(ChunkEntity(sessionId = "s1", chunkIndex = 1, filePath = "/b", status = ChunkStatus.DONE))
-
-        dao.resetStuckUploads()
-
-        assertEquals(1, dao.getByStatus(ChunkStatus.PENDING).size)
-        assertEquals(1, dao.getByStatus(ChunkStatus.DONE).size)
-    }
-
-    @Test
-    fun `resetStuckUploads updates updatedAt timestamp`() = runTest {
+    fun `resetStatusBulk updates updatedAt timestamp`() = runTest {
         val id = dao.insert(ChunkEntity(
             sessionId = "s1", chunkIndex = 0,
             filePath = "/a", status = ChunkStatus.UPLOADING
@@ -73,7 +67,7 @@ class ChunkDaoResetTest {
 
         // 時間差を確保
         Thread.sleep(10)
-        dao.resetStuckUploads()
+        dao.resetStatusBulk(listOf(ChunkStatus.UPLOADING), ChunkStatus.FAILED)
 
         val afterReset = dao.getById(id)!!
         assertTrue(afterReset.updatedAt >= beforeReset)
