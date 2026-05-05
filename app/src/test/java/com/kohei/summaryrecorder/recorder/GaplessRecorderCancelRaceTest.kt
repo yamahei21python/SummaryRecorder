@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -70,8 +71,4 @@ class GaplessRecorderCancelRaceTest {
             assertEquals("RIFF", String(bytes, 0, 4))
         }
     }
-}
-    }
-
-
 }
