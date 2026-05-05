@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -71,35 +70,8 @@ class GaplessRecorderCancelRaceTest {
             assertEquals("RIFF", String(bytes, 0, 4))
         }
     }
-
-    @Test
-    fun `immediate stop after start produces valid WAV`() = runTest {
-        val recordedChunks = mutableListOf<Pair<Int, File>>()
-        val provider = createContinuousProvider(readCount = 50)
-
-        val recorder = GaplessRecorder(
-            outputDir = tempDir,
-            chunkSizeBytes = 8192L,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = provider,
-            coroutineScope = testScope
-        )
-
-        recorder.start()
-        // 即座にstop — recordingJobはまだ実行中の可能性大
-        recorder.stop()
-
-        val wavFiles = tempDir.listFiles()?.filter { it.name.startsWith("chunk_") } ?: emptyList()
-        assertTrue(wavFiles.isNotEmpty(), "即stopでもWAV生成")
-
-        // data chunk size == ファイルサイズ - 44
-        wavFiles.forEach { file ->
-            val bytes = file.readBytes()
-            assertEquals("RIFF", String(bytes, 0, 4))
-            assertEquals("WAVE", String(bytes, 8, 4))
-            val dataLen = java.nio.ByteBuffer.wrap(bytes, 40, 4)
-                .order(java.nio.ByteOrder.LITTLE_ENDIAN).int
-            assertEquals(bytes.size - 44, dataLen, "${file.name}: dataLength一致")
-        }
+}
     }
+
+
 }

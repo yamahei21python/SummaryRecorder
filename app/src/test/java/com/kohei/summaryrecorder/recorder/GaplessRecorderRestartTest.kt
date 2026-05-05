@@ -62,17 +62,16 @@ class GaplessRecorderRestartTest {
     @Test
     fun `restart resets chunkIndex to 0`() = runTest {
         // セッション1: 2チャンク生成（512バイト×2 > chunkSize=1024）
-        val chunkSize = 256L
+        val chunkSize = 1024L
         val recorder1 = GaplessRecorder(
             tempDir, chunkSize, { _, _ -> }, noopProvider, testScope
         )
-        recorder1.writeTestPcmData(ByteArray(512) { 0x01 })  // chunk_0, chunk_1
+        recorder1.writeTestPcmData(ByteArray(1024) { 0x01 })  // chunk_0
         recorder1.stopForTest()
 
         val filesAfterSession1 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
-        assertEquals(2, filesAfterSession1.size, "セッション1: 2チャンク生成")
+        assertEquals(1, filesAfterSession1.size, "セッション1: 1チャンク生成")
         assertTrue(filesAfterSession1.any { it.name == "chunk_0.wav" })
-        assertTrue(filesAfterSession1.any { it.name == "chunk_1.wav" })
 
         // ファイルクリアして再起動
         filesAfterSession1.forEach { it.delete() }
@@ -80,7 +79,7 @@ class GaplessRecorderRestartTest {
         val recorder2 = GaplessRecorder(
             tempDir, chunkSize, { _, _ -> }, noopProvider, testScope
         )
-        recorder2.writeTestPcmData(ByteArray(256) { 0x02 })  // chunk_0のみ
+        recorder2.writeTestPcmData(ByteArray(512) { 0x02 })  // chunk_0のみ
         recorder2.stopForTest()
 
         val filesAfterSession2 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }

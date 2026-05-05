@@ -7,7 +7,9 @@ import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,12 +43,15 @@ class RecordingManagerTest {
 
     @BeforeEach
     fun setUp() {
-        // リラックスモックは各テストで上書き可能
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.w(any<String>(), any()) } returns 0
+        every { android.util.Log.w(any<String>(), any<Throwable>()) } returns 0
     }
 
     @AfterEach
     fun tearDown() {
-        io.mockk.unmockkAll()
+        unmockkStatic(android.util.Log::class)
+        unmockkAll()
     }
 
     /** 指定バイト数分のPCMデータを提供後、即終了するAudioProvider */

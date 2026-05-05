@@ -107,7 +107,7 @@ class RetryWorkerIdempotentTest {
     }
 
     @Test
-    fun `file missing in one chunk - deletes entire session including intact files`() = runTest {
+    fun `file missing in one chunk - deletes only missing chunk`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
         val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
@@ -135,7 +135,8 @@ class RetryWorkerIdempotentTest {
         uploader.retryFailedChunks()
 
         val remaining = chunkRepo.getBySession(sessionId)
-        assertEquals(0, remaining.size)
+        assertEquals(1, remaining.size, "欠損チャンクのみ削除、健全チャンクは保持")
+        assertEquals(ChunkStatus.DONE, remaining[0].status)
     }
 
     @Test

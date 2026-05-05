@@ -32,7 +32,7 @@ class SummarizeUseCaseRetentionTest {
     @BeforeEach
     fun setUp() {
         mockRepo = mockk<ChunkRepository>(relaxed = true)
-        mockSummaryRepo = mockk<SummaryRepository>()
+        mockSummaryRepo = mockk<SummaryRepository>(relaxed = true)
         useCase = SummarizeUseCase(mockRepo, mockSummaryRepo)
     }
 

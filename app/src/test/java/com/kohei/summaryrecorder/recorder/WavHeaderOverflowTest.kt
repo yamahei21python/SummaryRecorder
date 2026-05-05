@@ -44,7 +44,7 @@ class WavHeaderOverflowTest {
         // RIFF chunk size at offset 4 (fileSize - 8 = 44 + MAX_VALUE - 8 = MAX_VALUE + 36)
         val riffChunkSize = ByteBuffer.wrap(bytes, 4, 4)
             .order(ByteOrder.LITTLE_ENDIAN).int
-        assertEquals(Int.MAX_VALUE + 36 - Int.MAX_VALUE * 2, riffChunkSize) // オーバーフローする
+        assertEquals((44L + Int.MAX_VALUE - 8).toInt(), riffChunkSize) // オーバーフローする
     }
 
     @Test
