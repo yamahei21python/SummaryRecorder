@@ -58,6 +58,7 @@ jobs:
             --tests "com.kohei.summaryrecorder.di.ConfigModuleTest" \
             --tests "com.kohei.summaryrecorder.usecase.*" \
             --tests "com.kohei.summaryrecorder.service.RecordingManager*" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceDestroyFinalizationTest" \
             --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderAtomicityTest" \
             --stacktrace 2>&1 | tee test-core-output.txt
 
@@ -112,7 +113,11 @@ jobs:
           gradle testDebugUnitTest \
             --tests "com.kohei.summaryrecorder.data.db.*" \
             --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteByIdTest" \
-            --tests "com.kohei.summaryrecorder.service.RecordingService*" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceInitTest" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceFlowTest" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceIntentTest" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceSelfHealTest" \
+            --tests "com.kohei.summaryrecorder.service.RecordingServiceEdgeCaseTest" \
             --tests "com.kohei.summaryrecorder.service.RetryWorker*" \
             --tests "com.kohei.summaryrecorder.service.BatteryOptimizerTest" \
             --tests "com.kohei.summaryrecorder.service.ServiceRecordingControllerTest" \
