@@ -33,7 +33,7 @@ class GaplessRecorder(
     private val coroutineScope: CoroutineScope
 ) {
     private val mutex = Mutex()
-    private var provider: AudioProvider? = null
+    private lateinit var provider: AudioProvider
     private var currentFile: RandomAccessFile? = null
     private var currentChunkIndex = 0
     private var currentBytesWritten = 0L
@@ -87,11 +87,10 @@ class GaplessRecorder(
     suspend fun stop() {
         isRecording = false
 
-        provider?.apply {
-            stop()
-            release()
+        if (::provider.isInitialized) {
+            provider.stop()
+            provider.release()
         }
-        provider = null
 
         coroutineScope.coroutineContext.cancelChildren()
 
