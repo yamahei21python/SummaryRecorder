@@ -48,18 +48,14 @@ class WavHeaderOverflowTest {
     }
 
     @Test
-    fun `writeHeader with dataLength exceeding Int_MAX_VALUE overflows`() {
+    fun `writeHeader with dataLength exceeding Int_MAX_VALUE throws exception`() {
         val raf = createRaf("overflow.wav")
         val overflowLength = Int.MAX_VALUE.toLong() + 1 // 2147483648L
-        WavHeaderWriter.writeHeader(raf, overflowLength)
+        
+        org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            WavHeaderWriter.writeHeader(raf, overflowLength)
+        }
         raf.close()
-
-        val bytes = File(tempDir, "overflow.wav").readBytes()
-
-        // data sub-chunk size: 2147483648L → toInt() → -2147483648 (Int.MIN_VALUE)
-        val dataChunkSize = ByteBuffer.wrap(bytes, 40, 4)
-            .order(ByteOrder.LITTLE_ENDIAN).int
-        assertEquals(Int.MIN_VALUE, dataChunkSize)
     }
 
     @Test
@@ -75,12 +71,11 @@ class WavHeaderOverflowTest {
     }
 
     @Test
-    fun `writeHeader with very large dataLength still produces 44 byte header`() {
+    fun `writeHeader with very large dataLength throws exception`() {
         val raf = createRaf("huge.wav")
-        WavHeaderWriter.writeHeader(raf, dataLength = Long.MAX_VALUE)
+        org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            WavHeaderWriter.writeHeader(raf, dataLength = Long.MAX_VALUE)
+        }
         raf.close()
-
-        // ヘッダー自体は常に44バイト
-        assertEquals(44L, File(tempDir, "huge.wav").length())
     }
 }

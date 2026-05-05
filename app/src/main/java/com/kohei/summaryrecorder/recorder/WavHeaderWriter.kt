@@ -25,6 +25,8 @@ object WavHeaderWriter {
         channels: Int = 1,
         bitsPerSample: Int = 16
     ) {
+        require(dataLength <= Int.MAX_VALUE) { "dataLength exceeds 2GB limit of standard WAV" }
+        
         val byteRate = sampleRate * channels * bitsPerSample / 8
         val blockAlign = channels * bitsPerSample / 8
         val fileSize = HEADER_SIZE + dataLength

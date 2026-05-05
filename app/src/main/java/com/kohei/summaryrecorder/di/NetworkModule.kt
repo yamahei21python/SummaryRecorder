@@ -15,9 +15,20 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideGroqApiService(): GroqApiService {
+    fun provideOkHttpClient(): okhttp3.OkHttpClient {
+        return okhttp3.OkHttpClient.Builder()
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGroqApiService(okHttpClient: okhttp3.OkHttpClient): GroqApiService {
         return Retrofit.Builder()
             .baseUrl("https://api.groq.com/")
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GroqApiService::class.java)

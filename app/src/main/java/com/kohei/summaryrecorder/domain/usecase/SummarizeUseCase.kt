@@ -14,6 +14,11 @@ class SummarizeUseCase @Inject constructor(
         val combinedText = chunks
             .sortedBy { it.chunkIndex }
             .joinToString("\n\n") { it.transcriptionText ?: "" }
+            .trim()
+
+        if (combinedText.isEmpty()) {
+            return Result.success("録音データがありません")
+        }
 
         return summaryRepo.summarize(combinedText)
     }

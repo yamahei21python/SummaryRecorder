@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.recorder
 
+import androidx.annotation.VisibleForTesting
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -14,19 +15,17 @@ import java.nio.ByteOrder
 
 class GaplessRecorder(
     private val outputDir: File,
-    private val chunkSizeBytes: Long,
+    @VisibleForTesting internal val chunkSizeBytes: Long,
     private val onChunkComplete: (chunkIndex: Int, file: File) -> Unit,
     private val audioProvider: AudioProvider,
     private val coroutineScope: CoroutineScope
 ) {
     private val mutex = Mutex()
     private var recordingJob: Job? = null
-    private var currentFile: RandomAccessFile? = null
-    private var currentChunkIndex = 0
-    private var currentBytesWritten = 0L
-    private var isRecording = false
-    private val writeBuffer = ByteBuffer.allocate(AudioConstants.READ_BUFFER * 2).order(ByteOrder.LITTLE_ENDIAN)
-    private val shortBuffer = writeBuffer.asShortBuffer()
+    @VisibleForTesting internal var currentFile: RandomAccessFile? = null
+    @VisibleForTesting internal var currentChunkIndex = 0
+    @VisibleForTesting internal var currentBytesWritten = 0
+    @VisibleForTesting internal var isRecording = false
 
     fun start() {
         if (!audioProvider.start()) {
@@ -35,7 +34,7 @@ class GaplessRecorder(
 
         isRecording = true
         currentChunkIndex = 0
-        currentBytesWritten = 0L
+        currentBytesWritten = 0
 
         recordingJob = coroutineScope.launch {
             mutex.withLock { openNewFile() }
@@ -43,7 +42,8 @@ class GaplessRecorder(
             val buffer = ShortArray(AudioConstants.READ_BUFFER)
             while (isRecording) {
                 val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
-                if (read <= 0) break
+                if (read < 0) break
+                if (read == 0) continue
 
                 mutex.withLock {
                     if (!isRecording) return@withLock
@@ -52,7 +52,7 @@ class GaplessRecorder(
                     if (currentBytesWritten >= chunkSizeBytes) {
                         finalizeCurrentChunk()
                         currentChunkIndex++
-                        currentBytesWritten = 0L
+                        currentBytesWritten = 0
                         openNewFile()
                     }
                 }
@@ -75,24 +75,27 @@ class GaplessRecorder(
         }
     }
 
-    private fun openNewFile() {
+    @VisibleForTesting
+    internal fun openNewFile() {
         val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
         currentFile = RandomAccessFile(file, "rw").also {
             WavHeaderWriter.writeDummyHeader(it)
         }
     }
 
-    private fun writePcmData(buffer: ShortArray, readCount: Int) {
+    @VisibleForTesting
+    internal fun writePcmData(buffer: ShortArray, readCount: Int) {
         val file = currentFile ?: return
-        shortBuffer.clear()
-        shortBuffer.put(buffer, 0, readCount)
-        file.write(writeBuffer.array(), 0, readCount * 2)
-        currentBytesWritten += readCount * 2L
+        val byteBuf = ByteArray(readCount * 2)
+        ByteBuffer.wrap(byteBuf).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(buffer, 0, readCount)
+        file.write(byteBuf)
+        currentBytesWritten += readCount * 2
     }
 
-    private fun finalizeCurrentChunk() {
+    @VisibleForTesting
+    internal fun finalizeCurrentChunk() {
         currentFile?.let { raf ->
-            val dataLength = currentBytesWritten
+            val dataLength = currentBytesWritten.toLong()
             WavHeaderWriter.writeHeader(raf, dataLength)
             raf.close()
             currentFile = null

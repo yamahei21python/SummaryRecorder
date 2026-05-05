@@ -34,6 +34,7 @@ class DummyAudioProvider(
         if (read <= 0 && loop) {
             bufferedStream.reset()
             pcmStart = -1L
+            headerSkipped = false
             ensureHeaderSkipped()
             read = bufferedStream.read(byteBuf, 0, byteBuf.size)
         }

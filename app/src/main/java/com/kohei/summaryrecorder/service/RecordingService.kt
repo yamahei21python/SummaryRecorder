@@ -41,19 +41,12 @@ class RecordingService : Service() {
         private const val CHANNEL_ID = "recording_channel"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_START = "ACTION_START"
-        private const val ACTION_STOP = "ACTION_STOP"
         private const val EXTRA_SESSION_ID = "session_id"
 
         fun startIntent(context: Context, sessionId: String): Intent {
             return Intent(context, RecordingService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_SESSION_ID, sessionId)
-            }
-        }
-
-        fun stopIntent(context: Context): Intent {
-            return Intent(context, RecordingService::class.java).apply {
-                action = ACTION_STOP
             }
         }
     }
@@ -98,14 +91,6 @@ class RecordingService : Service() {
                     audioProvider = audioProvider
                 )
             }
-            ACTION_STOP -> {
-                serviceScope.launch {
-                    recordingManager.stopRecording()
-                    updateNotification("文字起こし処理中...")
-                    stopForeground(STOP_FOREGROUND_DETACH)
-                    stopSelf()
-                }
-            }
         }
         return START_NOT_STICKY
     }
@@ -113,7 +98,11 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        runBlocking { recordingManager.stopRecording() }
+        runBlocking {
+            kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                recordingManager.stopRecording()
+            }
+        }
         serviceScope.cancel()
         super.onDestroy()
     }

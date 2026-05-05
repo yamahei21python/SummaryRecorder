@@ -19,9 +19,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-class DebugModeHolder {
-    val isDebugMode: Boolean get() = DebugConfig.debugMode
-}
 
 data class ChunkSize(val bytes: Long)
 
@@ -31,39 +28,32 @@ object ConfigModule {
 
     @Provides
     @Singleton
-    fun provideDebugModeHolder(): DebugModeHolder = DebugModeHolder()
-
-    @Provides
-    @Singleton
-    fun provideChunkSize(holder: DebugModeHolder): ChunkSize {
+    fun provideChunkSize(): ChunkSize {
         return ChunkSize(
-            bytes = if (holder.isDebugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+            bytes = if (DebugConfig.debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
         )
     }
 
     @Provides
     fun provideTranscriptionProvider(
-        holder: DebugModeHolder,
         repository: TranscriptionRepository
     ): TranscriptionProvider {
-        return if (holder.isDebugMode) MockTranscriptionProvider() else repository
+        return if (DebugConfig.debugMode) MockTranscriptionProvider() else repository
     }
 
     @Provides
     fun provideSummaryProvider(
-        holder: DebugModeHolder,
         repository: SummaryRepository
     ): SummaryProvider {
-        return if (holder.isDebugMode) MockSummaryProvider() else repository
+        return if (DebugConfig.debugMode) MockSummaryProvider() else repository
     }
 
     @Provides
     @Singleton
     fun provideAudioProvider(
-        @ApplicationContext context: Context,
-        holder: DebugModeHolder
+        @ApplicationContext context: Context
     ): AudioProvider {
-        return if (holder.isDebugMode) {
+        return if (DebugConfig.debugMode) {
             DummyAudioProvider(inputStream = context.assets.open("dummy_audio.wav"))
         } else {
             com.kohei.summaryrecorder.audio.RealAudioProvider()

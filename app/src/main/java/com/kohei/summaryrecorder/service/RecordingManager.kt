@@ -17,7 +17,6 @@ class RecordingManager(
     private val serviceScope: CoroutineScope
 ) {
     private var recorder: GaplessRecorder? = null
-    private var sessionId: String = ""
 
     fun startRecording(
         sessionId: String,
@@ -25,14 +24,14 @@ class RecordingManager(
         chunkSizeBytes: Long,
         audioProvider: AudioProvider
     ) {
-        this.sessionId = sessionId
+        val currentSessionId = sessionId
 
         recorder = GaplessRecorder(
             outputDir = outputDir,
             chunkSizeBytes = chunkSizeBytes,
             onChunkComplete = { chunkIndex, file ->
                 serviceScope.launch {
-                    onChunkRecorded(chunkIndex, file)
+                    onChunkRecorded(currentSessionId, chunkIndex, file)
                 }
             },
             audioProvider = audioProvider,
@@ -45,7 +44,7 @@ class RecordingManager(
         recorder = null
     }
 
-    private suspend fun onChunkRecorded(chunkIndex: Int, file: File) {
+    private suspend fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File) {
         val entity = ChunkEntity(
             sessionId = sessionId,
             chunkIndex = chunkIndex,

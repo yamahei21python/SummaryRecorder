@@ -26,6 +26,11 @@ class GaplessRecorderRestartTest {
 
     private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    @org.junit.jupiter.api.AfterEach
+    fun tearDown() {
+        kotlinx.coroutines.cancel(testScope)
+    }
+
     /** 何もしないAudioProvider（writeTestPcmData使用時用） */
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
