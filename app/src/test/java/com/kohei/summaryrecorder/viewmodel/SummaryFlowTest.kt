@@ -79,6 +79,7 @@ class SummaryFlowTest {
             doneChunk(id = 2, index = 1, text = "テキスト2")
         )
         chunksFlow.value = doneChunks
+        viewModel.stopRecording()
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -122,6 +123,7 @@ class SummaryFlowTest {
         chunksFlow.value = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1")
         )
+        viewModel.stopRecording()
 
         val error = viewModel.uiState.value.error
         assertNotNull(error)

@@ -77,6 +77,7 @@ class MainViewModelSummarizeOnceTest {
             doneChunk(id = 1, index = 0, text = "テキスト1"),
             doneChunk(id = 2, index = 1, text = "テキスト2")
         )
+        viewModel.stopRecording()
 
         // UnconfinedTestDispatcherで即時実行
         val state1 = viewModel.uiState.value

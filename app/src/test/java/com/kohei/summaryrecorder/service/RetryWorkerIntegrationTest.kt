@@ -28,6 +28,7 @@ class RetryWorkerIntegrationTest {
     @Test
     fun `doWork returns success when no failed chunks remain`() = runTest {
         coEvery { mockUploader.retryFailedChunks() } returns 0
+        coEvery { mockUploader.getFailedChunkCount() } returns 0
         
         val worker = TestListenableWorkerBuilder<RetryWorker>(context)
             .setWorkerFactory(object : androidx.work.WorkerFactory() {

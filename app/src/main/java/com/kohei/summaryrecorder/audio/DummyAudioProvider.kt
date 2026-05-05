@@ -12,9 +12,20 @@ class DummyAudioProvider(
     private val loop: Boolean = true
 ) : AudioProvider {
 
-    private val audioData: ByteArray = inputStream.readBytes()
-    private var bais = ByteArrayInputStream(audioData)
+    private val audioData: ByteArray
+    private var bais: ByteArrayInputStream
     private var isActive = false
+
+    init {
+        val allBytes = inputStream.readBytes()
+        // WAVヘッダー(44bytes)をスキップして保持
+        audioData = if (allBytes.size >= 44) {
+            allBytes.copyOfRange(44, allBytes.size)
+        } else {
+            allBytes
+        }
+        bais = ByteArrayInputStream(audioData)
+    }
 
     override fun start(): Boolean {
         isActive = true
@@ -32,7 +43,7 @@ class DummyAudioProvider(
         val tempBuffer = ByteArray(bytesToRead)
         
         var readBytes = bais.read(tempBuffer)
-        if (readBytes == -1 && loop) {
+        if (readBytes <= 0 && loop) {
             // ループ
             bais = ByteArrayInputStream(audioData)
             readBytes = bais.read(tempBuffer)

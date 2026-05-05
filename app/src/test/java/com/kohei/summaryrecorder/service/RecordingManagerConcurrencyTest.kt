@@ -5,6 +5,7 @@ import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import io.mockk.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.io.File
@@ -39,7 +40,7 @@ class RecordingManagerConcurrencyTest {
             }
         }
         
-        yield()
+        advanceUntilIdle()
 
         coVerify(exactly = 3) { mockRepo.insert(any()) }
         coVerify(atLeast = 3) { mockUploader.uploadChunk(any()) }

@@ -43,12 +43,19 @@ class ConfigModuleSingletonTimingTest {
 
     @Test
     fun `audio provider also respects runtime debugMode changes`() {
+        val mockContext = mockk<Context>()
+        val mockAssets = mockk<android.content.res.AssetManager>()
+        every { mockContext.assets } returns mockAssets
+        // ダミーのWAVヘッダー（44バイト）+ データ
+        val dummyData = ByteArray(100)
+        every { mockAssets.open("dummy_audio.wav") } returns dummyData.inputStream()
+
         DebugConfig.debugMode = false
-        val audio1 = module.provideAudioProvider(context)
+        val audio1 = module.provideAudioProvider(mockContext)
         assertIs<RealAudioProvider>(audio1)
 
         DebugConfig.debugMode = true
-        val audio2 = module.provideAudioProvider(context)
+        val audio2 = module.provideAudioProvider(mockContext)
         assertIs<DummyAudioProvider>(audio2)
     }
 }

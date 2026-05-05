@@ -3,17 +3,19 @@ package com.kohei.summaryrecorder.recorder
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import io.mockk.mockk
 import kotlinx.coroutines.*
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Test
-import org.junit.jupiter.api.io.TempDir
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GaplessRecorderVolatileTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    @get:Rule
+    val tempFolder = TemporaryFolder()
 
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
@@ -28,7 +30,7 @@ class GaplessRecorderVolatileTest {
     @Test
     fun `stop from different coroutine context terminates recording loop`() = runTest {
         val recorder = GaplessRecorder(
-            outputDir = tempDir,
+            outputDir = tempFolder.root,
             chunkSizeBytes = 1024L * 1024,
             onChunkComplete = { _, _ -> },
             audioProvider = noopProvider,
@@ -39,7 +41,7 @@ class GaplessRecorderVolatileTest {
             recorder.start()
         }
 
-        delay(100)
+        advanceUntilIdle()
         assertTrue(recorder.isRecording, "録音中であること")
 
         // 別スレッドから stop() を呼び出す
@@ -47,7 +49,7 @@ class GaplessRecorderVolatileTest {
             recorder.stop()
         }
 
-        delay(100)
+        advanceUntilIdle()
         assertFalse(recorder.isRecording, "stop呼び出し後は false になること")
         job.cancelAndJoin()
     }

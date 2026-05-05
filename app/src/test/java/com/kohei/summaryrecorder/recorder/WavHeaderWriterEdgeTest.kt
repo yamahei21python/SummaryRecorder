@@ -1,7 +1,8 @@
 package com.kohei.summaryrecorder.recorder
 
+import org.junit.Rule
 import org.junit.Test
-import org.junit.jupiter.api.io.TempDir
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -10,12 +11,12 @@ import kotlin.test.assertEquals
 
 class WavHeaderWriterEdgeTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    @get:Rule
+    val tempFolder = TemporaryFolder()
 
     @Test
     fun `writeHeader with large dataLength produces correct RIFF size`() {
-        val file = File(tempDir, "test.wav")
+        val file = tempFolder.newFile("test.wav")
         val raf = RandomAccessFile(file, "rw")
         
         // 1GBのデータ長を想定
