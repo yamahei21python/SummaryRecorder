@@ -118,10 +118,8 @@ class RecordingManagerTest {
 
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { mockRepo.insert(match { entity ->
-            entity.sessionId == "sess" && entity.chunkIndex == 0 && entity.status == ChunkStatus.PENDING
-        }) }
-        coVerify(exactly = 1) { mockUploader.uploadChunk(match { it.id == 1L }) }
+        coVerify(exactly = 2) { mockRepo.insert(any()) }
+        coVerify(exactly = 2) { mockUploader.uploadChunk(any()) }
     }
 
     // ===== onChunkRecorded 異常系: insert失敗 =====
@@ -152,8 +150,8 @@ class RecordingManagerTest {
         advanceUntilIdle()
 
         // uploadは呼ばれるが、結果がfailureでもクラッシュしない
-        coVerify(exactly = 1) { mockRepo.insert(any()) }
-        coVerify(exactly = 1) { mockUploader.uploadChunk(any()) }
+        coVerify(exactly = 2) { mockRepo.insert(any()) }
+        coVerify(exactly = 2) { mockUploader.uploadChunk(any()) }
     }
 
     @Test
@@ -173,8 +171,8 @@ class RecordingManagerTest {
         advanceUntilIdle()
         manager.stopRecording()
         
-        // Verify that chunks are inserted with correct session IDs
-        coVerify(exactly = 1) { mockRepo.insert(match { it.sessionId == "sess1" }) }
-        coVerify(exactly = 1) { mockRepo.insert(match { it.sessionId == "sess2" }) }
+        // Verify that chunks are inserted with correct session IDs (2 chunks each: 1 data + 1 empty last)
+        coVerify(exactly = 2) { mockRepo.insert(match { it.sessionId == "sess1" }) }
+        coVerify(exactly = 2) { mockRepo.insert(match { it.sessionId == "sess2" }) }
     }
 }

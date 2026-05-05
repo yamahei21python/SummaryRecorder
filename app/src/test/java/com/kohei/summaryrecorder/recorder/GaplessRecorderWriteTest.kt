@@ -76,7 +76,7 @@ class GaplessRecorderWriteTest {
     }
 
     @Test
-    fun `empty recording produces no chunk`() = runTest {
+    fun `empty recording produces one empty chunk`() = runTest {
         val recordedChunks = mutableListOf<Pair<Int, File>>()
         val recorder = GaplessRecorder(
             outputDir = tempDir,
@@ -89,5 +89,6 @@ class GaplessRecorderWriteTest {
 
         // 1チャンク生成される（ヘッダーのみ）
         assertEquals(1, recordedChunks.size)
+        assertTrue(recordedChunks[0].second.length() <= 44)
     }
 }

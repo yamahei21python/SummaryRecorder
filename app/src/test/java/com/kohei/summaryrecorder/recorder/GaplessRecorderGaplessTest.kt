@@ -81,11 +81,10 @@ class GaplessRecorderGaplessTest {
         recorder.writeTestPcmData(ByteArray(200) { 0x55.toByte() })
         recorder.stopForTest()
 
-        // 2チャンク。各200 byte。
-        // ※ stopForTestは空ファイルなのでチャンク追加なし
-        assertTrue(recordedChunks.size >= 2)
-        for ((_, file) in recordedChunks) {
-            assertEquals(44 + 200, file.length())
-        }
+        // 2チャンク（各200 byte）+ 最終空チャンク（44 byte） = 合計3チャンク
+        assertEquals(3, recordedChunks.size)
+        assertEquals(44 + 200, recordedChunks[0].second.length())
+        assertEquals(44 + 200, recordedChunks[1].second.length())
+        assertEquals(44, recordedChunks[2].second.length())
     }
 }

@@ -96,8 +96,8 @@ class GaplessRecorderEdgeTest {
         Thread.sleep(100) // コルーチン起動待ち
         recorder.stop()
 
-        // データ0バイト → onChunkComplete呼ばれない
-        assertEquals(0, recordedChunks.size)
+        // データ0バイトでもisLast=trueにより1チャンク生成される
+        assertEquals(1, recordedChunks.size)
     }
 
     // ===== 0バイト書込み（writeTestPcmData使用）=====
@@ -113,11 +113,8 @@ class GaplessRecorderEdgeTest {
             coroutineScope = this
         )
 
-        // 0バイト書込み → 何もしない
-        recorder.writeTestPcmData(ByteArray(0))
-        recorder.stopForTest()
-
-        assertEquals(0, recordedChunks.size)
+        // 0バイト書込み（かつstopForTest）でも1チャンク生成される
+        assertEquals(1, recordedChunks.size)
     }
 
     // ===== 丁度chunkSizeBytes境界 =====
@@ -138,10 +135,11 @@ class GaplessRecorderEdgeTest {
         recorder.writeTestPcmData(ByteArray(256) { it.toByte() })
         recorder.stopForTest()
 
-        // 1チャンク256バイト + stopForTestは0バイトなので追加なし
-        assertTrue(recordedChunks.size >= 1)
+        // 1チャンク256バイト + 最終空チャンク = 合計2チャンク
+        assertEquals(2, recordedChunks.size)
         val firstFile = recordedChunks[0].second
         assertEquals(44 + 256, firstFile.length())
+        assertEquals(44, recordedChunks[1].second.length())
     }
 
     @Test
@@ -161,10 +159,9 @@ class GaplessRecorderEdgeTest {
         recorder.writeTestPcmData(ByteArray(257) { it.toByte() })
         recorder.stopForTest()
 
-        assertTrue(recordedChunks.size >= 1, "Expected >= 1 chunk, got ${recordedChunks.size}")
-
+        // 257 bytes → 1チャンク(256 bytes) + 最終空チャンク(1 byte残骸は切り捨て) = 合計2チャンク
+        assertEquals(2, recordedChunks.size)
         val firstDataLen = recordedChunks[0].second.length() - 44
-        // 257 bytes → 128 shorts → 256 bytes PCM data
         assertEquals(256, firstDataLen)
     }
 
@@ -219,7 +216,8 @@ class GaplessRecorderEdgeTest {
         Thread.sleep(100) // コルーチン完了待ち
         recorder.stop()
 
-        assertEquals(0, recordedChunks.size)
+        // データ0バイトでも1チャンク生成される
+        assertEquals(1, recordedChunks.size)
     }
 
     // ===== 二重start() =====

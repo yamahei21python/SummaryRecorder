@@ -79,8 +79,9 @@ class GaplessRecorderRestartTest {
         recorder1.stopForTest()
 
         val filesAfterSession1 = tempDir.listFiles()!!.filter { it.name.startsWith("chunk_") }
-        assertEquals(1, filesAfterSession1.size, "セッション1: 1チャンク生成")
+        assertEquals(2, filesAfterSession1.size, "セッション1: 1データチャンク + 1空チャンク生成")
         assertTrue(filesAfterSession1.any { it.name == "chunk_0.wav" })
+        assertTrue(filesAfterSession1.any { it.name == "chunk_1.wav" })
 
         // ファイルクリアして再起動
         filesAfterSession1.forEach { it.delete() }
