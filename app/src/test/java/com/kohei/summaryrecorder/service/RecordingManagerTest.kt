@@ -1,6 +1,5 @@
 package com.kohei.summaryrecorder.service
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
@@ -15,17 +14,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [31], manifest = Config.NONE)
 
 /**
  * RecordingManager: 録音ライフサイクル + チャンクコールバック検証。
@@ -38,15 +33,21 @@ import kotlin.test.assertNull
  */
 class RecordingManagerTest {
 
-    private lateinit var tempDir: File
+    @TempDir
+    lateinit var tempDir: File
 
     private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val mockRepo = mockk<ChunkRepository>(relaxed = true)
     private val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
 
-    @Before
+    @BeforeEach
     fun setUp() {
-        tempDir = File(System.getProperty("java.io.tmpdir"), "rec_mgr_test_${System.nanoTime()}").also { it.mkdirs() }
+        // リラックスモックは各テストで上書き可能
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     @After
