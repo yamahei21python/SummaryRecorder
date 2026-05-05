@@ -77,6 +77,7 @@ class MainViewModelSummarizeOnceTest {
         chunksFlow.value = listOf(
             doneChunk(id = 1, index = 0, text = "テキスト1"),
             doneChunk(id = 2, index = 1, text = "テキスト2")
+        )
         viewModel.stopRecording()
         advanceUntilIdle()
         
