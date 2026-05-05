@@ -50,6 +50,7 @@ class RecordingManagerConcurrencyTest {
         val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
         val mockAudioProvider = mockk<AudioProvider>(relaxed = true)
         every { mockAudioProvider.start() } returns true
+        every { mockAudioProvider.read(any(), any()) } returns -1
 
         val manager = RecordingManager(mockRepo, mockUploader, this)
         val tempDir = createTempDir()
@@ -73,6 +74,7 @@ class RecordingManagerConcurrencyTest {
         val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
         val mockAudioProvider = mockk<AudioProvider>(relaxed = true)
         every { mockAudioProvider.start() } returns true
+        every { mockAudioProvider.read(any(), any()) } returns -1
 
         val manager = RecordingManager(mockRepo, mockUploader, this)
         val tempDir = createTempDir()
