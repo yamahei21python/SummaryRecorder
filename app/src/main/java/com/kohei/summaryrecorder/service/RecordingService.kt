@@ -40,6 +40,8 @@ class RecordingService : Service() {
         private const val NOTIFICATION_ID = NotificationConstants.NOTIFICATION_ID
         private const val ACTION_START = "ACTION_START"
         private const val ACTION_STOP = "ACTION_STOP"
+        private const val ACTION_PAUSE = "ACTION_PAUSE"
+        private const val ACTION_RESUME = "ACTION_RESUME"
         private const val EXTRA_SESSION_ID = "session_id"
 
         fun startIntent(context: Context, sessionId: String): Intent {
@@ -52,6 +54,18 @@ class RecordingService : Service() {
         fun stopIntent(context: Context): Intent {
             return Intent(context, RecordingService::class.java).apply {
                 action = ACTION_STOP
+            }
+        }
+
+        fun pauseIntent(context: Context): Intent {
+            return Intent(context, RecordingService::class.java).apply {
+                action = ACTION_PAUSE
+            }
+        }
+
+        fun resumeIntent(context: Context): Intent {
+            return Intent(context, RecordingService::class.java).apply {
+                action = ACTION_RESUME
             }
         }
     }
@@ -117,6 +131,18 @@ class RecordingService : Service() {
                     stopSelf()
                 }
             }
+            ACTION_PAUSE -> {
+                serviceScope.launch {
+                    recordingManager.pauseRecording()
+                }
+                updateNotification("一時停止中...")
+            }
+            ACTION_RESUME -> {
+                serviceScope.launch {
+                    recordingManager.resumeRecording()
+                }
+                updateNotification("録音中...")
+            }
         }
         return START_NOT_STICKY
     }
@@ -147,6 +173,12 @@ class RecordingService : Service() {
             )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
+    }
+
+    private fun updateNotification(text: String) {
+        val notification = buildNotification(text)
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun buildNotification(text: String): Notification {

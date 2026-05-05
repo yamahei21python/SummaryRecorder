@@ -17,4 +17,12 @@ class ServiceRecordingController @Inject constructor(
     override fun stopRecording() {
         context.startService(RecordingService.stopIntent(context))
     }
+
+    override fun pauseRecording() {
+        context.startService(RecordingService.pauseIntent(context))
+    }
+
+    override fun resumeRecording() {
+        context.startService(RecordingService.resumeIntent(context))
+    }
 }

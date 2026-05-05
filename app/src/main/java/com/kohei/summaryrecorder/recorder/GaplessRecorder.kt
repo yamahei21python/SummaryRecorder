@@ -26,6 +26,7 @@ class GaplessRecorder(
     @VisibleForTesting internal var currentChunkIndex = 0
     @VisibleForTesting internal var currentBytesWritten = 0
     @Volatile @VisibleForTesting internal var isRecording = false
+    @Volatile @VisibleForTesting internal var isPaused = false
     @VisibleForTesting internal var currentFileName: String = ""
 
     suspend fun start() {
@@ -37,6 +38,7 @@ class GaplessRecorder(
 
         mutex.withLock {
             isRecording = true
+            isPaused = false
             currentChunkIndex = 0
             currentBytesWritten = 0
 
@@ -47,6 +49,12 @@ class GaplessRecorder(
                     
                     val buffer = ShortArray(AudioConstants.READ_BUFFER)
                     while (isRecording) {
+                        if (isPaused) {
+                            // 一時停止中はreadせずビジーウェイト
+                            kotlinx.coroutines.delay(50)
+                            continue
+                        }
+                        
                         val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
                         if (read < 0) break
                         if (read == 0) continue
@@ -58,7 +66,7 @@ class GaplessRecorder(
                         var indexToFinalize = 0
 
                         mutex.withLock {
-                            if (!isRecording) return@withLock
+                            if (!isRecording || isPaused) return@withLock
                             
                             val file = currentFile ?: return@withLock
                             writePcmData(file, buffer, read)
@@ -70,7 +78,7 @@ class GaplessRecorder(
                                 bytesToFinalize = currentBytesWritten
                                 indexToFinalize = currentChunkIndex
                                 
-                                currentFile = null // ロック内で参照を切り離す
+                                currentFile = null
                                 currentChunkIndex++
                                 currentBytesWritten = 0
                                 openNewFile()
@@ -106,11 +114,34 @@ class GaplessRecorder(
         audioProvider.release()
     }
 
+    /**
+     * 一時停止: AudioProviderを停止し、isPaused=trueに設定。
+     * isRecording=trueは維持（録音セッションは継続）。
+     */
+    suspend fun pause() {
+        mutex.withLock {
+            if (!isRecording || isPaused) return
+            isPaused = true
+        }
+        audioProvider.stop()
+    }
+
+    /**
+     * 再開: AudioProviderを再開し、isPaused=falseに設定。
+     */
+    suspend fun resume() {
+        mutex.withLock {
+            if (!isRecording || !isPaused) return
+            isPaused = false
+        }
+        audioProvider.start()
+    }
+
     private suspend fun stopInternal() {
         val jobToCancel = mutex.withLock {
             val wasRecording = isRecording
             isRecording = false
-            // BUG-001: cancelAndJoin の前に stop() を呼んでブロッキングIOを解除する
+            isPaused = false
             if (wasRecording) {
                 audioProvider.stop()
             }
@@ -149,7 +180,6 @@ class GaplessRecorder(
             it.close()
 
             val file = File(outputDir, fileName)
-            // BUG-003: 0バイトかつisLast=trueなら保存（セッション終了の目印）、それ以外で0バイトなら削除
             if (dataLength > 0 || isLast) {
                 if (file.exists()) {
                     onChunkComplete(index, file, isLast)

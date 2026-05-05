@@ -60,6 +60,18 @@ class RecordingManager(
         }
     }
 
+    suspend fun pauseRecording() {
+        mutex.withLock {
+            recorderRef.get()?.pause()
+        }
+    }
+
+    suspend fun resumeRecording() {
+        mutex.withLock {
+            recorderRef.get()?.resume()
+        }
+    }
+
     private fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File, isLast: Boolean) {
         // uploadScopeで実行 — recorderScopeキャンセル（stopRecording）に影響されない
         uploadScope.launch {
