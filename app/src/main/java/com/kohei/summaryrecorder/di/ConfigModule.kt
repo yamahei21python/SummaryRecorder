@@ -12,7 +12,15 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Reusable
+import javax.inject.Singleton
+
+/**
+ * DebugConfig.debugMode を参照するプロキシークラス。
+ * @Singleton で注入されるが、isDebugMode は毎回評価される。
+ */
+class DebugModeHolder {
+    val isDebugMode: Boolean get() = DebugConfig.debugMode
+}
 
 data class ChunkSize(val bytes: Long)
 
@@ -20,24 +28,30 @@ data class ChunkSize(val bytes: Long)
 @InstallIn(SingletonComponent::class)
 object ConfigModule {
 
-    @Reusable
-    fun provideChunkSize(): ChunkSize {
+    @Provides
+    @Singleton
+    fun provideDebugModeHolder(): DebugModeHolder = DebugModeHolder()
+
+    @Provides
+    fun provideChunkSize(holder: DebugModeHolder): ChunkSize {
         return ChunkSize(
-            bytes = if (DebugConfig.debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+            bytes = if (holder.isDebugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
         )
     }
 
-    @Reusable
+    @Provides
     fun provideTranscriptionProvider(
+        holder: DebugModeHolder,
         repository: TranscriptionRepository
     ): TranscriptionProvider {
-        return if (DebugConfig.debugMode) MockTranscriptionProvider() else repository
+        return if (holder.isDebugMode) MockTranscriptionProvider() else repository
     }
 
-    @Reusable
+    @Provides
     fun provideSummaryProvider(
+        holder: DebugModeHolder,
         repository: SummaryRepository
     ): SummaryProvider {
-        return if (DebugConfig.debugMode) MockSummaryProvider() else repository
+        return if (holder.isDebugMode) MockSummaryProvider() else repository
     }
 }
