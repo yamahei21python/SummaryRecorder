@@ -324,7 +324,7 @@ class GaplessRecorderEdgeTest {
         )
 
         recorder.start()
-        Thread.sleep(50) 
+        kotlinx.coroutines.delay(50) 
         recorder.isRecording = false
         
         recorder.stopForTest()
