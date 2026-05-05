@@ -36,13 +36,41 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            // local.properties または環境変数から署名情報を読込
+            val keystoreFile = localProps.getProperty("release.keystore.file")
+                ?: System.getenv("RELEASE_KEYSTORE_FILE")
+            val keystorePwd = localProps.getProperty("release.keystore.password")
+                ?: System.getenv("RELEASE_KEYSTORE_PASSWORD")
+            val keyAliasVal = localProps.getProperty("release.key.alias")
+                ?: System.getenv("RELEASE_KEY_ALIAS")
+            val keyPwd = localProps.getProperty("release.key.password")
+                ?: System.getenv("RELEASE_KEY_PASSWORD")
+            
+            if (keystoreFile != null) {
+                storeFile = file(keystoreFile)
+                storePassword = keystorePwd
+                keyAlias = keyAliasVal
+                keyPassword = keyPwd
+            }
+        }
+    }
+
     buildTypes {
-        release {
+        debug {
             isMinifyEnabled = false
+            buildConfigField("boolean", "ENABLE_LOGGING", "true")
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "ENABLE_LOGGING", "false")
         }
     }
 

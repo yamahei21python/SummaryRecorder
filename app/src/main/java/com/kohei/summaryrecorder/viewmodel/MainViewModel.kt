@@ -206,6 +206,17 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun retryLastSummary() {
+        val sessionId = _uiState.value.sessionId
+        if (sessionId.isBlank()) return
+
+        _uiState.update { it.copy(error = null, isLoading = true) }
+        summarized = false
+        viewModelScope.launch {
+            summarizeAll(sessionId)
+        }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }

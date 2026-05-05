@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -127,6 +129,23 @@ fun RecordingTab(viewModel: MainViewModel, uiState: MainViewModel.UiState) {
             Text(if (uiState.isRecording) "録音停止" else "録音開始")
         }
 
+        // #9: バックグラウンド録音継続中表示
+        if (uiState.isRecording) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Text(
+                    text = "🎤 録音中 — アプリを閉じてもバックグラウンドで継続します",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
         // チャンク状態一覧
         if (uiState.chunks.isNotEmpty()) {
             Text("チャンク状態", style = MaterialTheme.typography.titleMedium)
@@ -143,18 +162,20 @@ fun RecordingTab(viewModel: MainViewModel, uiState: MainViewModel.UiState) {
             Text("文字起こし完了待ち...")
         }
 
-        // 要約結果
+        // #7: 要約結果（コピー可能）
         uiState.summary?.let { summary ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("要約結果", style = MaterialTheme.typography.titleMedium)
                     HorizontalDivider()
-                    Text(summary, style = MaterialTheme.typography.bodyMedium)
+                    SelectionContainer {
+                        Text(summary, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
 
-        // エラー表示
+        // #10: エラー表示 + リトライボタン
         uiState.error?.let { error ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -162,11 +183,25 @@ fun RecordingTab(viewModel: MainViewModel, uiState: MainViewModel.UiState) {
                     containerColor = MaterialTheme.colorScheme.errorContainer
                 )
             ) {
-                Text(
-                    text = error,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.clearError()
+                            viewModel.retryLastSummary()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("再試行")
+                    }
+                }
             }
         }
     }
@@ -241,11 +276,22 @@ fun SessionCard(session: SessionHistory, viewModel: MainViewModel) {
                 Text(
                     text = viewModel.formatSessionStatus(session),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (session.failedChunks > 0) Color(0xFFF44336) else Color(0xFF4CAF50)
+                    color = if (session.failedChunks > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                // #8: ファイルサイズ表示
+                Text(
+                    text = "${session.totalChunks}チャンク",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = { showDeleteDialog = true }) {
-                Text("🗑", style = MaterialTheme.typography.titleMedium)
+                Icon(
+                    painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_delete),
+                    contentDescription = "削除",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -293,10 +339,10 @@ fun ChunkRow(chunk: MainViewModel.ChunkUiItem) {
 @Composable
 fun StatusBadge(status: ChunkStatus) {
     val (text, color) = when (status) {
-        ChunkStatus.PENDING -> "待機中" to Color.Gray
-        ChunkStatus.UPLOADING -> "送信中" to Color(0xFF2196F3)
-        ChunkStatus.DONE -> "完了" to Color(0xFF4CAF50)
-        ChunkStatus.FAILED -> "失敗" to Color(0xFFF44336)
+        ChunkStatus.PENDING -> "待機中" to MaterialTheme.colorScheme.outline
+        ChunkStatus.UPLOADING -> "送信中" to MaterialTheme.colorScheme.primary
+        ChunkStatus.DONE -> "完了" to MaterialTheme.colorScheme.primary
+        ChunkStatus.FAILED -> "失敗" to MaterialTheme.colorScheme.error
     }
     Surface(
         color = color.copy(alpha = 0.2f),

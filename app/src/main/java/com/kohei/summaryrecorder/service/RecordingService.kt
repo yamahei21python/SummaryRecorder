@@ -3,6 +3,7 @@ package com.kohei.summaryrecorder.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -149,11 +150,18 @@ class RecordingService : Service() {
     }
 
     private fun buildNotification(text: String): Notification {
+        val pendingIntent = androidx.core.app.TaskStackBuilder.create(this).run {
+            addNextIntentWithParentStack(
+                android.content.Intent(this@RecordingService, com.kohei.summaryrecorder.ui.MainActivity::class.java)
+            )
+            getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SummaryRecorder")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
+            .setContentIntent(pendingIntent)
             .build()
     }
 

@@ -1,2 +1,9 @@
+# API Keys
 groq.api.key=gsk_xxxxx
 gemini.api.key=AIzaxxxxx
+
+# Release signing (optional - generate with: keytool -genkey -v -keystore release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000)
+# release.keystore.file=release.keystore
+# release.keystore.password=your_password
+# release.key.alias=release
+# release.key.password=your_password
