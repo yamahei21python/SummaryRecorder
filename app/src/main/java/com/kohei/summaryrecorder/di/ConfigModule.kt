@@ -12,36 +12,29 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
-
-// ===== Value type for DI =====
+import javax.inject.Reusable
 
 data class ChunkSize(val bytes: Long)
-
-// ===== Config + Provider（DebugConfig.debugMode を直接参照） =====
 
 @Module
 @InstallIn(SingletonComponent::class)
 object ConfigModule {
 
-    @Provides
-    @Singleton
+    @Reusable
     fun provideChunkSize(): ChunkSize {
         return ChunkSize(
             bytes = if (DebugConfig.debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
         )
     }
 
-    @Provides
-    @Singleton
+    @Reusable
     fun provideTranscriptionProvider(
         repository: TranscriptionRepository
     ): TranscriptionProvider {
         return if (DebugConfig.debugMode) MockTranscriptionProvider() else repository
     }
 
-    @Provides
-    @Singleton
+    @Reusable
     fun provideSummaryProvider(
         repository: SummaryRepository
     ): SummaryProvider {

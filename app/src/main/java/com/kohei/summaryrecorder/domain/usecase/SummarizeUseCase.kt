@@ -12,6 +12,7 @@ import javax.inject.Inject
  * 責務:
  * - セッション内の全チャンク文字起こしテキストを結合
  * - SummaryRepository に要約依頼
+ * - 要約成功時にセッションデータを削除
  */
 class SummarizeUseCase @Inject constructor(
     private val dao: ChunkDao,
@@ -19,6 +20,7 @@ class SummarizeUseCase @Inject constructor(
 ) {
     /**
      * 指定セッションの全DONEチャンクテキストを結合して要約。
+     * 成功時にDB上のセッションデータを削除。
      *
      * @return 要約成功テキスト or 例外
      */
@@ -28,6 +30,10 @@ class SummarizeUseCase @Inject constructor(
             .sortedBy { it.chunkIndex }
             .joinToString("\n\n") { it.transcriptionText ?: "" }
 
-        return summaryRepo.summarize(combinedText)
+        val result = summaryRepo.summarize(combinedText)
+        if (result.isSuccess) {
+            dao.deleteBySession(sessionId)
+        }
+        return result
     }
 }

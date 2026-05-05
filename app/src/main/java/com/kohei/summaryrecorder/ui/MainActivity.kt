@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.ui.theme.SummaryRecorderTheme
 import com.kohei.summaryrecorder.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -47,8 +48,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val viewModel: MainViewModel = hiltViewModel()
-            MainScreen(viewModel = viewModel)
+            SummaryRecorderTheme {
+                val viewModel: MainViewModel = hiltViewModel()
+                MainScreen(viewModel = viewModel)
+            }
         }
     }
 }

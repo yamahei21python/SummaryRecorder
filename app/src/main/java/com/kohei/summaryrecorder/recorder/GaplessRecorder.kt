@@ -1,11 +1,8 @@
 package com.kohei.summaryrecorder.recorder
 
-import androidx.annotation.VisibleForTesting
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
-import com.kohei.summaryrecorder.audio.RealAudioProvider
+import com.kohei.summaryrecorder.audio.DebugConfig
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -26,12 +23,14 @@ import java.nio.ByteOrder
  * @param chunkSizeBytes チャンク上限（デフォルト19MB ≒ 10分、DebugConfigで切替）
  * @param onChunkComplete チャンク確定時コールバック（インデックス, ファイル）
  * @param audioProvider 音源（non-null、必須）
+ * @param coroutineScope 外部注入のコルーチンスコープ（orphan防止）
  */
 class GaplessRecorder(
     private val outputDir: File,
-    private val chunkSizeBytes: Long = com.kohei.summaryrecorder.audio.DebugConfig.chunkSizeBytes,
+    private val chunkSizeBytes: Long = DebugConfig.chunkSizeBytes,
     private val onChunkComplete: (chunkIndex: Int, file: File) -> Unit,
-    private val audioProvider: AudioProvider
+    private val audioProvider: AudioProvider,
+    private val coroutineScope: CoroutineScope
 ) {
     private val mutex = Mutex()
     private var provider: AudioProvider? = null
@@ -39,9 +38,6 @@ class GaplessRecorder(
     private var currentChunkIndex = 0
     private var currentBytesWritten = 0L
     private var isRecording = false
-    private val recordingScope = CoroutineScope(
-        Dispatchers.IO + SupervisorJob()
-    )
 
     // ===== 公開API =====
 
@@ -55,7 +51,7 @@ class GaplessRecorder(
         currentChunkIndex = 0
         currentBytesWritten = 0L
 
-        recordingScope.launch {
+        coroutineScope.launch {
             mutex.withLock { openNewFile() }
 
             val buffer = ShortArray(AudioConstants.READ_BUFFER)
@@ -97,7 +93,7 @@ class GaplessRecorder(
         }
         provider = null
 
-        recordingScope.coroutineContext.cancelChildren()
+        coroutineScope.coroutineContext.cancelChildren()
 
         mutex.withLock {
             finalizeCurrentChunk()
@@ -132,42 +128,6 @@ class GaplessRecorder(
             if (file.exists() && dataLength > 0) {
                 onChunkComplete(currentChunkIndex, file)
             }
-        }
-    }
-
-    // ===== テスト用ブリッジメソッド =====
-
-    /**
-     * テスト用: バイト配列をPCMデータとして書込む。
-     * Extension関数から委譲される。
-     */
-    @VisibleForTesting
-    internal fun performWriteTestPcmData(data: ByteArray) {
-        if (currentFile == null) {
-            openNewFile()
-        }
-        val shortCount = data.size / 2
-        val shorts = ShortArray(shortCount)
-        ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
-        writePcmData(shorts, shortCount)
-
-        if (currentBytesWritten >= chunkSizeBytes) {
-            finalizeCurrentChunk()
-            currentChunkIndex++
-            currentBytesWritten = 0L
-            openNewFile()
-        }
-    }
-
-    /**
-     * テスト用: 現在のチャンクを確定して停止。
-     * Extension関数から委譲される。
-     */
-    @VisibleForTesting
-    internal fun performStopForTest() {
-        isRecording = false
-        if (currentFile != null) {
-            finalizeCurrentChunk()
         }
     }
 }

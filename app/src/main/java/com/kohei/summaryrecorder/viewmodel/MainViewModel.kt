@@ -71,27 +71,22 @@ class MainViewModel @Inject constructor(
         // 古い購読をキャンセル（リーク防止）
         observeJobs.forEach { it.cancel() }
 
-        // チャンク一覧表示用Flow
-        val listJob = viewModelScope.launch {
-            dao.observeBySession(sessionId)
-                .map { chunks -> chunks.map { it.toUiItem() } }
-                .onEach { items -> _uiState.update { it.copy(chunks = items) } }
-                .collect {}
-        }
-
-        // 全DONE検知 → 要約トリガー
-        val summaryJob = viewModelScope.launch {
+        val job = viewModelScope.launch {
             dao.observeBySession(sessionId)
                 .map { chunks ->
-                    chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
+                    val items = chunks.map { it.toUiItem() }
+                    val allDone = chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
+                    Triple(items, allDone, chunks)
                 }
                 .distinctUntilChanged()
-                .filter { it }
-                .onEach { summarizeAll(sessionId) }
-                .collect {}
+                .collect { (items, allDone, _) ->
+                    _uiState.update { it.copy(chunks = items) }
+                    if (allDone) {
+                        summarizeAll(sessionId)
+                    }
+                }
         }
-
-        observeJobs = listOf(listJob, summaryJob)
+        observeJobs = listOf(job)
     }
 
     private fun ChunkEntity.toUiItem() = ChunkUiItem(
@@ -112,8 +107,7 @@ class MainViewModel @Inject constructor(
                     isLoading = false
                 )
             }
-            // DB物理削除（SUM-004）
-            dao.deleteBySession(sessionId)
+            // dao.deleteBySession() は UseCase内に移動済み
         } else {
             _uiState.update {
                 it.copy(

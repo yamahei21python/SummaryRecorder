@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.service
 
+import android.util.Log
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.ChunkDao
@@ -38,7 +39,8 @@ class RecordingManager(
                     onChunkRecorded(chunkIndex, file)
                 }
             },
-            audioProvider = audioProvider
+            audioProvider = audioProvider,
+            coroutineScope = serviceScope
         ).also { it.start() }
     }
 
@@ -58,7 +60,14 @@ class RecordingManager(
             filePath = file.absolutePath,
             status = ChunkStatus.PENDING
         )
-        val id = dao.insert(entity)
-        uploader.uploadChunk(entity.copy(id = id))
+        try {
+            val id = dao.insert(entity)
+            val result = uploader.uploadChunk(entity.copy(id = id))
+            if (result.isFailure) {
+                Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")
+            }
+        } catch (e: Exception) {
+            Log.w("RecordingManager", "onChunkRecorded failed", e)
+        }
     }
 }

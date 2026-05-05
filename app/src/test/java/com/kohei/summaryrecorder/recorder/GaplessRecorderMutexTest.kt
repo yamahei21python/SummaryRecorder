@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -17,6 +20,8 @@ class GaplessRecorderMutexTest {
 
     @TempDir
     lateinit var tempDir: File
+
+    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
@@ -37,7 +42,8 @@ class GaplessRecorderMutexTest {
                     recordedChunks.add(index to file)
                 }
             },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // メインスレッドで5回書込み（各1024 bytes）

@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -21,6 +24,8 @@ class GaplessRecorderSplitTest {
     @TempDir
     lateinit var tempDir: File
 
+    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
         override fun read(buffer: ShortArray, size: Int): Int = -1
@@ -37,7 +42,8 @@ class GaplessRecorderSplitTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 3回に分けて書込み（各256 bytes） → 3回目で累計768 > 512 → 分割
@@ -65,7 +71,8 @@ class GaplessRecorderSplitTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 200 bytesずつ書込み → 毎回分割トリガー
@@ -88,7 +95,8 @@ class GaplessRecorderSplitTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         recorder.writeTestPcmData(ByteArray(200) { 0.toByte() })

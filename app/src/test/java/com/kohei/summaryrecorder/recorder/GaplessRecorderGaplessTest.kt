@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -15,6 +18,8 @@ class GaplessRecorderGaplessTest {
 
     @TempDir
     lateinit var tempDir: File
+
+    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
@@ -31,7 +36,8 @@ class GaplessRecorderGaplessTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 200 bytesずつ（一意パターン）5回書込み → 1000 bytes total
@@ -66,7 +72,8 @@ class GaplessRecorderGaplessTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 200 + 200 = 2チャンクぴったり

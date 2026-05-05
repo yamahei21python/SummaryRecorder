@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -22,6 +25,8 @@ class GaplessRecorderEdgeTest {
 
     @TempDir
     lateinit var tempDir: File
+
+    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     /** テスト用: 何もしないAudioProvider（writeTestPcmData使用時用） */
     private val noopProvider = object : AudioProvider {
@@ -46,7 +51,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = 1024,
             onChunkComplete = { _, _ -> },
-            audioProvider = failingProvider
+            audioProvider = failingProvider,
+            coroutineScope = testScope
         )
 
         assertThrows<IllegalStateException> {
@@ -77,7 +83,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = provider
+            audioProvider = provider,
+            coroutineScope = testScope
         )
 
         recorder.start()
@@ -97,7 +104,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 0バイト書込み → 何もしない
@@ -117,7 +125,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 丁度256バイト書込み → 分割トリガー（== chunkSizeBytes）
@@ -138,7 +147,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // 257バイト書込み → shortCount=128 (257/2=128、最後1バイト切り捨て)
@@ -162,7 +172,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         recorder.writeTestPcmData(ByteArray(100) { it.toByte() })
@@ -191,7 +202,8 @@ class GaplessRecorderEdgeTest {
             outputDir = tempDir,
             chunkSizeBytes = 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = provider
+            audioProvider = provider,
+            coroutineScope = testScope
         )
 
         recorder.start()

@@ -1,6 +1,9 @@
 package com.kohei.summaryrecorder.recorder
 
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -24,6 +27,8 @@ class GaplessRecorderWriteTest {
     @TempDir
     lateinit var tempDir: File
 
+    private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
     /** テスト用: 何もしないAudioProvider（writeTestPcmData使用時はstart()不要なため） */
     private val noopProvider = object : AudioProvider {
         override fun start(): Boolean = true
@@ -39,7 +44,8 @@ class GaplessRecorderWriteTest {
             outputDir = tempDir,
             chunkSizeBytes = 19L * 1024 * 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
 
         // PCMデータを書き込む（1000 bytes = 500 samples @ 16bit mono）
@@ -76,10 +82,9 @@ class GaplessRecorderWriteTest {
             outputDir = tempDir,
             chunkSizeBytes = 19L * 1024 * 1024,
             onChunkComplete = { index, file -> recordedChunks.add(index to file) },
-            audioProvider = noopProvider
+            audioProvider = noopProvider,
+            coroutineScope = testScope
         )
-
-        // 何も書かずにstop
         recorder.stopForTest()
 
         // データなし → チャンク生成なし
