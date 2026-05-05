@@ -4,6 +4,7 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
+import android.util.Log
 import java.io.File
 
 class TranscriptionUploader(
@@ -22,7 +23,9 @@ class TranscriptionUploader(
         }
         return if (result.isSuccess) {
             chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
-            file.delete()
+            if (file.exists() && !file.delete()) {
+                Log.w("TranscriptionUploader", "Failed to delete file: ${file.absolutePath}")
+            }
             result
         } else {
             chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)

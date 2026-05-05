@@ -135,6 +135,6 @@ class RecordingService : Service() {
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
         WorkManager.getInstance(this)
-            .enqueueUniquePeriodicWork("retry_transcription", ExistingPeriodicWorkPolicy.KEEP, request)
+            .enqueueUniquePeriodicWork("retry_transcription", ExistingPeriodicWorkPolicy.REPLACE, request)
     }
 }

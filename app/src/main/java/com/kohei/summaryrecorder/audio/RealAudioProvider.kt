@@ -5,6 +5,7 @@ import com.kohei.summaryrecorder.recorder.AudioConstants
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.util.Log
 
 /** 本番: AudioRecord 経由で端末マイクからPCM取得 */
 class RealAudioProvider(
@@ -34,11 +35,19 @@ class RealAudioProvider(
         audioRecord?.read(buffer, 0, size) ?: -1
 
     override fun stop() {
-        try { audioRecord?.stop() } catch (_: IllegalStateException) {}
+        try {
+            audioRecord?.stop()
+        } catch (e: Exception) {
+            Log.w("RealAudioProvider", "stop failed", e)
+        }
     }
 
     override fun release() {
-        audioRecord?.release()
+        try {
+            audioRecord?.release()
+        } catch (e: Exception) {
+            Log.w("RealAudioProvider", "release failed", e)
+        }
         audioRecord = null
     }
 }

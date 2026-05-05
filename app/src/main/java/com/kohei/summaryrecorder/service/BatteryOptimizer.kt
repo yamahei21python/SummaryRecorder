@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 /**
@@ -33,8 +34,8 @@ object BatteryOptimizer {
                 createNotificationChannel(context)
                 showNotification(context)
             }
-        } catch (_: Exception) {
-            // テスト環境やSettings未サポート端末では安全に無視
+        } catch (e: Exception) {
+            Log.d("BatteryOptimizer", "checkAndNotify failed", e)
         }
     }
 
@@ -46,7 +47,8 @@ object BatteryOptimizer {
             val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
             val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
             !isIgnoring
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.d("BatteryOptimizer", "shouldRequestBatteryOptimization failed", e)
             false
         }
     }
