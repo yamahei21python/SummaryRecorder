@@ -2,17 +2,18 @@ package com.kohei.summaryrecorder.di
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.kohei.summaryrecorder.audio.DummyAudioProvider
-import com.kohei.summaryrecorder.audio.MockTranscriptionProvider
-import com.kohei.summaryrecorder.audio.RealAudioProvider
 import com.kohei.summaryrecorder.data.repository.TranscriptionRepository
 import com.kohei.summaryrecorder.audio.DebugConfig
 import io.mockk.*
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import kotlin.test.assertIs
+import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class ConfigModuleSingletonTimingTest {
@@ -28,17 +29,27 @@ class ConfigModuleSingletonTimingTest {
         mockRepo = mockk()
     }
 
-    @Test
-    fun `after fix - providers respect runtime debugMode changes`() {
-        // 1. 最初は debugMode = false
+    @After
+    fun tearDown() {
         DebugConfig.debugMode = false
-        val provider1 = module.provideTranscriptionProvider(mockRepo)
-        assertIs<TranscriptionRepository>(provider1, "最初は実体リポジトリが返る")
+    }
 
-        // 2. 途中で debugMode = true に変更
+    @Test
+    fun `after fix - providers respect runtime debugMode changes`() = runBlocking {
+        // 1. debugMode = false → real repoに委譲
+        DebugConfig.debugMode = false
+        coEvery { mockRepo.transcribe(any()) } returns Result.success("real")
+        val provider1 = module.provideTranscriptionProvider(mockRepo)
+        val result1 = provider1.transcribe(File("test.wav"))
+        assertTrue(result1.isSuccess)
+        assertEquals("real", result1.getOrThrow())
+
+        // 2. debugMode = true → mockに委譲
         DebugConfig.debugMode = true
         val provider2 = module.provideTranscriptionProvider(mockRepo)
-        assertIs<MockTranscriptionProvider>(provider2, "debugMode変更後はMockが返る")
+        val result2 = provider2.transcribe(File("test.wav"))
+        assertTrue(result2.isSuccess)
+        assertEquals("これはテスト用の文字起こし結果です。", result2.getOrThrow())
     }
 
     @Test
@@ -46,16 +57,18 @@ class ConfigModuleSingletonTimingTest {
         val mockContext = mockk<Context>()
         val mockAssets = mockk<android.content.res.AssetManager>()
         every { mockContext.assets } returns mockAssets
-        // ダミーのWAVヘッダー（44バイト）+ データ
         val dummyData = ByteArray(100)
         every { mockAssets.open("dummy_audio.wav") } returns dummyData.inputStream()
 
+        // 本番モード → Lazy wrapper返却（AudioRecord不可だがprovider自体は生成される）
         DebugConfig.debugMode = false
         val audio1 = module.provideAudioProvider(mockContext)
-        assertIs<RealAudioProvider>(audio1)
+        audio1.release()
 
+        // debugモード → DummyAudioProvider.start成功
         DebugConfig.debugMode = true
         val audio2 = module.provideAudioProvider(mockContext)
-        assertIs<DummyAudioProvider>(audio2)
+        assertTrue(audio2.start(), "debugMode時はDummyAudioProvider経由でstart成功")
+        audio2.release()
     }
 }

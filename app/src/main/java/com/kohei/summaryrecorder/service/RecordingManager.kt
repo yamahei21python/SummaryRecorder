@@ -38,6 +38,7 @@ class RecordingManager(
                 chunkSizeBytes = chunkSizeBytes,
                 onChunkComplete = { chunkIndex, file, isLast ->
                     onChunkRecorded(sessionId, chunkIndex, file, isLast)
+                    Unit
                 },
                 audioProvider = audioProvider,
                 coroutineScope = recorderScope
@@ -59,28 +60,29 @@ class RecordingManager(
         }
     }
 
-    private suspend fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File, isLast: Boolean) {
-        val entity = ChunkEntity(
-            sessionId = sessionId,
-            chunkIndex = chunkIndex,
-            filePath = file.absolutePath,
-            status = ChunkStatus.PENDING,
-            isLast = isLast
-        )
-        try {
-            val id = chunkRepository.insert(entity)
-            if (id == -1L) {
-                Log.e("RecordingManager", "Failed to insert chunk $chunkIndex into database")
-                return
-            }
-            uploadScope.launch {
+    private fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File, isLast: Boolean) {
+        // uploadScopeで実行 — recorderScopeキャンセル（stopRecording）に影響されない
+        uploadScope.launch {
+            val entity = ChunkEntity(
+                sessionId = sessionId,
+                chunkIndex = chunkIndex,
+                filePath = file.absolutePath,
+                status = ChunkStatus.PENDING,
+                isLast = isLast
+            )
+            try {
+                val id = chunkRepository.insert(entity)
+                if (id == -1L) {
+                    Log.e("RecordingManager", "Failed to insert chunk $chunkIndex into database")
+                    return@launch
+                }
                 val result = uploader.uploadChunk(entity.copy(id = id))
                 if (result.isFailure) {
                     Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")
                 }
+            } catch (e: Exception) {
+                Log.w("RecordingManager", "onChunkRecorded failed", e)
             }
-        } catch (e: Exception) {
-            Log.w("RecordingManager", "onChunkRecorded failed", e)
         }
     }
 }

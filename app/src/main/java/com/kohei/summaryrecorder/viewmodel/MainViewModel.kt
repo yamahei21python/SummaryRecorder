@@ -130,17 +130,19 @@ class MainViewModel @Inject constructor(
                     _uiState.update { it.copy(chunks = items) }
 
                     val recording = _uiState.value.isRecording
+
+                    // ローディング解除（UIフィードバック）
                     if (!recording && (allTerminal || items.isEmpty())) {
                         _uiState.update { it.copy(isLoading = false) }
-                        // #10: セッション終了後にobserveJobをキャンセル（リソースリーク防止）
-                        if (allTerminal) {
-                            observeJob?.cancel()
-                        }
                     }
 
+                    // 要約トリガー: 録音終了 + isLastあり + 全DONE + 未要約
+                    // NOTE: hasLast=false の間はキャンセルしない → 最終チャンク到着を待つ
                     if (!recording && hasLast && chunks.all { it.status == ChunkStatus.DONE } && !summarized) {
                         summarized = true
                         summarizeAll(sessionId)
+                        // 要約完了後、リソースリーク防止のためobserve終了
+                        observeJob?.cancel()
                     }
                 }
         }

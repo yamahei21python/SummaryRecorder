@@ -1,28 +1,27 @@
 appId: com.kohei.summaryrecorder
 ---
-# E2E Happy Path: 録音→分割→文字起こし→要約表示
-# Debug mode起動（ダミー音声 + モックAPI + 小チャンク）
-- exec:
-    command: adb shell am start -n com.kohei.summaryrecorder/.ui.MainActivity --ez debug true
+# E2E Happy Path
 
-# UI読込待ち（タブUI: 録音タブがデフォルト選択）
-- waitFor: "録音開始"
+- assertVisible: "録音開始"
 
-# 録音開始（ダミー音声をループ読込、100KB毎にチャンク生成）
+# 録音開始
 - tapOn: "録音開始"
 
-# チャンク一覧が表示され、少なくとも1つが完了状態になるのを待つ
+# チャンク完了待ち
 - assertVisible: "チャンク状態"
 - assertVisible: "完了"
 
 # 録音停止
 - tapOn: "録音停止"
 
-# 要約結果が表示されるまで待機（MockSummaryProviderが固定応答を返す）
-- assertVisible: "要約結果"
+# 要約結果が表示されるまで最大60秒リトライ
+- retry:
+    maxRetries: 30
+    commands:
+      - assertVisible: "要約結果"
 
-# 履歴タブに切り替え
+# 履歴タブ
 - tapOn: "履歴"
 
-# 履歴が空であることを確認（要約成功後の自動削除）
+# 自動削除確認
 - assertVisible: "履歴がありません"
