@@ -275,7 +275,7 @@ class GaplessRecorderEdgeTest {
             chunkSizeBytes = 1024,
             onChunkComplete = { _, _ -> },
             audioProvider = noopProvider,
-            coroutineScope = testScope
+            coroutineScope = this
         )
 
         // Setup a situation where delete() is needed (dataLength == 0)

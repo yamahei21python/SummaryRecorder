@@ -73,7 +73,7 @@ class GaplessRecorderRestartTest {
         // セッション1: 2チャンク生成（512バイト×2 > chunkSize=1024）
         val chunkSize = 1024L
         val recorder1 = GaplessRecorder(
-            tempDir, chunkSize, { _, _ -> }, noopProvider, testScope
+            tempDir, chunkSize, { _, _ -> }, noopProvider, this
         )
         recorder1.writeTestPcmData(ByteArray(1024) { 0x01 })  // chunk_0
         recorder1.stopForTest()
