@@ -2,10 +2,10 @@ package com.kohei.summaryrecorder.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -16,12 +16,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val dao: ChunkDao,
+    private val chunkRepository: ChunkRepository,
     private val summarizeUseCase: SummarizeUseCase,
     private val recordingController: RecordingController
 ) : ViewModel() {
-
-    // ===== UI State =====
 
     data class UiState(
         val isRecording: Boolean = false,
@@ -41,10 +39,7 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    // observeChunks の Job を保持 → 再 startRecording 時に cancel
-    private var observeJobs: List<Job> = emptyList()
-
-    // ===== 録音制御 =====
+    private var observeJob: Job? = null
 
     fun startRecording() {
         val sessionId = UUID.randomUUID().toString()
@@ -65,28 +60,25 @@ class MainViewModel @Inject constructor(
         recordingController.stopRecording()
     }
 
-    // ===== チャンク監視 =====
-
     private fun observeChunks(sessionId: String) {
-        // 古い購読をキャンセル（リーク防止）
-        observeJobs.forEach { it.cancel() }
-
-        val job = viewModelScope.launch {
-            dao.observeBySession(sessionId)
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            chunkRepository.observeBySession(sessionId)
                 .map { chunks ->
                     val items = chunks.map { it.toUiItem() }
                     val allDone = chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
-                    Triple(items, allDone, chunks)
+                    items to allDone
                 }
                 .distinctUntilChanged()
-                .collect { (items, allDone, _) ->
+                .onEach { (items, _) ->
                     _uiState.update { it.copy(chunks = items) }
-                    if (allDone) {
-                        summarizeAll(sessionId)
-                    }
                 }
+                .filter { (_, allDone) -> allDone }
+                .onEach {
+                    launch { summarizeAll(sessionId) }
+                }
+                .collect {}
         }
-        observeJobs = listOf(job)
     }
 
     private fun ChunkEntity.toUiItem() = ChunkUiItem(
@@ -94,8 +86,6 @@ class MainViewModel @Inject constructor(
         status = status,
         transcription = transcriptionText
     )
-
-    // ===== 要約 =====
 
     private suspend fun summarizeAll(sessionId: String) {
         val result = summarizeUseCase.execute(sessionId)
@@ -107,7 +97,6 @@ class MainViewModel @Inject constructor(
                     isLoading = false
                 )
             }
-            // dao.deleteBySession() は UseCase内に移動済み
         } else {
             _uiState.update {
                 it.copy(

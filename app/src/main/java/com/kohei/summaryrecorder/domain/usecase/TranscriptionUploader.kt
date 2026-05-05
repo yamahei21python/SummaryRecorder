@@ -1,55 +1,23 @@
 package com.kohei.summaryrecorder.domain.usecase
 
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
 import java.io.File
-import javax.inject.Inject
 
-/**
- * 文字起こしアップロード共通ロジック。
- * RecordingService（即時）とRetryWorker（再送）の重複を統合。
- *
- * 責務:
- * - 単一チャンク: UPLOADING → transcribe → DONE/FAILED
- * - 失敗チャンク一括再送: FAILED一覧 → セッション単位で処理
- * - ファイル消失検知: セッション全削除
- */
 class TranscriptionUploader(
-    private val dao: ChunkDao,
+    private val chunkRepository: ChunkRepository,
     private val transcriptionProvider: TranscriptionProvider
 ) {
 
-    /**
-     * 単一チャンクをアップロード。
-     * RecordingServiceのonChunkRecorded → uploadChunkフロー。
-     */
     suspend fun uploadChunk(chunk: ChunkEntity): Result<String> {
-        dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-
-        val file = File(chunk.filePath)
-        val result = transcriptionProvider.transcribe(file)
-
-        if (result.isSuccess) {
-            val text = result.getOrThrow()
-            dao.updateStatus(chunk.id, ChunkStatus.DONE, text)
-            file.delete()
-        } else {
-            dao.updateStatus(chunk.id, ChunkStatus.FAILED)
-        }
-
-        return result
+        chunkRepository.updateStatus(chunk.id, ChunkStatus.UPLOADING)
+        return processTranscribeResult(chunk)
     }
 
-    /**
-     * 失敗チャンクを一括再送。
-     * RetryWorkerのdoWorkロジック。
-     *
-     * @return 処理済みチャンク数
-     */
     suspend fun retryFailedChunks(): Int {
-        val failedChunks = dao.getByStatus(ChunkStatus.FAILED)
+        val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
         val bySession = failedChunks.groupBy { it.sessionId }
         var processedCount = 0
 
@@ -57,38 +25,44 @@ class TranscriptionUploader(
             chunks.forEach { chunk ->
                 val file = File(chunk.filePath)
                 if (!file.exists()) {
-                    dao.deleteBySession(sessionId)
+                    chunkRepository.deleteBySession(sessionId)
                     return@forEach
                 }
 
-                dao.updateStatus(chunk.id, ChunkStatus.UPLOADING)
-
-                // 各チャンクのtranscribeをtry/catchで囲み、例外時もFAILEDに戻して次チャンクへ継続
-                val result = try {
-                    transcriptionProvider.transcribe(file)
-                } catch (e: Exception) {
-                    dao.updateStatus(chunk.id, ChunkStatus.FAILED)
-                    return@forEach
-                }
-
-                if (result.isSuccess) {
-                    dao.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
-                    file.delete()
-                    processedCount++
-                } else {
-                    dao.updateStatus(chunk.id, ChunkStatus.FAILED)
-                }
+                val success = processTranscribeResult(chunk, updateUploading = true)
+                if (success) processedCount++
             }
         }
 
         return processedCount
     }
 
-    /**
-     * 失敗チャンクが残っているかチェック。
-     * RetryWorkerで Result.retry / Result.success の判定に使用。
-     */
-    suspend fun hasFailedChunks(): Boolean {
-        return dao.getByStatus(ChunkStatus.FAILED).isNotEmpty()
+    suspend fun getFailedChunkCount(): Int =
+        chunkRepository.getByStatus(ChunkStatus.FAILED).size
+
+    private suspend fun processTranscribeResult(
+        chunk: ChunkEntity,
+        updateUploading: Boolean = false
+    ): Boolean {
+        val file = File(chunk.filePath)
+        if (updateUploading) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.UPLOADING)
+        }
+
+        val result = try {
+            transcriptionProvider.transcribe(file)
+        } catch (e: Exception) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            return false
+        }
+
+        return if (result.isSuccess) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, result.getOrThrow())
+            file.delete()
+            true
+        } else {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.FAILED)
+            false
+        }
     }
 }

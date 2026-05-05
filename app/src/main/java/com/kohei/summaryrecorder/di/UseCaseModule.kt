@@ -1,8 +1,8 @@
 package com.kohei.summaryrecorder.di
 
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.repository.SummaryRepository
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import com.kohei.summaryrecorder.service.ServiceRecordingController
@@ -19,19 +19,19 @@ object UseCaseModule {
     @Provides
     @Singleton
     fun provideTranscriptionUploader(
-        dao: ChunkDao,
+        chunkRepository: ChunkRepository,
         transcriptionProvider: com.kohei.summaryrecorder.domain.provider.TranscriptionProvider
     ): TranscriptionUploader {
-        return TranscriptionUploader(dao, transcriptionProvider)
+        return TranscriptionUploader(chunkRepository, transcriptionProvider)
     }
 
     @Provides
     @Singleton
     fun provideSummarizeUseCase(
-        dao: ChunkDao,
+        chunkRepository: ChunkRepository,
         summaryRepo: SummaryRepository
     ): SummarizeUseCase {
-        return SummarizeUseCase(dao, summaryRepo)
+        return SummarizeUseCase(chunkRepository, summaryRepo)
     }
 
     @Provides

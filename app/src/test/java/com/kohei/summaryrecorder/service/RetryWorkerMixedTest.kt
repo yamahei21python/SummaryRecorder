@@ -7,6 +7,7 @@ import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import com.kohei.summaryrecorder.data.db.AppDatabase
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.repository.ChunkRepositoryImpl
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -19,15 +20,6 @@ import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.assertEquals
 
-/**
- * TranscriptionUploader: 複合状態テスト（既存テストの補完）。
- *
- * 検証項目:
- * - FAILED + PENDING混在 → PENDING無視、FAILEDのみ再送
- * - 全FAILEDチャンクのファイル消失 → セッション全削除、1回のみ実行
- * - 複数セッションで片方だけファイル消失
- * - UPLOADINGチャンクは処理対象外
- */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [31], manifest = Config.NONE)
 class RetryWorkerMixedTest {
@@ -55,79 +47,72 @@ class RetryWorkerMixedTest {
     fun `FAILED and PENDING mixed - only FAILED retried`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
-        val dao = db.chunkDao()
-        val uploader = TranscriptionUploader(dao, mockProvider)
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
         val sessionId = "mixed-fp-session"
 
-        // FAILED: 再送対象
         val failedFile = File(tempDir, "failed.wav").also { it.writeBytes(ByteArray(100)) }
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = sessionId, chunkIndex = 0,
             filePath = failedFile.absolutePath, status = ChunkStatus.FAILED
         ))
 
-        // PENDING: 無視
         val pendingFile = File(tempDir, "pending.wav").also { it.writeBytes(ByteArray(100)) }
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = sessionId, chunkIndex = 1,
             filePath = pendingFile.absolutePath, status = ChunkStatus.PENDING
         ))
 
         uploader.retryFailedChunks()
 
-        val all = dao.getBySession(sessionId)
+        val all = chunkRepo.getBySession(sessionId)
         assertEquals(2, all.size)
 
-        // FAILED→DONE
         assertEquals(ChunkStatus.DONE, all[0].status)
         assertEquals("テキスト", all[0].transcriptionText)
 
-        // PENDINGは不変
         assertEquals(ChunkStatus.PENDING, all[1].status)
     }
 
     @Test
     fun `all FAILED files missing - entire session deleted`() = runTest {
-        val dao = db.chunkDao()
-        val uploader = TranscriptionUploader(dao, mockProvider)
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
         val sessionId = "all-missing-session"
 
-        // 全ファイル存在しない
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = sessionId, chunkIndex = 0,
             filePath = "/tmp/missing_0.wav", status = ChunkStatus.FAILED
         ))
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = sessionId, chunkIndex = 1,
             filePath = "/tmp/missing_1.wav", status = ChunkStatus.FAILED
         ))
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = sessionId, chunkIndex = 2,
             filePath = "/tmp/missing_2.wav", status = ChunkStatus.FAILED
         ))
 
         uploader.retryFailedChunks()
 
-        // セッション全削除
-        assertEquals(0, dao.getBySession(sessionId).size)
+        assertEquals(0, chunkRepo.getBySession(sessionId).size)
     }
 
     @Test
     fun `UPLOADING chunks are not processed`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
-        val dao = db.chunkDao()
-        val uploader = TranscriptionUploader(dao, mockProvider)
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
         val uploadFile = File(tempDir, "uploading.wav").also { it.writeBytes(ByteArray(100)) }
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = "upload-session", chunkIndex = 0,
             filePath = uploadFile.absolutePath, status = ChunkStatus.UPLOADING
         ))
 
         uploader.retryFailedChunks()
 
-        // UPLOADINGはgetByStatus(FAILED)に含まれない → 不変
-        val chunks = dao.getBySession("upload-session")
+        val chunks = chunkRepo.getBySession("upload-session")
         assertEquals(1, chunks.size)
         assertEquals(ChunkStatus.UPLOADING, chunks[0].status)
     }
@@ -136,43 +121,39 @@ class RetryWorkerMixedTest {
     fun `multiple sessions - only one has missing files`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("テキスト")
 
-        val dao = db.chunkDao()
-        val uploader = TranscriptionUploader(dao, mockProvider)
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
 
-        // Session A: ファイル存在 → 再送成功
         val fileA = File(tempDir, "a.wav").also { it.writeBytes(ByteArray(100)) }
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = "session-A", chunkIndex = 0,
             filePath = fileA.absolutePath, status = ChunkStatus.FAILED
         ))
 
-        // Session B: ファイル消失 → セッション全削除
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = "session-B", chunkIndex = 0,
             filePath = "/tmp/missing_b.wav", status = ChunkStatus.FAILED
         ))
 
         uploader.retryFailedChunks()
 
-        // Session A: DONE
-        val sessionA = dao.getBySession("session-A")
+        val sessionA = chunkRepo.getBySession("session-A")
         assertEquals(1, sessionA.size)
         assertEquals(ChunkStatus.DONE, sessionA[0].status)
 
-        // Session B: 全削除
-        assertEquals(0, dao.getBySession("session-B").size)
+        assertEquals(0, chunkRepo.getBySession("session-B").size)
     }
 
     @Test
     fun `FAILED chunk with large file - retried successfully`() = runTest {
         coEvery { mockProvider.transcribe(any<File>()) } returns Result.success("大きなファイルテキスト")
 
-        val dao = db.chunkDao()
-        val uploader = TranscriptionUploader(dao, mockProvider)
+        val chunkRepo = ChunkRepositoryImpl(db.chunkDao())
+        val uploader = TranscriptionUploader(chunkRepo, mockProvider)
         val largeFile = File(tempDir, "large.wav").also {
-            it.writeBytes(ByteArray(1024 * 100)) // 100KB
+            it.writeBytes(ByteArray(1024 * 100))
         }
-        dao.insert(ChunkEntity(
+        chunkRepo.insert(ChunkEntity(
             sessionId = "large-session", chunkIndex = 0,
             filePath = largeFile.absolutePath, status = ChunkStatus.FAILED
         ))
@@ -180,7 +161,7 @@ class RetryWorkerMixedTest {
         val count = uploader.retryFailedChunks()
 
         assertEquals(1, count)
-        val done = dao.getByStatus(ChunkStatus.DONE)
+        val done = chunkRepo.getByStatus(ChunkStatus.DONE)
         assertEquals(1, done.size)
         assertEquals("大きなファイルテキスト", done[0].transcriptionText)
     }

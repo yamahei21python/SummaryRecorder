@@ -3,10 +3,10 @@ package com.kohei.summaryrecorder.viewmodel
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
 import io.mockk.every
@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [31], application = Application::class)
 class SummaryFlowTest {
 
-    private lateinit var dao: ChunkDao
+    private lateinit var chunkRepository: ChunkRepository
     private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
@@ -36,11 +36,11 @@ class SummaryFlowTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        dao = mockk<ChunkDao>(relaxed = true)
+        chunkRepository = mockk<ChunkRepository>(relaxed = true)
         summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
-        coEvery { dao.observeBySession(any()) } returns chunksFlow
+        every { chunkRepository.observeBySession(any()) } returns chunksFlow
         every { recordingController.startRecording(any()) } returns Unit
         every { recordingController.stopRecording() } returns Unit
     }
@@ -71,7 +71,7 @@ class SummaryFlowTest {
     fun `all done triggers summarize`() = runTest {
         coEvery { summarizeUseCase.execute(any()) } returns Result.success("要約テキスト")
 
-        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
+        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         val doneChunks = listOf(
@@ -84,13 +84,11 @@ class SummaryFlowTest {
             val state = awaitItem()
             assertEquals("要約テキスト", state.summary)
         }
-
-        coEvery { dao.deleteBySession(any()) } returns Unit
     }
 
     @Test
     fun `partial done does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
+        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         val partialChunks = listOf(
@@ -104,7 +102,7 @@ class SummaryFlowTest {
 
     @Test
     fun `empty chunks does not trigger summarize`() = runTest {
-        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
+        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = emptyList()
@@ -118,7 +116,7 @@ class SummaryFlowTest {
             RuntimeException("API error")
         )
 
-        val viewModel = MainViewModel(dao, summarizeUseCase, recordingController)
+        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
         viewModel.startRecording()
 
         chunksFlow.value = listOf(

@@ -2,8 +2,8 @@ package com.kohei.summaryrecorder.service
 
 import android.util.Log
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
+import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.recorder.GaplessRecorder
@@ -11,12 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
 
-/**
- * 録音制御マネージャー。
- * RecordingServiceから録音開始/停止/チャンク処理を分離。
- */
 class RecordingManager(
-    private val dao: ChunkDao,
+    private val chunkRepository: ChunkRepository,
     private val uploader: TranscriptionUploader,
     private val serviceScope: CoroutineScope
 ) {
@@ -44,10 +40,6 @@ class RecordingManager(
         ).also { it.start() }
     }
 
-    /**
-     * 録音停止。suspend（GaplessRecorder.stop()がsuspendのため）。
-     * RecordingServiceのonDestroyからserviceScope.launchで呼ぶ。
-     */
     suspend fun stopRecording() {
         recorder?.stop()
         recorder = null
@@ -61,7 +53,7 @@ class RecordingManager(
             status = ChunkStatus.PENDING
         )
         try {
-            val id = dao.insert(entity)
+            val id = chunkRepository.insert(entity)
             val result = uploader.uploadChunk(entity.copy(id = id))
             if (result.isFailure) {
                 Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")

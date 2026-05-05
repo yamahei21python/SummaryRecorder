@@ -4,11 +4,6 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-/**
- * GaplessRecorder テスト用拡張関数。
- * private メンバーにリフレクションでアクセス。
- */
-
 private fun <T> GaplessRecorder.getPrivate(name: String, returnType: Class<T>): T {
     val field = GaplessRecorder::class.java.getDeclaredField(name)
     field.isAccessible = true
@@ -42,9 +37,6 @@ private fun GaplessRecorder.invokeFinalizeCurrentChunk() {
     method.invoke(this)
 }
 
-/**
- * テスト用: バイト配列をPCMデータとして書込む。
- */
 fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
     val currentFile = getPrivate("currentFile", RandomAccessFile::class.java)
     if (currentFile == null) {
@@ -67,9 +59,6 @@ fun GaplessRecorder.writeTestPcmData(data: ByteArray) {
     }
 }
 
-/**
- * テスト用: 現在のチャンクを確定して停止。
- */
 fun GaplessRecorder.stopForTest() {
     setPrivate("isRecording", false)
     val currentFile = getPrivate("currentFile", RandomAccessFile::class.java)
