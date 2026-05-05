@@ -5,9 +5,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -22,12 +26,14 @@ import kotlin.test.assertTrue
  */
 class GaplessRecorderRestartTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+    
+    private val tempDir: File by lazy { tempFolder.root }
 
     private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-    @org.junit.jupiter.api.AfterEach
+    @After
     fun tearDown() {
         testScope.cancel()
     }

@@ -111,23 +111,20 @@ class MainViewModelEdgeTest {
         val firstFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
         val secondFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
         
-        // Return different flows based on sessionId
-        var sessionCount = 0
-        every { chunkRepository.observeBySession(any()) } answers {
-            if (sessionCount++ == 0) firstFlow else secondFlow
-        }
-
         val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
 
         // Session 1
         viewModel.startRecording()
         val firstSession = viewModel.uiState.value.sessionId
+        // Re-mock specifically for first session to be sure
+        every { chunkRepository.observeBySession(firstSession) } returns firstFlow
 
         viewModel.stopRecording()
 
         // Session 2
         viewModel.startRecording()
         val secondSession = viewModel.uiState.value.sessionId
+        every { chunkRepository.observeBySession(secondSession) } returns secondFlow
 
         // Emit to the FIRST session's flow
         firstFlow.value = listOf(

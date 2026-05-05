@@ -9,13 +9,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 class SummaryRepoTest {
 
@@ -25,19 +24,18 @@ class SummaryRepoTest {
     // テスト用システムプロンプト
     private val testSystemPrompt = "テスト用システムプロンプト"
 
-    @BeforeEach
+    @Before
     fun setUp() {
         generativeModel = mockk<GenerativeModel>()
         repository = SummaryRepository(generativeModel, testSystemPrompt)
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
         unmockkAll()
     }
 
     @Test
-    @DisplayName("summarize success returns text")
     fun `summarize success returns text`() = runTest {
         val mockResponse = mockk<GenerateContentResponse>()
         every { mockResponse.text } returns "要約テキスト"
@@ -51,7 +49,6 @@ class SummaryRepoTest {
     }
 
     @Test
-    @DisplayName("summarize empty response returns failure")
     fun `summarize empty response returns failure`() = runTest {
         val mockResponse = mockk<GenerateContentResponse>()
         every { mockResponse.text } returns null
@@ -61,12 +58,11 @@ class SummaryRepoTest {
 
         assertTrue(result.isFailure)
         val exception = result.exceptionOrNull()!!
-        assertInstanceOf(IllegalStateException::class.java, exception)
+        assertTrue(exception is IllegalStateException)
         assertEquals("Gemini returned empty response", exception.message)
     }
 
     @Test
-    @DisplayName("summarize exception returns failure")
     fun `summarize exception returns failure`() = runTest {
         coEvery { generativeModel.generateContent(any<Content>()) } throws RuntimeException("API error")
 
@@ -74,23 +70,21 @@ class SummaryRepoTest {
 
         assertTrue(result.isFailure)
         val exception = result.exceptionOrNull()!!
-        assertInstanceOf(RuntimeException::class.java, exception)
+        assertTrue(exception is RuntimeException)
         assertEquals("API error", exception.message)
     }
 
     @Test
-    @DisplayName("summarize cancellation returns failure")
     fun `summarize cancellation returns failure`() = runTest {
         coEvery { generativeModel.generateContent(any<Content>()) } throws java.util.concurrent.CancellationException("Timed out")
 
         val result = repository.summarize("テスト入力テキスト")
 
         assertTrue(result.isFailure)
-        assertInstanceOf(java.util.concurrent.CancellationException::class.java, result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is java.util.concurrent.CancellationException)
     }
 
     @Test
-    @DisplayName("summarize times out after 60s")
     fun `summarize times out after 60s`() = runTest {
         coEvery { generativeModel.generateContent(any<Content>()) } coAnswers {
             kotlinx.coroutines.delay(65_000L) // Delay longer than TIMEOUT_MS
@@ -102,6 +96,6 @@ class SummaryRepoTest {
         val result = repository.summarize("テスト入力テキスト")
 
         assertTrue(result.isFailure)
-        assertInstanceOf(kotlinx.coroutines.TimeoutCancellationException::class.java, result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is kotlinx.coroutines.TimeoutCancellationException)
     }
 }

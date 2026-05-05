@@ -10,9 +10,9 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -29,14 +29,14 @@ class SummarizeUseCaseRetentionTest {
     private lateinit var mockSummaryRepo: SummaryRepository
     private lateinit var useCase: SummarizeUseCase
 
-    @BeforeEach
+    @Before
     fun setUp() {
         mockRepo = mockk<ChunkRepository>(relaxed = true)
         mockSummaryRepo = mockk<SummaryRepository>(relaxed = true)
         useCase = SummarizeUseCase(mockRepo, mockSummaryRepo)
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
         unmockkAll()
     }
