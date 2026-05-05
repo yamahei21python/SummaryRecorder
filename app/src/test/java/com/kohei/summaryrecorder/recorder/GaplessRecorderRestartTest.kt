@@ -4,6 +4,7 @@ import com.kohei.summaryrecorder.domain.provider.AudioProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -28,7 +29,7 @@ class GaplessRecorderRestartTest {
 
     @org.junit.jupiter.api.AfterEach
     fun tearDown() {
-        kotlinx.coroutines.cancel(testScope)
+        testScope.cancel()
     }
 
     /** 何もしないAudioProvider（writeTestPcmData使用時用） */

@@ -29,47 +29,33 @@ class ConfigModuleTest {
         DebugConfig.debugMode = false
     }
 
-    @Test
-    fun `DebugModeHolder returns true when debugMode is true`() {
-        DebugConfig.debugMode = true
-        assertTrue(DebugModeHolder().isDebugMode)
-    }
 
-    @Test
-    fun `DebugModeHolder returns false when debugMode is false`() {
-        DebugConfig.debugMode = false
-        assertFalse(DebugModeHolder().isDebugMode)
-    }
 
     @Test
     fun `ChunkSize returns debug bytes when debugMode`() {
         DebugConfig.debugMode = true
-        val holder = DebugModeHolder()
-        val chunkSize = ConfigModule.provideChunkSize(holder)
+        val chunkSize = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, chunkSize.bytes)
     }
 
     @Test
     fun `ChunkSize returns production bytes when not debugMode`() {
         DebugConfig.debugMode = false
-        val holder = DebugModeHolder()
-        val chunkSize = ConfigModule.provideChunkSize(holder)
+        val chunkSize = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, chunkSize.bytes)
     }
 
     @Test
     fun `ChunkSize value reflects runtime debugMode change`() {
         DebugConfig.debugMode = false
-        val holder = DebugModeHolder()
 
         // 本番モード
-        val production = ConfigModule.provideChunkSize(holder)
+        val production = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.PRODUCTION_CHUNK_BYTES, production.bytes)
 
-        // ランタイム切替 → 新しいHolderが必要（isDebugModeはgetterで参照）
+        // ランタイム切替
         DebugConfig.debugMode = true
-        val debugHolder = DebugModeHolder()
-        val debug = ConfigModule.provideChunkSize(debugHolder)
+        val debug = ConfigModule.provideChunkSize()
         assertEquals(DebugConfig.DEBUG_CHUNK_BYTES, debug.bytes)
     }
 }
