@@ -1,5 +1,6 @@
 package com.kohei.summaryrecorder.service
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.provider.AudioProvider
@@ -7,23 +8,24 @@ import com.kohei.summaryrecorder.domain.provider.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.TranscriptionUploader
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [31], manifest = Config.NONE)
 
 /**
  * RecordingManager: 録音ライフサイクル + チャンクコールバック検証。
@@ -36,19 +38,21 @@ import kotlin.test.assertNull
  */
 class RecordingManagerTest {
 
-    @TempDir
-    lateinit var tempDir: File
+    private lateinit var tempDir: File
 
     private val testScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val mockRepo = mockk<ChunkRepository>(relaxed = true)
     private val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
 
-    @BeforeEach
+    @Before
     fun setUp() {
-        mockkStatic(android.util.Log::class)
-        // RecordingManager内のLog.w呼出しをモック
-        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
-        every { android.util.Log.w(any<String>(), any<Throwable>()) } returns 0
+        tempDir = File(System.getProperty("java.io.tmpdir"), "rec_mgr_test_${System.nanoTime()}").also { it.mkdirs() }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+        tempDir.deleteRecursively()
     }
 
     @AfterEach
