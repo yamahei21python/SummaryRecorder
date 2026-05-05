@@ -42,11 +42,23 @@ jobs:
           echo "gemini.api.key=dummy_key_for_ci" >> local.properties
           echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
-      - name: Run single core test (diagnostic)
+      - name: Run core tests (non-Robolectric)
         run: |
           set -o pipefail
           gradle testDebugUnitTest \
-            --tests "com.kohei.summaryrecorder.recorder.GaplessRecorderEdgeTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelEdgeTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
+            --tests "com.kohei.summaryrecorder.recorder.*" \
+            --tests "com.kohei.summaryrecorder.audio.DummyAudioProvider*" \
+            --tests "com.kohei.summaryrecorder.data.api.*" \
+            --tests "com.kohei.summaryrecorder.data.repository.SummaryRepositoryPromptTest" \
+            --tests "com.kohei.summaryrecorder.data.repository.SummaryRepoTest" \
+            --tests "com.kohei.summaryrecorder.data.repository.TranscriptionRepoTest" \
+            --tests "com.kohei.summaryrecorder.di.ConfigModuleTest" \
+            --tests "com.kohei.summaryrecorder.usecase.*" \
+            --tests "com.kohei.summaryrecorder.service.RecordingManager*" \
+            --tests "com.kohei.summaryrecorder.service.TranscriptionUploaderAtomicityTest" \
             --stacktrace 2>&1 | tee test-core-output.txt
 
       - name: Upload core test results
