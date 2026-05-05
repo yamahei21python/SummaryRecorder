@@ -47,8 +47,6 @@ jobs:
           set -o pipefail
           gradle testDebugUnitTest \
             --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelEdgeTest" \
-            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
-            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
             --tests "com.kohei.summaryrecorder.recorder.*" \
             --tests "com.kohei.summaryrecorder.audio.DummyAudioProvider*" \
             --tests "com.kohei.summaryrecorder.data.api.*" \
@@ -110,6 +108,8 @@ jobs:
         run: |
           set -o pipefail
           gradle testDebugUnitTest \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
             --tests "com.kohei.summaryrecorder.data.db.*" \
             --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteByIdTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceInitTest" \
