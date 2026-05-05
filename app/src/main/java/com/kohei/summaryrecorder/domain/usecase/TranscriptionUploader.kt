@@ -32,20 +32,18 @@ class TranscriptionUploader(
 
     suspend fun retryFailedChunks(): Int {
         val failedChunks = chunkRepository.getByStatus(ChunkStatus.FAILED)
-        val bySession = failedChunks.groupBy { it.sessionId }
         var processedCount = 0
 
-        bySession.forEach { (sessionId, chunks) ->
-            chunks.forEach { chunk ->
-                val file = File(chunk.filePath)
-                if (!file.exists()) {
-                    chunkRepository.deleteBySession(sessionId)
-                    return@forEach
-                }
-
-                val success = processTranscribeResult(chunk, updateUploading = true)
-                if (success) processedCount++
+        failedChunks.forEach { chunk ->
+            val file = File(chunk.filePath)
+            if (!file.exists()) {
+                // ファイル欠損: 当該チャンクのみ削除。セッション全体は維持。
+                chunkRepository.deleteById(chunk.id)
+                return@forEach
             }
+
+            val success = processTranscribeResult(chunk, updateUploading = true)
+            if (success) processedCount++
         }
 
         return processedCount

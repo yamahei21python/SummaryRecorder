@@ -73,9 +73,13 @@ class MainViewModel @Inject constructor(
                 .onEach { (items, _) ->
                     _uiState.update { it.copy(chunks = items) }
                 }
-                .filter { (_, allDone) -> allDone }
-                .onEach {
-                    launch { summarizeAll(sessionId) }
+                .also { flow ->
+                    // 全チャンクDONEを検知した時のみ1回summarize。observeは継続。
+                    launch {
+                        flow.filter { (_, allDone) -> allDone }
+                            .take(1)
+                            .collect { summarizeAll(sessionId) }
+                    }
                 }
                 .collect {}
         }

@@ -64,7 +64,7 @@ class GaplessRecorder(
         audioProvider.stop()
         audioProvider.release()
 
-        recordingJob?.cancel()
+        recordingJob?.cancelAndJoin()
         recordingJob = null
 
         mutex.withLock {

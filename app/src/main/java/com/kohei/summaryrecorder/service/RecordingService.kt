@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import androidx.core.app.ServiceCompat
 import com.kohei.summaryrecorder.R
 import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.di.ChunkSize
@@ -31,6 +32,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class RecordingService : Service() {
@@ -79,7 +81,13 @@ class RecordingService : Service() {
                 val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
                     ?: UUID.randomUUID().toString()
 
-                startForeground(NOTIFICATION_ID, buildNotification("録音中..."))
+                startForeground(NOTIFICATION_ID, buildNotification("録音中..."),
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        ServiceCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    } else {
+                        0
+                    }
+                )
                 scheduleRetryWorker()
 
                 val outputDir = File(filesDir, "recordings/$sessionId").also { it.mkdirs() }
@@ -93,7 +101,7 @@ class RecordingService : Service() {
             ACTION_STOP -> {
                 serviceScope.launch { recordingManager.stopRecording() }
                 updateNotification("文字起こし処理中...")
-                stopForeground(true)
+                stopForeground(STOP_FOREGROUND_DETACH)
                 stopSelf()
             }
         }
@@ -103,7 +111,7 @@ class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        serviceScope.launch { recordingManager.stopRecording() }
+        runBlocking { recordingManager.stopRecording() }
         serviceScope.cancel()
         super.onDestroy()
     }

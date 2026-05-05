@@ -15,10 +15,6 @@ class SummarizeUseCase @Inject constructor(
             .sortedBy { it.chunkIndex }
             .joinToString("\n\n") { it.transcriptionText ?: "" }
 
-        val result = summaryRepo.summarize(combinedText)
-        if (result.isSuccess) {
-            chunkRepository.deleteBySession(sessionId)
-        }
-        return result
+        return summaryRepo.summarize(combinedText)
     }
 }
