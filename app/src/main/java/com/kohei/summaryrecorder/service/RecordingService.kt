@@ -74,6 +74,7 @@ class RecordingService : Service() {
     @Inject lateinit var uploader: TranscriptionUploader
     @Inject lateinit var chunkSize: ChunkSize
     @Inject lateinit var audioProvider: AudioProvider
+    @Inject lateinit var summaryDao: com.kohei.summaryrecorder.data.db.SummaryDao
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var recordingManager: RecordingManager
@@ -121,11 +122,16 @@ class RecordingService : Service() {
                 }
             }
             ACTION_STOP -> {
+                val sessionId = recordingManager.getCurrentSessionId()
                 serviceScope.launch {
                     try {
                         recordingManager.stopRecording()
                     } catch (e: Exception) {
                         android.util.Log.w("RecordingService", "stopRecording failed", e)
+                    }
+                    // WavMerger + SummaryDao先行insert
+                    if (sessionId != null) {
+                        finalizeSession(sessionId)
                     }
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
@@ -179,6 +185,47 @@ class RecordingService : Service() {
         val notification = buildNotification(text)
         val manager = getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private suspend fun finalizeSession(sessionId: String) {
+        try {
+            val chunkDir = File(filesDir, "recordings/$sessionId")
+            val chunkFiles = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                chunkDir.listFiles()
+                    ?.filter { it.name.endsWith(".wav") }
+                    ?.sortedBy { it.name }
+                    ?: emptyList()
+            }
+
+            if (chunkFiles.isEmpty()) {
+                android.util.Log.w("RecordingService", "No chunk files for session $sessionId")
+                return
+            }
+
+            val recordingsDir = File(filesDir, "recordings").apply { mkdirs() }
+            val mergedFile = File(recordingsDir, "$sessionId.wav")
+
+            val durationMs = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.kohei.summaryrecorder.recorder.WavMerger.merge(chunkFiles, mergedFile)
+            }
+
+            chunkRepository.deleteBySession(sessionId)
+
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                chunkDir.deleteRecursively()
+            }
+
+            summaryDao.insert(
+                com.kohei.summaryrecorder.data.db.SummaryEntity(
+                    sessionId = sessionId,
+                    audioFilePath = mergedFile.absolutePath,
+                    durationMs = durationMs,
+                    status = com.kohei.summaryrecorder.data.db.SummaryStatus.RECORDED
+                )
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("RecordingService", "finalizeSession failed", e)
+        }
     }
 
     private fun buildNotification(text: String): Notification {

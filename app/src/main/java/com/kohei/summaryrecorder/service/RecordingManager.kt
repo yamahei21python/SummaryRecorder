@@ -24,6 +24,7 @@ class RecordingManager(
     private val uploadScope = CoroutineScope(baseScope.coroutineContext + SupervisorJob())
     private val mutex = Mutex()
     private val recorderRef = AtomicReference<GaplessRecorder?>(null)
+    private var currentSessionId: String? = null
 
     suspend fun startRecording(
         sessionId: String,
@@ -33,6 +34,7 @@ class RecordingManager(
     ) {
         mutex.withLock {
             recorderRef.get()?.stop()
+            currentSessionId = sessionId
             val recorder = GaplessRecorder(
                 outputDir = outputDir,
                 chunkSizeBytes = chunkSizeBytes,
@@ -55,10 +57,18 @@ class RecordingManager(
     }
 
     suspend fun stopRecording() {
+        val sessionId: String?
+
         mutex.withLock {
             recorderRef.getAndSet(null)?.stop()
+            sessionId = currentSessionId
         }
+
+        // 録音停止後の後処理は呼び出し元(RecordingService)で行う
+        // RecordingManagerはsessionIdを返すだけでよい
     }
+
+    fun getCurrentSessionId(): String? = currentSessionId
 
     suspend fun pauseRecording() {
         mutex.withLock {
@@ -72,8 +82,12 @@ class RecordingManager(
         }
     }
 
+    /**
+     * 録音停止後のセッション確定処理はRecordingService側で行う。
+     * （filesDirへのアクセスが必要なため）
+     */
+
     private fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File, isLast: Boolean) {
-        // uploadScopeで実行 — recorderScopeキャンセル（stopRecording）に影響されない
         uploadScope.launch {
             val entity = ChunkEntity(
                 sessionId = sessionId,
