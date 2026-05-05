@@ -88,4 +88,20 @@ class SummaryRepoTest {
         assertTrue(result.isFailure)
         assertInstanceOf(java.util.concurrent.CancellationException::class.java, result.exceptionOrNull())
     }
+
+    @Test
+    @DisplayName("summarize times out after 60s")
+    fun `summarize times out after 60s`() = runTest {
+        coEvery { generativeModel.generateContent(any<Content>()) } coAnswers {
+            kotlinx.coroutines.delay(65_000L) // Delay longer than TIMEOUT_MS
+            val mockResponse = mockk<GenerateContentResponse>()
+            every { mockResponse.text } returns "要約テキスト"
+            mockResponse
+        }
+
+        val result = repository.summarize("テスト入力テキスト")
+
+        assertTrue(result.isFailure)
+        assertInstanceOf(kotlinx.coroutines.TimeoutCancellationException::class.java, result.exceptionOrNull())
+    }
 }

@@ -93,6 +93,11 @@ class DummyAudioProviderTest {
         val read2 = provider.read(buffer, 10)
         assertEquals(10, read2)
 
+        // 2周目のデータもPCM（0-9）であること。WAVヘッダ（44バイト）が混入していないことを検証
+        for (i in 0 until 10) {
+            assertEquals(i.toShort(), buffer[i], "2周目のデータが不正です。WAVヘッダがスキップされていない可能性があります。index=$i")
+        }
+
         provider.stop()
         provider.release()
     }

@@ -87,4 +87,18 @@ class SummarizeUseCaseRetentionTest {
         // chunkIndex順で結合されること
         coVerify { mockSummaryRepo.summarize("1番目\n\n2番目") }
     }
+
+    @Test
+    fun `execute returns early when combinedText is empty`() = runTest {
+        val chunks = listOf(
+            ChunkEntity(sessionId = "s4", chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "   ")
+        )
+        coEvery { mockRepo.getBySession("s4") } returns chunks
+
+        val result = useCase.execute("s4")
+
+        assertTrue(result.isSuccess)
+        assertEquals("録音データがありません", result.getOrThrow())
+        coVerify(exactly = 0) { mockSummaryRepo.summarize(any()) }
+    }
 }

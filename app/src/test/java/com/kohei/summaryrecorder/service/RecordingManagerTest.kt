@@ -149,4 +149,35 @@ class RecordingManagerTest {
         coVerify(exactly = 1) { mockRepo.insert(any()) }
         coVerify(exactly = 1) { mockUploader.uploadChunk(any()) }
     }
+
+    // ===== Race Condition =====
+
+    @Test
+    fun `sessionId race condition is prevented by local capture`() = runTest {
+        coEvery { mockRepo.insert(any()) } returns 1L
+        coEvery { mockUploader.uploadChunk(any()) } returns Result.success("transcribed")
+
+        val manager = RecordingManager(mockRepo, mockUploader, this)
+        
+        // Start session 1
+        manager.startRecording("sess1", tempDir, 4L, createProvider(4L))
+        // Stop immediately
+        manager.stopRecording()
+        
+        // Start session 2
+        manager.startRecording("sess2", tempDir, 4L, createProvider(4L))
+        
+        advanceUntilIdle()
+
+        // Verify that chunks are inserted with correct session IDs
+        // sess1 chunk should have sessionId="sess1"
+        coVerify(exactly = 1) { mockRepo.insert(match { entity ->
+            entity.sessionId == "sess1" && entity.chunkIndex == 0
+        }) }
+        
+        // sess2 chunk should have sessionId="sess2"
+        coVerify(exactly = 1) { mockRepo.insert(match { entity ->
+            entity.sessionId == "sess2" && entity.chunkIndex == 0
+        }) }
+    }
 }

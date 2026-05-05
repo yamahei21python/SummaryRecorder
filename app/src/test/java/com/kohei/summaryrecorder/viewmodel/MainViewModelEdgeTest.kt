@@ -107,6 +107,48 @@ class MainViewModelEdgeTest {
     }
 
     @Test
+    fun `emissions from previous session flow are ignored after restart`() = runTest {
+        val firstFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
+        val secondFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
+        
+        // Return different flows based on sessionId
+        var sessionCount = 0
+        every { chunkRepository.observeBySession(any()) } answers {
+            if (sessionCount++ == 0) firstFlow else secondFlow
+        }
+
+        val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
+
+        // Session 1
+        viewModel.startRecording()
+        val firstSession = viewModel.uiState.value.sessionId
+
+        viewModel.stopRecording()
+
+        // Session 2
+        viewModel.startRecording()
+        val secondSession = viewModel.uiState.value.sessionId
+
+        // Emit to the FIRST session's flow
+        firstFlow.value = listOf(
+            doneChunk(id = 1, index = 0, text = "古いセッション", sessionId = firstSession)
+        )
+
+        // Should not trigger summary or update chunks since job was cancelled
+        assertEquals(emptyList<ChunkEntity>(), viewModel.uiState.value.chunks)
+        assertNull(viewModel.uiState.value.summary)
+        
+        // Emit to the SECOND session's flow
+        secondFlow.value = listOf(
+            doneChunk(id = 2, index = 0, text = "新しいセッション", sessionId = secondSession)
+        )
+        
+        // Should update chunks
+        assertEquals(1, viewModel.uiState.value.chunks.size)
+        assertEquals("新しいセッション", viewModel.uiState.value.chunks[0].transcriptionText)
+    }
+
+    @Test
     fun `empty chunks does not trigger summarize`() = runTest {
         val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
         viewModel.startRecording()

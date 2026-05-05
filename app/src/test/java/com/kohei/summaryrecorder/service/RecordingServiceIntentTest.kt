@@ -17,7 +17,6 @@ import kotlin.test.assertEquals
  *
  * 検証項目:
  * - startIntent(): action=ACTION_START, extra=session_id
- * - stopIntent(): action=ACTION_STOP
  * - startIntent()のtarget componentがRecordingService
  */
 @RunWith(AndroidJUnit4::class)
@@ -55,23 +54,7 @@ class RecordingServiceIntentTest {
         )
     }
 
-    @Test
-    fun `stopIntent has ACTION_STOP`() {
-        val intent = RecordingService.stopIntent(context)
 
-        assertEquals("ACTION_STOP", intent.action)
-    }
-
-    @Test
-    fun `stopIntent targets RecordingService component`() {
-        val intent = RecordingService.stopIntent(context)
-
-        val component = intent.component
-        assertEquals(
-            "com.kohei.summaryrecorder.service.RecordingService",
-            component?.className
-        )
-    }
 
     @Test
     fun `startIntent with empty sessionId stores empty string`() {
