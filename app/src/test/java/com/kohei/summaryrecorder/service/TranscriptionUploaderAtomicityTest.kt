@@ -100,8 +100,9 @@ class TranscriptionUploaderAtomicityTest {
 
     @Test
     fun `retryFailedChunks skips already processing chunks`() = runTest {
-        // 実ファイル作成（file.exists() チェック通過のため）
+        // 44バイトを超えるデータを書き込み、空ファイル判定を回避
         val realFile = tempFolder.newFile("exists.wav")
+        realFile.writeBytes(ByteArray(100) { 0 })
         val chunk1 = ChunkEntity(id = 1L, sessionId = "s", chunkIndex = 0, filePath = realFile.absolutePath, status = ChunkStatus.FAILED)
 
         coEvery { mockRepo.getByStatus(ChunkStatus.FAILED) } returns listOf(chunk1)

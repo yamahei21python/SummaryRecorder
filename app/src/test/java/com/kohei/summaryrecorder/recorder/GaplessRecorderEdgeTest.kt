@@ -93,8 +93,9 @@ class GaplessRecorderEdgeTest {
         )
 
         recorder.start()
-        Thread.sleep(100) // コルーチン起動待ち
+        advanceUntilIdle() // Wait for coroutine to start and call openNewFile
         recorder.stop()
+        advanceUntilIdle()
 
         // データ0バイトでもisLast=trueにより1チャンク生成される
         assertEquals(1, recordedChunks.size)
@@ -114,6 +115,10 @@ class GaplessRecorderEdgeTest {
         )
 
         // 0バイト書込み（かつstopForTest）でも1チャンク生成される
+        recorder.openNewFile() // チャンク生成を確実にするため
+        recorder.writeTestPcmData(ByteArray(0))
+        recorder.stopForTest()
+
         assertEquals(1, recordedChunks.size)
     }
 
@@ -213,8 +218,9 @@ class GaplessRecorderEdgeTest {
         )
 
         recorder.start()
-        Thread.sleep(100) // コルーチン完了待ち
+        advanceUntilIdle() // コルーチン完了待ち
         recorder.stop()
+        advanceUntilIdle()
 
         // データ0バイトでも1チャンク生成される
         assertEquals(1, recordedChunks.size)

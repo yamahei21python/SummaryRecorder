@@ -85,6 +85,7 @@ class GaplessRecorderWriteTest {
             audioProvider = noopProvider,
             coroutineScope = testScope
         )
+        recorder.openNewFile()
         recorder.stopForTest()
 
         // 1チャンク生成される（ヘッダーのみ）
