@@ -49,8 +49,6 @@ class RecordingServiceEdgeCaseTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        // Setup mocks for required fields manually or use Hilt if properly injected
-        // Hilt will inject them if we use create() but sometimes Robolectric + Hilt needs manual property setting if not fully setup
         service.dao = mockk(relaxed = true)
         service.chunkRepository = mockk(relaxed = true)
         service.uploader = mockk(relaxed = true)
@@ -62,32 +60,21 @@ class RecordingServiceEdgeCaseTest {
         
         val intent = Intent(context, RecordingService::class.java).apply {
             action = "ACTION_START"
-            // No session_id extra
         }
 
         serviceController.withIntent(intent).startCommand(0, 1)
 
-        // Verify that a directory with a valid UUID was created
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
         val recordingManager = recordingManagerField.get(service) as RecordingManager
 
-        val sessionIdField = RecordingManager::class.java.getDeclaredField("sessionId")
-        sessionIdField.isAccessible = true
-        // Wait, RecordingManager no longer has sessionId! We changed it to local capture.
-        // So we need to check the outputDir instead.
+        // Since we can't easily get the sessionId from the new RecordingManager,
+        // we'll check if any directory was created in filesDir/recordings/
+        val recordingsDir = java.io.File(context.filesDir, "recordings")
+        val sessionDirs = recordingsDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
         
-        val recorderField = RecordingManager::class.java.getDeclaredField("recorder")
-        recorderField.isAccessible = true
-        val recorder = recorderField.get(recordingManager) as? com.kohei.summaryrecorder.recorder.GaplessRecorder
-        assertNotNull(recorder)
-        
-        val outputDirField = com.kohei.summaryrecorder.recorder.GaplessRecorder::class.java.getDeclaredField("outputDir")
-        outputDirField.isAccessible = true
-        val outputDir = outputDirField.get(recorder) as java.io.File
-        
-        // Verify outputDir name is a valid UUID
-        val uuidName = outputDir.name
+        assertTrue(sessionDirs.isNotEmpty(), "A session directory should be created")
+        val uuidName = sessionDirs.first().name
         val parsedUuid = UUID.fromString(uuidName)
         assertNotNull(parsedUuid)
         
@@ -107,22 +94,25 @@ class RecordingServiceEdgeCaseTest {
 
         serviceController.create()
         
-        // Use reflection to mock recordingManager
-        val mockManager = mockk<RecordingManager>()
-        // Mock stopRecording to delay indefinitely to simulate timeout
+        val mockManager = mockk<RecordingManager>(relaxed = true)
+        // Simulate a long-running stopRecording
         coEvery { mockManager.stopRecording() } coAnswers {
-            kotlinx.coroutines.delay(5000L)
+            kotlinx.coroutines.delay(10000L)
         }
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
         recordingManagerField.set(service, mockManager)
 
-        // destroy should not block indefinitely. It should timeout after 2 seconds.
+        // onDestroy uses runBlocking + withTimeoutOrNull(2000L).
+        // In Robolectric/runTest, we need to be careful with real vs virtual time.
+        // We just want to ensure it doesn't crash and returns within a reasonable real time.
         val startTime = System.currentTimeMillis()
         serviceController.destroy()
         val elapsed = System.currentTimeMillis() - startTime
         
-        // Ensure it took around 2000ms, not 5000ms
-        assertTrue(elapsed < 4000L, "destroy took too long: $elapsed ms")
+        // Timeout is 2000ms. So it should take at least ~2000ms real time if it waits,
+        // OR it might return immediately if virtual time advances.
+        // The important thing is it DOES return and doesn't wait 10000ms.
+        assertTrue(elapsed < 5000L, "destroy took too long: $elapsed ms")
     }
 }

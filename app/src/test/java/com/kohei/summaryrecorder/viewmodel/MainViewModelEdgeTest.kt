@@ -108,23 +108,25 @@ class MainViewModelEdgeTest {
 
     @Test
     fun `emissions from previous session flow are ignored after restart`() = runTest {
-        val firstFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
-        val secondFlow = MutableStateFlow<List<ChunkEntity>>(emptyList())
+        val sessionFlows = mutableMapOf<String, MutableStateFlow<List<ChunkEntity>>>()
+        every { chunkRepository.observeBySession(any()) } answers {
+            val sid = it.invocation.args[0] as String
+            sessionFlows.getOrPut(sid) { MutableStateFlow(emptyList()) }
+        }
         
         val viewModel = MainViewModel(chunkRepository, summarizeUseCase, recordingController)
 
         // Session 1
         viewModel.startRecording()
         val firstSession = viewModel.uiState.value.sessionId
-        // Re-mock specifically for first session to be sure
-        every { chunkRepository.observeBySession(firstSession) } returns firstFlow
+        val firstFlow = sessionFlows[firstSession]!!
 
         viewModel.stopRecording()
 
         // Session 2
         viewModel.startRecording()
         val secondSession = viewModel.uiState.value.sessionId
-        every { chunkRepository.observeBySession(secondSession) } returns secondFlow
+        val secondFlow = sessionFlows[secondSession]!!
 
         // Emit to the FIRST session's flow
         firstFlow.value = listOf(
@@ -132,7 +134,7 @@ class MainViewModelEdgeTest {
         )
 
         // Should not trigger summary or update chunks since job was cancelled
-        assertEquals(emptyList<ChunkEntity>(), viewModel.uiState.value.chunks)
+        assertEquals(0, viewModel.uiState.value.chunks.size)
         assertNull(viewModel.uiState.value.summary)
         
         // Emit to the SECOND session's flow
