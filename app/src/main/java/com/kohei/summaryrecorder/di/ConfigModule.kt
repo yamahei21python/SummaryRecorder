@@ -20,9 +20,9 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 
-class ChunkSize(private val debugModeProvider: () -> Boolean) {
+class ChunkSize(private val bytesProvider: () -> Long) {
     val bytes: Long
-        get() = if (debugModeProvider()) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+        get() = bytesProvider()
 }
 
 @Module
@@ -32,7 +32,9 @@ object ConfigModule {
     @Provides
     @Singleton
     fun provideChunkSize(): ChunkSize {
-        return ChunkSize(debugModeProvider = { DebugConfig.debugMode })
+        return ChunkSize(bytesProvider = {
+            if (DebugConfig.debugMode) DebugConfig.DEBUG_CHUNK_BYTES else DebugConfig.PRODUCTION_CHUNK_BYTES
+        })
     }
 
     @Provides

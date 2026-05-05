@@ -65,10 +65,9 @@ class RecordingServiceEdgeCaseTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        service.dao = mockk(relaxed = true)
         service.chunkRepository = mockk(relaxed = true)
         service.uploader = mockk(relaxed = true)
-        service.chunkSize = ChunkSize(1024L)
+        service.chunkSize = ChunkSize { 1024L }
         service.audioProvider = mockk(relaxed = true)
         coEvery { service.audioProvider.start() } returns true
 
@@ -102,10 +101,9 @@ class RecordingServiceEdgeCaseTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        service.dao = mockk(relaxed = true)
         service.chunkRepository = mockk(relaxed = true)
         service.uploader = mockk(relaxed = true)
-        service.chunkSize = ChunkSize(1024L)
+        service.chunkSize = ChunkSize { 1024L }
         service.audioProvider = mockk(relaxed = true)
 
         serviceController.create()
