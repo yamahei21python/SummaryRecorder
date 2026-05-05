@@ -101,7 +101,7 @@ class MainViewModelEdgeTest {
 
         val doneChunks = listOf(
             ChunkEntity(id = 1, sessionId = viewModel.uiState.value.sessionId,
-                chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "t")
+                chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "t", isLast = true)
         )
         chunksFlow.value = doneChunks
         advanceUntilIdle()

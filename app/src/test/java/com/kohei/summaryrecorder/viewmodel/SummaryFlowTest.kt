@@ -62,7 +62,8 @@ class SummaryFlowTest {
         chunkIndex = index,
         filePath = "/chunk_$index.wav",
         status = ChunkStatus.DONE,
-        transcriptionText = text
+        transcriptionText = text,
+        isLast = true
     )
 
     private fun pendingChunk(id: Long, index: Int) = ChunkEntity(

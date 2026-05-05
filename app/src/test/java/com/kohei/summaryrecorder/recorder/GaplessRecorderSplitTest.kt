@@ -94,7 +94,7 @@ class GaplessRecorderSplitTest {
         val recorder = GaplessRecorder(
             outputDir = tempDir,
             chunkSizeBytes = chunkSize,
-            onChunkComplete = { index, file -> recordedChunks.add(index to file) },
+            onChunkComplete = { index, file, _ -> recordedChunks.add(index to file) },
             audioProvider = noopProvider,
             coroutineScope = testScope
         )
