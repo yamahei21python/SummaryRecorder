@@ -45,7 +45,7 @@ class MainViewModelSummarizeOnceTest {
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
         savedStateHandle = SavedStateHandle()
-        every { chunkRepository.observeBySession(any()) } returns chunksFlow
+        every { chunkRepository.getChunksFlow(any()) } returns chunksFlow
         every { recordingController.startRecording(any()) } returns Unit
     }
 
