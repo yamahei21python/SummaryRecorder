@@ -5,7 +5,7 @@ appId: com.kohei.summaryrecorder
 - exec:
     command: adb shell am start -n com.kohei.summaryrecorder/.ui.MainActivity --ez debug true
 
-# UI読込待ち
+# UI読込待ち（タブUI: 録音タブがデフォルト選択）
 - waitFor: "録音開始"
 
 # 録音開始（ダミー音声をループ読込、100KB毎にチャンク生成）
@@ -20,3 +20,9 @@ appId: com.kohei.summaryrecorder
 
 # 要約結果が表示されるまで待機（MockSummaryProviderが固定応答を返す）
 - assertVisible: "要約結果"
+
+# 履歴タブに切り替え
+- tapOn: "履歴"
+
+# 履歴が空であることを確認（要約成功後の自動削除）
+- assertVisible: "履歴がありません"
