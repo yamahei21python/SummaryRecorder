@@ -19,6 +19,13 @@ class TranscriptionUploader @Inject constructor(
             return Result.failure(IllegalStateException("Chunk ${chunk.id} already being processed"))
         }
         val file = File(chunk.filePath)
+        
+        if (file.exists() && file.length() <= 44L) {
+            chunkRepository.updateStatus(chunk.id, ChunkStatus.DONE, "")
+            file.delete()
+            return Result.success("")
+        }
+
         val result = try {
             transcriptionProvider.transcribe(file)
         } catch (e: Exception) {

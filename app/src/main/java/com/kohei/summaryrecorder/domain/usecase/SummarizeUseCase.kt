@@ -12,6 +12,12 @@ class SummarizeUseCase @Inject constructor(
 ) {
     suspend fun execute(sessionId: String): Result<String> {
         val chunks = chunkRepository.getBySession(sessionId)
+        
+        val hasFailed = chunks.any { it.status == ChunkStatus.FAILED }
+        if (hasFailed) {
+            return Result.failure(IllegalStateException("一部の録音データの書き起こしに失敗したため、要約できませんでした。"))
+        }
+
         val combinedText = chunks
             .filter { it.status == ChunkStatus.DONE }
             .sortedBy { it.chunkIndex }

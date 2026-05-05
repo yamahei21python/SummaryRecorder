@@ -16,7 +16,7 @@ import java.nio.ByteOrder
 class GaplessRecorder(
     private val outputDir: File,
     @VisibleForTesting internal val chunkSizeBytes: Long,
-    private val onChunkComplete: (chunkIndex: Int, file: File) -> Unit,
+    private val onChunkComplete: suspend (chunkIndex: Int, file: File, isLast: Boolean) -> Unit,
     private val audioProvider: AudioProvider,
     private val coroutineScope: CoroutineScope
 ) {
@@ -28,33 +28,48 @@ class GaplessRecorder(
     @Volatile @VisibleForTesting internal var isRecording = false
 
     suspend fun start() {
-        recordingJob?.cancelAndJoin()
+        val oldJob = mutex.withLock {
+            val job = recordingJob
+            recordingJob = null
+            isRecording = false
+            job
+        }
+        oldJob?.cancelAndJoin()
+
         if (!audioProvider.start()) {
             throw IllegalStateException("AudioProvider.start() failed")
         }
 
-        isRecording = true
-        currentChunkIndex = 0
-        currentBytesWritten = 0
+        mutex.withLock {
+            isRecording = true
+            currentChunkIndex = 0
+            currentBytesWritten = 0
 
-        recordingJob = coroutineScope.launch {
-            mutex.withLock { openNewFile() }
+            recordingJob = coroutineScope.launch {
+                try {
+                    mutex.withLock { openNewFile() }
 
-            val buffer = ShortArray(AudioConstants.READ_BUFFER)
-            while (isRecording) {
-                val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
-                if (read < 0) break
-                if (read == 0) continue
+                    val buffer = ShortArray(AudioConstants.READ_BUFFER)
+                    while (isRecording) {
+                        val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
+                        if (read < 0) break
+                        if (read == 0) continue
 
-                mutex.withLock {
-                    if (!isRecording) return@withLock
-                    writePcmData(buffer, read)
+                        mutex.withLock {
+                            if (!isRecording) return@withLock
+                            writePcmData(buffer, read)
 
-                    if (currentBytesWritten >= chunkSizeBytes) {
-                        finalizeCurrentChunk()
-                        currentChunkIndex++
-                        currentBytesWritten = 0
-                        openNewFile()
+                            if (currentBytesWritten >= chunkSizeBytes) {
+                                finalizeCurrentChunk(isLast = false)
+                                currentChunkIndex++
+                                currentBytesWritten = 0
+                                openNewFile()
+                            }
+                        }
+                    }
+                } finally {
+                    mutex.withLock {
+                        finalizeCurrentChunk(isLast = true)
                     }
                 }
             }
@@ -62,18 +77,17 @@ class GaplessRecorder(
     }
 
     suspend fun stop() {
-        isRecording = false
-
-        audioProvider.stop()
-
-        recordingJob?.cancelAndJoin()
-        recordingJob = null
-
-        audioProvider.release()
-
-        mutex.withLock {
-            finalizeCurrentChunk()
+        val jobToCancel = mutex.withLock {
+            if (!isRecording) return@withLock null
+            isRecording = false
+            audioProvider.stop()
+            val job = recordingJob
+            recordingJob = null
+            job
         }
+        
+        jobToCancel?.cancelAndJoin()
+        audioProvider.release()
     }
 
     @VisibleForTesting
@@ -94,7 +108,7 @@ class GaplessRecorder(
     }
 
     @VisibleForTesting
-    internal fun finalizeCurrentChunk() {
+    internal suspend fun finalizeCurrentChunk(isLast: Boolean = false) {
         currentFile?.let { raf ->
             val dataLength = currentBytesWritten.toLong()
             WavHeaderWriter.writeHeader(raf, dataLength)
@@ -102,9 +116,9 @@ class GaplessRecorder(
             currentFile = null
 
             val file = File(outputDir, "chunk_${currentChunkIndex}.wav")
-            if (dataLength > 0) {
+            if (dataLength > 0 || isLast) {
                 if (file.exists()) {
-                    onChunkComplete(currentChunkIndex, file)
+                    onChunkComplete(currentChunkIndex, file, isLast)
                 }
             } else {
                 if (file.exists()) file.delete()

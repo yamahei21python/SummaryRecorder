@@ -91,6 +91,7 @@ class MainViewModel @Inject constructor(
             chunkRepository.getChunksFlow(sessionId)
                 .collect { chunks ->
                     val items = chunks.map { it.toUiItem() }
+                    val hasLast = chunks.any { it.isLast }
                     val allDone = chunks.isNotEmpty() && chunks.all { it.status == ChunkStatus.DONE }
                     val allTerminal = chunks.isNotEmpty() && chunks.all {
                         it.status == ChunkStatus.DONE || it.status == ChunkStatus.FAILED
@@ -103,7 +104,7 @@ class MainViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false) }
                     }
 
-                    if (!recording && allDone && !summarized) {
+                    if (!recording && hasLast && allDone && !summarized) {
                         summarized = true
                         summarizeAll(sessionId)
                     }

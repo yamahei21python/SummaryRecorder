@@ -34,6 +34,9 @@ data class ChunkEntity(
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
 
+    @ColumnInfo(name = "is_last")
+    val isLast: Boolean = false,
+
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0
 )
