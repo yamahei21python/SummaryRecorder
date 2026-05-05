@@ -33,7 +33,7 @@ object WavHeaderWriter {
 
         // RIFF header
         file.writeAsciiBytes("RIFF")
-        file.writeIntLE((fileSize - 8).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt())
+        file.writeIntLE((fileSize - 8).toInt())
         file.writeAsciiBytes("WAVE")
 
         // fmt sub-chunk
