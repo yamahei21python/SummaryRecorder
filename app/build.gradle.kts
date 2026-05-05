@@ -132,4 +132,5 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.work:work-testing:2.9.0")
     testImplementation("androidx.work:work-testing:2.9.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }

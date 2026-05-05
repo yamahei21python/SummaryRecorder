@@ -2,6 +2,7 @@ package com.kohei.summaryrecorder.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import com.kohei.summaryrecorder.service.ServiceRecordingController
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ class MainViewModelEdgeTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var chunkRepo: ChunkRepository
+    private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var controller: ServiceRecordingController
     private lateinit var viewModel: MainViewModel
 
@@ -31,11 +33,12 @@ class MainViewModelEdgeTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         chunkRepo = mockk(relaxed = true)
+        summarizeUseCase = mockk(relaxed = true)
         controller = mockk(relaxed = true)
         
         every { chunkRepo.getChunksFlow(any()) } returns flowOf(emptyList())
         
-        viewModel = MainViewModel(chunkRepo, controller)
+        viewModel = MainViewModel(chunkRepo, summarizeUseCase, controller)
     }
 
     @After

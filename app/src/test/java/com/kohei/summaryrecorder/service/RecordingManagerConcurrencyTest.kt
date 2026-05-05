@@ -3,9 +3,7 @@ package com.kohei.summaryrecorder.service
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import io.mockk.any
-import io.mockk.coVerify
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
