@@ -4,7 +4,8 @@ on:
   workflow_dispatch:  # 手動実行のみ。GitHubのActionsタブから「Run workflow」で発火
 
 jobs:
-  e2e:
+  # ===== Light E2E: UI操作のみ (dummy API keysでCI実行可) =====
+  light:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -48,7 +49,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-          # KVMが利用可能か確認
           ls -l /dev/kvm || echo "KVM not available"
 
       - name: AVD cache
@@ -81,7 +81,7 @@ jobs:
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      - name: Run E2E tests
+      - name: Run Light E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 31
@@ -98,12 +98,33 @@ jobs:
             # APKインストール
             adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-            # Maestro実行
-            maestro test .maestro/e2e_happy_path.yaml
+            # 音声録音権限付与
+            adb shell pm grant com.kohei.summaryrecorder android.permission.RECORD_AUDIO
+            adb shell pm grant com.kohei.summaryrecorder android.permission.POST_NOTIFICATIONS
+
+            # Light E2E実行 (UI操作のみ, API呼び出しなし)
+            maestro test .maestro/e2e_happy_path.yaml --format junit
+            maestro test .maestro/e2e_settings.yaml --format junit
 
       - name: Upload Maestro report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-report
+          name: maestro-light-report
           path: ~/.maestro/tests/**/*
+
+# ===== Heavy E2E: フルパイプライン (手動実行, 実際のAPI keys必要) =====
+#
+# Heavy E2EはCIでは実行しません。手動で実行してください:
+#
+#   前提:
+#     1. 実機またはエミュレータが接続済み
+#     2. local.properties に実際のAPI keysが設定済み
+#     3. Maestroがインストール済み (curl -Ls "https://get.maestro.mobile.dev" | bash)
+#
+#   実行手順:
+#     ./e2e/setup_heavy.sh          # DB + WAV事前投入
+#     maestro test .maestro/e2e_heavy_pipeline.yaml
+#
+#   または一括実行:
+#     ./e2e/run_heavy.sh
