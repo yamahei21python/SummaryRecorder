@@ -1,6 +1,7 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import android.os.StatFs
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -15,6 +16,7 @@ import com.kohei.summaryrecorder.recorder.AudioConstants
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
+import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,6 +36,7 @@ class MainViewModel @Inject constructor(
     private val recordingController: RecordingController,
     private val summaryDao: SummaryDao,
     private val deleteSummaryUseCase: DeleteSummaryUseCase,
+    private val backupRestoreUseCase: BackupRestoreUseCase,
     private val application: Application,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -43,6 +46,7 @@ class MainViewModel @Inject constructor(
         private const val KEY_IS_RECORDING = "is_recording"
         private const val KEY_IS_PAUSED = "is_paused"
         private const val KEY_RECORDING_SECONDS = "recording_seconds"
+        private const val KEY_RECORDING_START_TIME = "recording_start_time"
         private const val RECORDINGS_DIR = "recordings"
     }
 
@@ -92,6 +96,10 @@ class MainViewModel @Inject constructor(
         get() = savedStateHandle[KEY_RECORDING_SECONDS] ?: 0
         set(value) { savedStateHandle[KEY_RECORDING_SECONDS] = value }
 
+    private var persistedRecordingStartTime: Long
+        get() = savedStateHandle[KEY_RECORDING_START_TIME] ?: 0L
+        set(value) { savedStateHandle[KEY_RECORDING_START_TIME] = value }
+
     init {
         observeSummaries()
         restorePreviousSession()
@@ -112,12 +120,21 @@ class MainViewModel @Inject constructor(
     private fun restorePreviousSession() {
         val prevSession = persistedSessionId
         if (prevSession != null && persistedIsRecording) {
+            // 開始時刻から経過秒数を再計算（プロセスキル後のズレ補正）
+            val startTime = persistedRecordingStartTime
+            val elapsedSeconds = if (startTime > 0 && !persistedIsPaused) {
+                ((System.currentTimeMillis() - startTime) / 1000).toInt()
+            } else {
+                persistedRecordingSeconds
+            }
+            persistedRecordingSeconds = elapsedSeconds
+
             _uiState.update {
                 it.copy(
                     isRecording = true,
                     isPaused = persistedIsPaused,
                     sessionId = prevSession,
-                    recordingSeconds = persistedRecordingSeconds
+                    recordingSeconds = elapsedSeconds
                 )
             }
             observeChunks(prevSession)
@@ -170,10 +187,12 @@ class MainViewModel @Inject constructor(
 
     fun startRecording() {
         val sessionId = UUID.randomUUID().toString()
+        val startTime = System.currentTimeMillis()
         persistedSessionId = sessionId
         persistedIsRecording = true
         persistedIsPaused = false
         persistedRecordingSeconds = 0
+        persistedRecordingStartTime = startTime
 
         _uiState.update {
             it.copy(
@@ -274,24 +293,7 @@ class MainViewModel @Inject constructor(
     private suspend fun retryPendingRecords() {
         val pending = summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING))
         for (entity in pending) {
-            summaryDao.updateStatus(entity.sessionId, SummaryStatus.SUMMARIZING)
-            val result = summarizeUseCase.execute(entity.sessionId)
-            if (result.isSuccess) {
-                val output = result.getOrThrow()
-                summaryDao.updateStatusAndContent(
-                    sessionId = entity.sessionId,
-                    status = SummaryStatus.DONE,
-                    title = output.summaryResult.title,
-                    summaryText = output.summaryResult.summaryText,
-                    transcriptionText = output.transcriptionText
-                )
-            } else {
-                summaryDao.updateStatus(
-                    sessionId = entity.sessionId,
-                    status = SummaryStatus.ERROR,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
+            summarizeUseCase.executeAndPersist(entity.sessionId, summaryDao)
         }
     }
 
@@ -331,24 +333,7 @@ class MainViewModel @Inject constructor(
 
     fun retrySummary(sessionId: String) {
         viewModelScope.launch {
-            summaryDao.updateStatus(sessionId, SummaryStatus.SUMMARIZING)
-            val result = summarizeUseCase.execute(sessionId)
-            if (result.isSuccess) {
-                val output = result.getOrThrow()
-                summaryDao.updateStatusAndContent(
-                    sessionId = sessionId,
-                    status = SummaryStatus.DONE,
-                    title = output.summaryResult.title,
-                    summaryText = output.summaryResult.summaryText,
-                    transcriptionText = output.transcriptionText
-                )
-            } else {
-                summaryDao.updateStatus(
-                    sessionId = sessionId,
-                    status = SummaryStatus.ERROR,
-                    errorMessage = result.exceptionOrNull()?.message
-                )
-            }
+            summarizeUseCase.executeAndPersist(sessionId, summaryDao)
         }
     }
 
@@ -361,6 +346,28 @@ class MainViewModel @Inject constructor(
     fun updateTitle(sessionId: String, title: String) {
         viewModelScope.launch {
             summaryDao.updateTitle(sessionId, title)
+        }
+    }
+
+    // ===== Backup / Restore =====
+
+    fun exportBackup(uri: Uri) {
+        viewModelScope.launch {
+            val result = backupRestoreUseCase.exportToUri(uri)
+            if (result.isSuccess) {
+                _uiState.update { it.copy(error = null) }
+            } else {
+                _uiState.update { it.copy(error = "エクスポート失敗: ${result.exceptionOrNull()?.message}") }
+            }
+        }
+    }
+
+    fun importBackup(uri: Uri) {
+        viewModelScope.launch {
+            val result = backupRestoreUseCase.importFromUri(uri)
+            if (result.isFailure) {
+                _uiState.update { it.copy(error = "インポート失敗: ${result.exceptionOrNull()?.message}") }
+            }
         }
     }
 

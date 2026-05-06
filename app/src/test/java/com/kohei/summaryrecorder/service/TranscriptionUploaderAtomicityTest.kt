@@ -12,6 +12,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -80,10 +81,12 @@ class TranscriptionUploaderAtomicityTest {
         val realFile = tempFolder.newFile("concurrent.wav")
         realFile.writeBytes(ByteArray(100) { 0 })
 
-        var casCounter = 0
+        // AtomicIntegerでスレッドセーフなCAS模擬
+        val casCounter = AtomicInteger(0)
         coEvery { mockRepo.casToUploading(1L, any()) } coAnswers {
-            casCounter++
-            if (casCounter == 1) 1 else 0
+            casCounter.incrementAndGet()
+            // 最初の呼び出しのみ成功(1)、以降は失敗(0)
+            if (casCounter.get() == 1) 1 else 0
         }
         coEvery { mockProvider.transcribe(any()) } returns Result.success("テキスト")
         coEvery { mockRepo.updateStatus(any(), any(), any(), any()) } returns Unit

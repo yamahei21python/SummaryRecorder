@@ -64,6 +64,7 @@
     <!-- Summary card -->
     <string name="error_label">❌ エラー</string>
     <string name="btn_retry">再試行</string>
+    <string name="title_placeholder_summarizing">要約中...</string>
 
     <!-- Detail screen -->
     <string name="btn_edit">✏編集</string>
@@ -75,6 +76,17 @@
 
     <!-- Badge -->
     <string name="badge_overflow">99+</string>
+
+    <!-- Backup/Restore -->
+    <string name="btn_settings">⚙</string>
+    <string name="dialog_settings_title">設定</string>
+    <string name="btn_export">エクスポート</string>
+    <string name="btn_import">インポート</string>
+    <string name="export_success">%d件の要約をエクスポートしました</string>
+    <string name="export_failed">エクスポートに失敗しました</string>
+    <string name="import_success">%d件の要約をインポートしました</string>
+    <string name="import_failed">インポートに失敗しました</string>
+    <string name="import_confirm">既存データと重複する場合は上書きされます。続行しますか？</string>
 
     <!-- RecordingService notifications -->
     <string name="notification_recording">録音中...</string>

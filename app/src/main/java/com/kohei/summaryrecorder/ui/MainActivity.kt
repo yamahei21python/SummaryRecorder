@@ -2,10 +2,13 @@ package com.kohei.summaryrecorder.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -30,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,6 +102,22 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: MainViewModel, playbackSpeed: Float, onSpeedChange: (Float) -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showImportConfirm by remember { mutableStateOf(false) }
+
+    // Export launcher
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) viewModel.exportBackup(uri)
+    }
+
+    // Import launcher
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) viewModel.importBackup(uri)
+    }
 
     // ExoPlayer instance
     val exoPlayer = remember {
@@ -119,14 +139,23 @@ fun MainScreen(viewModel: MainViewModel, playbackSpeed: Float, onSpeedChange: (F
 
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Text(when (uiState.selectedTab) {
-                    0 -> stringResource(R.string.tab_title_recording)
-                    1 -> stringResource(R.string.tab_title_audio)
-                    2 -> stringResource(R.string.tab_title_summary)
-                    else -> stringResource(R.string.tab_title_recording)
-                })
-            })
+            TopAppBar(
+                title = {
+                    Text(when (uiState.selectedTab) {
+                        0 -> stringResource(R.string.tab_title_recording)
+                        1 -> stringResource(R.string.tab_title_audio)
+                        2 -> stringResource(R.string.tab_title_summary)
+                        else -> stringResource(R.string.tab_title_recording)
+                    })
+                },
+                actions = {
+                    if (uiState.selectedTab == 0) {
+                        IconButton(onClick = { showSettingsDialog = true }) {
+                            Text(stringResource(R.string.btn_settings))
+                        }
+                    }
+                }
+            )
         },
         bottomBar = {
             NavigationBar {
@@ -176,6 +205,57 @@ fun MainScreen(viewModel: MainViewModel, playbackSpeed: Float, onSpeedChange: (F
                 2 -> SummaryTabContent(viewModel = viewModel, uiState = uiState, exoPlayer = exoPlayer)
             }
         }
+    }
+
+    // Settings dialog
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text(stringResource(R.string.dialog_settings_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            showSettingsDialog = false
+                            exportLauncher.launch("summaryrecorder_backup_${System.currentTimeMillis()}.zip")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(stringResource(R.string.btn_export)) }
+                    OutlinedButton(
+                        onClick = {
+                            showSettingsDialog = false
+                            showImportConfirm = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(stringResource(R.string.btn_import)) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDialog = false }) {
+                    Text(stringResource(R.string.btn_close))
+                }
+            }
+        )
+    }
+
+    // Import confirmation dialog
+    if (showImportConfirm) {
+        AlertDialog(
+            onDismissRequest = { showImportConfirm = false },
+            title = { Text(stringResource(R.string.btn_import)) },
+            text = { Text(stringResource(R.string.import_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImportConfirm = false
+                    importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
+                }) { Text(stringResource(R.string.btn_import)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirm = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -414,7 +494,11 @@ fun AudioTabContent(
                                 isCurrentlyPlaying = false
                             } else {
                                 if (currentPlayingId != entity.sessionId) {
-                                    val mediaItem = androidx.media3.common.MediaItem.fromUri(android.net.Uri.fromFile(java.io.File(entity.audioFilePath)))
+                                    // W3: 空パスガード
+                                    if (entity.audioFilePath.isBlank()) return@AudioCard
+                                    val audioFile = java.io.File(entity.audioFilePath)
+                                    if (!audioFile.exists()) return@AudioCard
+                                    val mediaItem = androidx.media3.common.MediaItem.fromUri(android.net.Uri.fromFile(audioFile))
                                     exoPlayer.setMediaItem(mediaItem)
                                     exoPlayer.prepare()
                                     currentPlayingId = entity.sessionId
@@ -500,6 +584,13 @@ fun AudioCard(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    val isProcessing = entity.status == SummaryStatus.RECORDED || entity.status == SummaryStatus.SUMMARIZING
+    val displayTitle = when {
+        entity.title.isNotBlank() -> entity.title
+        isProcessing -> stringResource(R.string.title_placeholder_summarizing)
+        else -> viewModel.formatDate(entity.createdAt)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onPlay
@@ -507,11 +598,11 @@ fun AudioCard(
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entity.title.ifBlank { viewModel.formatDate(entity.createdAt) },
+                    text = displayTitle,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
@@ -635,8 +726,17 @@ fun SummaryCard(
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    val isProcessing = entity.status == SummaryStatus.RECORDED || entity.status == SummaryStatus.SUMMARIZING
+    val displayTitle = when {
+        entity.title.isNotBlank() -> entity.title
+        isProcessing -> stringResource(R.string.title_placeholder_summarizing)
+        else -> viewModel.formatDate(entity.createdAt)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("summary_card_${entity.sessionId}"),
         onClick = onClick
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
@@ -646,7 +746,7 @@ fun SummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = entity.title.ifBlank { viewModel.formatDate(entity.createdAt) },
+                    text = displayTitle,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -661,11 +761,13 @@ fun SummaryCard(
                     }
                 }
             }
-            Text(
-                text = entity.summaryText.take(100),
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2, overflow = TextOverflow.Ellipsis
-            )
+            if (!isProcessing) {
+                Text(
+                    text = entity.summaryText.take(100),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 text = viewModel.formatDate(entity.createdAt),
                 style = MaterialTheme.typography.labelSmall
@@ -721,9 +823,16 @@ fun SummaryDetailScreen(
         viewModel.markAsRead(entity.sessionId)
     }
 
+    val isProcessing = entity.status == SummaryStatus.RECORDED || entity.status == SummaryStatus.SUMMARIZING
+    val displayTitle = when {
+        entity.title.isNotBlank() -> entity.title
+        isProcessing -> stringResource(R.string.title_placeholder_summarizing)
+        else -> viewModel.formatDate(entity.createdAt)
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(entity.title.ifBlank { viewModel.formatDate(entity.createdAt) }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            title = { Text(displayTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
             navigationIcon = {
                 TextButton(onClick = onBack) { Text("←") }
             },
