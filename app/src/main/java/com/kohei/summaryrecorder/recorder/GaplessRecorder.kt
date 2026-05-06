@@ -134,13 +134,19 @@ class GaplessRecorder(
 
     /**
      * 再開: AudioProviderを再開し、isPaused=falseに設定。
+     * start()失敗時は isPaused=true 維持して中断状態継続。
      */
     suspend fun resume() {
         mutex.withLock {
             if (!isRecording || !isPaused) return
             isPaused = false
         }
-        audioProvider.start()
+        if (!audioProvider.start()) {
+            android.util.Log.w("GaplessRecorder", "resume: audioProvider.start() failed")
+            mutex.withLock {
+                isPaused = true
+            }
+        }
     }
 
     private suspend fun stopInternal() {

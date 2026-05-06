@@ -7,8 +7,6 @@ import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
-import com.kohei.summaryrecorder.data.model.SummaryResult
-import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
@@ -89,14 +87,11 @@ class MainViewModelRetryTest {
             status = SummaryStatus.RECORDED
         )
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(recordedEntity)
-        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
-            SummarizeOutput(SummaryResult("タイトル", "要約"), "転写")
-        )
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         createViewModel()
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "タイトル", "要約", "転写") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 
     @Test
@@ -106,12 +101,11 @@ class MainViewModelRetryTest {
             status = SummaryStatus.SUMMARIZING
         )
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(summarizingEntity)
-        coEvery { summarizeUseCase.execute("s2") } returns Result.failure(RuntimeException("fail"))
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         createViewModel()
 
-        coVerify { summaryDao.updateStatus("s2", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatus("s2", SummaryStatus.ERROR, "fail") }
+        coVerify { summarizeUseCase.executeAndPersist("s2", summaryDao) }
     }
 
     @Test
@@ -119,15 +113,12 @@ class MainViewModelRetryTest {
         val e1 = SummaryEntity(sessionId = "s1", status = SummaryStatus.RECORDED, audioFilePath = "/f1.wav")
         val e2 = SummaryEntity(sessionId = "s2", status = SummaryStatus.SUMMARIZING, audioFilePath = "/f2.wav")
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(e1, e2)
-        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
-            SummarizeOutput(SummaryResult("T1", "S1"), "TR1")
-        )
-        coEvery { summarizeUseCase.execute("s2") } returns Result.failure(RuntimeException("err"))
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         createViewModel()
 
-        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "T1", "S1", "TR1") }
-        coVerify { summaryDao.updateStatus("s2", SummaryStatus.ERROR, "err") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
+        coVerify { summarizeUseCase.executeAndPersist("s2", summaryDao) }
     }
 
     @Test
@@ -136,33 +127,29 @@ class MainViewModelRetryTest {
 
         createViewModel()
 
-        coVerify(exactly = 0) { summarizeUseCase.execute(any()) }
+        coVerify(exactly = 0) { summarizeUseCase.executeAndPersist(any(), any()) }
     }
 
     // ===== retrySummary (手動再試行) =====
 
     @Test
     fun `retrySummary success path`() {
-        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
-            SummarizeOutput(SummaryResult("タイトル", "要約テキスト"), "転写")
-        )
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "タイトル", "要約テキスト", "転写") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 
     @Test
     fun `retrySummary failure path sets ERROR`() {
-        coEvery { summarizeUseCase.execute("s1") } returns Result.failure(RuntimeException("API error"))
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.ERROR, "API error") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 
     // ===== clearError =====

@@ -8,8 +8,6 @@ import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
-import com.kohei.summaryrecorder.data.model.SummaryResult
-import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
@@ -88,9 +86,7 @@ class MainViewModelSummarizeOnceTest {
 
     @Test
     fun `retrySummary calls summarizeUseCase and updates dao`() {
-        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
-            SummarizeOutput(SummaryResult("タイトル", "要約テキスト"), "転写")
-        )
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
         coEvery { summaryDao.getBySessionId("s1") } returns SummaryEntity(
             sessionId = "s1", audioFilePath = "/f.wav", status = SummaryStatus.ERROR
         )
@@ -98,20 +94,16 @@ class MainViewModelSummarizeOnceTest {
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "タイトル", "要約テキスト", "転写") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 
     @Test
     fun `retrySummary on failure sets ERROR status`() {
-        coEvery { summarizeUseCase.execute("s1") } returns Result.failure(
-            RuntimeException("API error")
-        )
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.ERROR, "API error") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 }

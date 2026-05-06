@@ -1,6 +1,8 @@
 package com.kohei.summaryrecorder.domain.usecase
 
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.db.SummaryDao
+import com.kohei.summaryrecorder.data.db.SummaryStatus
 import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
@@ -49,6 +51,31 @@ class SummarizeUseCase @Inject constructor(
             )
         } else {
             Result.success(result)
+        }
+    }
+
+    /**
+     * B6/R1 修正: 3重実装を1箇所に集約。
+     * execute() + DB永続化をワンストップで実行。
+     */
+    suspend fun executeAndPersist(sessionId: String, summaryDao: SummaryDao) {
+        summaryDao.updateStatus(sessionId, SummaryStatus.SUMMARIZING)
+        val result = execute(sessionId)
+        if (result.isSuccess) {
+            val output = result.getOrThrow()
+            summaryDao.updateStatusAndContent(
+                sessionId = sessionId,
+                status = SummaryStatus.DONE,
+                title = output.summaryResult.title,
+                summaryText = output.summaryResult.summaryText,
+                transcriptionText = output.transcriptionText
+            )
+        } else {
+            summaryDao.updateStatus(
+                sessionId = sessionId,
+                status = SummaryStatus.ERROR,
+                errorMessage = result.exceptionOrNull()?.message
+            )
         }
     }
 }

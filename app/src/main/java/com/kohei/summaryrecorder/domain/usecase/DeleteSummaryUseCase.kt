@@ -11,7 +11,10 @@ class DeleteSummaryUseCase @Inject constructor(
 ) {
     suspend fun execute(sessionId: String, audioFilePath: String) {
         withContext(Dispatchers.IO) {
-            File(audioFilePath).delete()
+            val file = File(audioFilePath)
+            if (file.exists() && !file.delete()) {
+                android.util.Log.w("DeleteSummaryUseCase", "Failed to delete file: $audioFilePath")
+            }
         }
         summaryDao.delete(sessionId)
     }

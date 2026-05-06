@@ -8,8 +8,6 @@ import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
-import com.kohei.summaryrecorder.data.model.SummaryResult
-import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
@@ -124,15 +122,12 @@ class MainViewModelTabSessionTest {
             sessionId = "s1", audioFilePath = "/f.wav", durationMs = 1000L,
             status = SummaryStatus.ERROR, errorMessage = "prev error"
         )
-        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
-            SummarizeOutput(SummaryResult("タイトル", "要約"), "転写")
-        )
+        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
-        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "タイトル", "要約", "転写") }
+        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
     }
 
     @Test

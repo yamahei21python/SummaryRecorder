@@ -173,9 +173,13 @@ class RecordingService : Service() {
         if (sessionId != null) {
             kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                 try {
-                    kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                    val completed = kotlinx.coroutines.withTimeoutOrNull(30_000L) {
                         recordingManager.stopRecording()
                         finalizeSession(sessionId)
+                        true
+                    }
+                    if (completed == null) {
+                        android.util.Log.w("RecordingService", "onDestroy finalize timed out after 30s, chunk cleanup may be incomplete")
                     }
                 } catch (e: Exception) {
                     android.util.Log.w("RecordingService", "onDestroy finalize failed", e)
@@ -269,24 +273,7 @@ class RecordingService : Service() {
     }
 
     private suspend fun executeSummarize(sessionId: String) {
-        summaryDao.updateStatus(sessionId, SummaryStatus.SUMMARIZING)
-        val result = summarizeUseCase.execute(sessionId)
-        if (result.isSuccess) {
-            val output = result.getOrThrow()
-            summaryDao.updateStatusAndContent(
-                sessionId = sessionId,
-                status = SummaryStatus.DONE,
-                title = output.summaryResult.title,
-                summaryText = output.summaryResult.summaryText,
-                transcriptionText = output.transcriptionText
-            )
-        } else {
-            summaryDao.updateStatus(
-                sessionId = sessionId,
-                status = SummaryStatus.ERROR,
-                errorMessage = result.exceptionOrNull()?.message
-            )
-        }
+        summarizeUseCase.executeAndPersist(sessionId, summaryDao)
     }
 
     private suspend fun cleanupChunks(sessionId: String, chunkDir: File) {
