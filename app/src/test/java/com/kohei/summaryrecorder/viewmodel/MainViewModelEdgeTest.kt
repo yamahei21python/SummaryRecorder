@@ -9,6 +9,7 @@ import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.*
@@ -38,6 +39,7 @@ class MainViewModelEdgeTest {
     private lateinit var controller: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
+    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
@@ -51,6 +53,7 @@ class MainViewModelEdgeTest {
         controller = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk(relaxed = true)
         deleteSummaryUseCase = mockk(relaxed = true)
+        backupRestoreUseCase = mockk(relaxed = true)
         application = mockk(relaxed = true)
         savedStateHandle = SavedStateHandle()
         chunksFlow = MutableStateFlow(emptyList())
@@ -62,7 +65,7 @@ class MainViewModelEdgeTest {
         every { controller.currentVolumeLevel } returns 0f
         coEvery { controller.awaitReady() } returns Unit
 
-        viewModel = MainViewModel(chunkRepo, summarizeUseCase, controller, summaryDao, deleteSummaryUseCase, application, savedStateHandle)
+        viewModel = MainViewModel(chunkRepo, summarizeUseCase, controller, summaryDao, deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle)
     }
 
     @After

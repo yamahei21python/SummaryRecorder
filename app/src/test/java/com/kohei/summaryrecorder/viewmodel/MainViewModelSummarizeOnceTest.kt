@@ -10,6 +10,7 @@ import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
@@ -42,6 +43,7 @@ class MainViewModelSummarizeOnceTest {
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
+    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
 
@@ -54,6 +56,7 @@ class MainViewModelSummarizeOnceTest {
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
+        backupRestoreUseCase = mockk<BackupRestoreUseCase>(relaxed = true)
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         every { chunkRepository.getChunksFlow(any()) } returns chunksFlow
@@ -81,7 +84,7 @@ class MainViewModelSummarizeOnceTest {
     )
 
     private fun createViewModel() = MainViewModel(
-        chunkRepository, summarizeUseCase, recordingController, summaryDao, deleteSummaryUseCase, application, savedStateHandle
+        chunkRepository, summarizeUseCase, recordingController, summaryDao, deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
     )
 
     @Test
