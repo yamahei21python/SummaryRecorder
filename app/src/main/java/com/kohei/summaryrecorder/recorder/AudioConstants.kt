@@ -9,4 +9,5 @@ object AudioConstants {
     const val CHANNEL_CONFIG = android.media.AudioFormat.CHANNEL_IN_MONO
     const val AUDIO_FORMAT = android.media.AudioFormat.ENCODING_PCM_16BIT
     const val READ_BUFFER = 4096
+    const val BYTES_PER_SECOND: Long = SAMPLE_RATE.toLong() * 2L
 }

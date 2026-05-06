@@ -25,6 +25,7 @@ class RecordingManager(
     private val mutex = Mutex()
     private val recorderRef = AtomicReference<GaplessRecorder?>(null)
     private var currentSessionId: String? = null
+    private var currentAudioProvider: AudioProvider? = null
 
     suspend fun startRecording(
         sessionId: String,
@@ -35,6 +36,7 @@ class RecordingManager(
         mutex.withLock {
             recorderRef.get()?.stop()
             currentSessionId = sessionId
+            currentAudioProvider = audioProvider
             val recorder = GaplessRecorder(
                 outputDir = outputDir,
                 chunkSizeBytes = chunkSizeBytes,
@@ -57,18 +59,16 @@ class RecordingManager(
     }
 
     suspend fun stopRecording() {
-        val sessionId: String?
-
         mutex.withLock {
             recorderRef.getAndSet(null)?.stop()
-            sessionId = currentSessionId
+            currentSessionId = null
+            currentAudioProvider = null
         }
-
-        // 録音停止後の後処理は呼び出し元(RecordingService)で行う
-        // RecordingManagerはsessionIdを返すだけでよい
     }
 
     fun getCurrentSessionId(): String? = currentSessionId
+
+    fun getMaxAmplitude(): Int = currentAudioProvider?.getMaxAmplitude() ?: 0
 
     suspend fun pauseRecording() {
         mutex.withLock {

@@ -56,7 +56,13 @@ class GaplessRecorder(
                         }
                         
                         val read = audioProvider.read(buffer, AudioConstants.READ_BUFFER)
-                        if (read < 0) break
+                        if (read < 0) {
+                            if (isPaused) {
+                                kotlinx.coroutines.delay(50)
+                                continue
+                            }
+                            break
+                        }
                         if (read == 0) continue
 
                         var shouldSplit = false
@@ -154,7 +160,7 @@ class GaplessRecorder(
 
     @VisibleForTesting
     internal fun openNewFile(): RandomAccessFile {
-        val fileName = "chunk_${System.currentTimeMillis() % 1_000_000}_${currentChunkIndex}.wav"
+        val fileName = "chunk_${System.nanoTime()}_${currentChunkIndex}.wav"
         val file = File(outputDir, fileName)
         val raf = RandomAccessFile(file, "rw").also {
             WavHeaderWriter.writeDummyHeader(it)

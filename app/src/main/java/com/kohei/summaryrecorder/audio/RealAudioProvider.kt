@@ -17,6 +17,9 @@ class RealAudioProvider(
 
     private var audioRecord: AudioRecord? = null
 
+    @Volatile
+    private var lastMaxAmplitude: Int = 0
+
     override fun start(): Boolean {
         val minBuf = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
         if (minBuf == AudioRecord.ERROR_BAD_VALUE || minBuf == AudioRecord.ERROR) return false
@@ -34,8 +37,18 @@ class RealAudioProvider(
         return true
     }
 
-    override fun read(buffer: ShortArray, size: Int): Int =
-        audioRecord?.read(buffer, 0, size) ?: -1
+    override fun read(buffer: ShortArray, size: Int): Int {
+        val read = audioRecord?.read(buffer, 0, size) ?: -1
+        if (read > 0) {
+            var max = 0
+            for (i in 0 until read) {
+                val v = if (buffer[i] >= 0) buffer[i].toInt() else (-buffer[i]).toInt()
+                if (v > max) max = v
+            }
+            lastMaxAmplitude = max
+        }
+        return read
+    }
 
     override fun stop() {
         try {
@@ -43,6 +56,7 @@ class RealAudioProvider(
         } catch (e: Exception) {
             Log.w("RealAudioProvider", "stop failed", e)
         }
+        lastMaxAmplitude = 0
     }
 
     override fun release() {
@@ -52,5 +66,8 @@ class RealAudioProvider(
             Log.w("RealAudioProvider", "release failed", e)
         }
         audioRecord = null
+        lastMaxAmplitude = 0
     }
+
+    override fun getMaxAmplitude(): Int = if (audioRecord != null) lastMaxAmplitude else 0
 }

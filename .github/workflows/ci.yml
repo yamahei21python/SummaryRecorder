@@ -47,6 +47,10 @@ jobs:
           set -o pipefail
           gradle testDebugUnitTest \
             --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelEdgeTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelTabSessionTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelRetryTest" \
+            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
             --tests "com.kohei.summaryrecorder.recorder.*" \
             --tests "com.kohei.summaryrecorder.audio.DummyAudioProvider*" \
             --tests "com.kohei.summaryrecorder.data.api.*" \
@@ -108,15 +112,15 @@ jobs:
         run: |
           set -o pipefail
           gradle testDebugUnitTest \
-            --tests "com.kohei.summaryrecorder.viewmodel.MainViewModelSummarizeOnceTest" \
-            --tests "com.kohei.summaryrecorder.viewmodel.SummaryFlowTest" \
             --tests "com.kohei.summaryrecorder.data.db.*" \
             --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteByIdTest" \
+            --tests "com.kohei.summaryrecorder.data.repository.ChunkRepositoryDeleteSessionTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceInitTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceFlowTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceIntentTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceSelfHealTest" \
             --tests "com.kohei.summaryrecorder.service.RecordingServiceEdgeCaseTest" \
+            --tests "com.kohei.summaryrecorder.service.FinalizeSessionTest" \
             --tests "com.kohei.summaryrecorder.service.RetryWorker*" \
             --tests "com.kohei.summaryrecorder.service.BatteryOptimizerTest" \
             --tests "com.kohei.summaryrecorder.service.ServiceRecordingControllerTest" \

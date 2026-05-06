@@ -8,4 +8,6 @@ interface AudioProvider {
     fun read(buffer: ShortArray, size: Int): Int
     fun stop()
     fun release()
+    /** 現在の最大振幅 (0-32767)。録音中以外は0 */
+    fun getMaxAmplitude(): Int = 0
 }

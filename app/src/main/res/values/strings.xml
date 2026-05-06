@@ -7,4 +7,80 @@
 2. 主要トピック（箇条書き）
 3. 重要な発言・決定事項
 4. アクションアイテム（あれば）</string>
+
+    <!-- Tab titles -->
+    <string name="tab_title_recording">SummaryRecorder</string>
+    <string name="tab_title_audio">音声確認</string>
+    <string name="tab_title_summary">要約・読みおこし</string>
+
+    <!-- Tab labels -->
+    <string name="tab_label_recording">録音操作</string>
+    <string name="tab_label_audio">音声確認</string>
+    <string name="tab_label_summary">要約</string>
+
+    <!-- Icons contentDescription -->
+    <string name="cd_recording">録音操作</string>
+    <string name="cd_audio">音声確認</string>
+    <string name="cd_summary">要約</string>
+
+    <!-- Storage info -->
+    <string name="storage_free">空き容量</string>
+    <string name="storage_recordable">録音可能時間</string>
+    <string name="unit_hours">時間</string>
+
+    <!-- Recording controls -->
+    <string name="btn_stop">□ 停止</string>
+    <string name="btn_record">● 録音</string>
+    <string name="btn_resume">▶ 再開</string>
+    <string name="btn_pause">‖ 一時停止</string>
+
+    <!-- Recording notice -->
+    <string name="recording_background">🎤 録音中 — バックグラウンド継続</string>
+
+    <!-- Loading -->
+    <string name="loading_transcription">文字起こし完了待ち...</string>
+
+    <!-- Error dialog -->
+    <string name="btn_close">閉じる</string>
+
+    <!-- Empty state -->
+    <string name="empty_no_recordings">録音がありません</string>
+    <string name="empty_start_recording">タブ1から録音を開始してください</string>
+
+    <!-- Playback controls -->
+    <string name="seek_back_60">↩60</string>
+    <string name="seek_back_10">↩10</string>
+    <string name="seek_forward_10">10↪</string>
+    <string name="seek_forward_60">60↪</string>
+    <string name="cd_pause">一時停止</string>
+    <string name="cd_play">再生</string>
+
+    <!-- Delete dialog -->
+    <string name="dialog_delete_title">削除確認</string>
+    <string name="dialog_delete_message">この録音を削除しますか？</string>
+    <string name="btn_delete">削除</string>
+    <string name="btn_cancel">キャンセル</string>
+
+    <!-- Summary card -->
+    <string name="error_label">❌ エラー</string>
+    <string name="btn_retry">再試行</string>
+
+    <!-- Detail screen -->
+    <string name="btn_edit">✏編集</string>
+    <string name="tab_summary">要約</string>
+    <string name="tab_transcription">読みおこし</string>
+    <string name="dialog_edit_title">タイトル編集</string>
+    <string name="label_title">タイトル</string>
+    <string name="btn_save">保存</string>
+
+    <!-- Badge -->
+    <string name="badge_overflow">99+</string>
+
+    <!-- RecordingService notifications -->
+    <string name="notification_recording">録音中...</string>
+    <string name="notification_paused">一時停止中...</string>
+    <string name="channel_name">録音サービス</string>
+    <string name="notification_title">SummaryRecorder</string>
+    <string name="action_pause">一時停止</string>
+    <string name="action_resume">再開</string>
 </resources>

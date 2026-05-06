@@ -1,42 +1,50 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
+import com.kohei.summaryrecorder.data.db.SummaryDao
+import com.kohei.summaryrecorder.data.db.SummaryEntity
+import com.kohei.summaryrecorder.data.db.SummaryStatus
 import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.data.model.SummarizeOutput
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Before
-import org.junit.Test
 import org.junit.Assert.assertEquals
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [31], application = Application::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelSummarizeOnceTest {
+
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var chunkRepository: ChunkRepository
     private lateinit var summarizeUseCase: SummarizeUseCase
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var recordingController: RecordingController
+    private lateinit var summaryDao: SummaryDao
+    private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
+    private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
 
     @Before
@@ -46,14 +54,22 @@ class MainViewModelSummarizeOnceTest {
         summarizeUseCase = mockk<SummarizeUseCase>()
         chunksFlow = MutableStateFlow(emptyList())
         recordingController = mockk<RecordingController>(relaxed = true)
+        summaryDao = mockk<SummaryDao>(relaxed = true)
+        deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
+        application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         every { chunkRepository.getChunksFlow(any()) } returns chunksFlow
         every { recordingController.startRecording(any()) } returns Unit
+        every { recordingController.isReady } returns MutableStateFlow(true)
+        every { recordingController.currentVolumeLevel } returns 0f
+        every { summaryDao.observeAll() } returns flowOf(emptyList<SummaryEntity>())
+        coEvery { recordingController.awaitReady() } returns Unit
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkAll()
     }
 
     private fun doneChunk(id: Long, index: Int, text: String) = ChunkEntity(
@@ -67,54 +83,35 @@ class MainViewModelSummarizeOnceTest {
     )
 
     private fun createViewModel() = MainViewModel(
-        chunkRepository, summarizeUseCase, recordingController, savedStateHandle
+        chunkRepository, summarizeUseCase, recordingController, summaryDao, deleteSummaryUseCase, application, savedStateHandle
     )
 
     @Test
-    fun `summarizeAll is called exactly once even when chunks re-updated`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "要約テキスト"), "転写"))
-
-        val viewModel = createViewModel()
-        viewModel.startRecording()
-
-        val doneChunks = listOf(
-            doneChunk(id = 1, index = 0, text = "テキスト1"),
-            doneChunk(id = 2, index = 1, text = "テキスト2")
+    fun `retrySummary calls summarizeUseCase and updates dao`() {
+        coEvery { summarizeUseCase.execute("s1") } returns Result.success(
+            SummarizeOutput(SummaryResult("タイトル", "要約テキスト"), "転写")
+        )
+        coEvery { summaryDao.getBySessionId("s1") } returns SummaryEntity(
+            sessionId = "s1", audioFilePath = "/f.wav", status = SummaryStatus.ERROR
         )
 
-        // 録音中にDONEチャンクを流す → isRecording=true なので要約は発火しない
-        chunksFlow.value = doneChunks
-        advanceUntilIdle()
+        val vm = createViewModel()
+        vm.retrySummary("s1")
 
-        // 録音停止
-        viewModel.stopRecording()
-        advanceUntilIdle()
-
-        // stopRecording後にchunksFlowを再emit → collect再発火、isRecording=false + allDone で要約
-        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 1) }
-        advanceUntilIdle()
-
-        assertEquals("要約テキスト", viewModel.uiState.value.summary)
-        io.mockk.coVerify(exactly = 1) { summarizeUseCase.execute(any()) }
-
-        // 2回目: 同じ内容を再emit（DB再更新をシミュレーション）
-        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 2) }
-        advanceUntilIdle()
-
-        // まだ1回のみ — summarized=true でガード
-        io.mockk.coVerify(exactly = 1) { summarizeUseCase.execute(any()) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { summaryDao.updateStatusAndContent("s1", SummaryStatus.DONE, "タイトル", "要約テキスト", "転写") }
     }
 
     @Test
-    fun `summarizeAll not called when chunks are not all done`() = runTest {
-        val viewModel = createViewModel()
-        viewModel.startRecording()
-
-        chunksFlow.value = listOf(
-            doneChunk(id = 1, index = 0, text = "テキスト1"),
-            ChunkEntity(id = 2, sessionId = "test-session", chunkIndex = 1, filePath = "/chunk_1.wav", status = ChunkStatus.PENDING)
+    fun `retrySummary on failure sets ERROR status`() {
+        coEvery { summarizeUseCase.execute("s1") } returns Result.failure(
+            RuntimeException("API error")
         )
 
-        io.mockk.coVerify(exactly = 0) { summarizeUseCase.execute(any()) }
+        val vm = createViewModel()
+        vm.retrySummary("s1")
+
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.ERROR, "API error") }
     }
 }

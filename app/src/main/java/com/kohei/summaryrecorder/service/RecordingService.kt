@@ -14,7 +14,9 @@ import com.kohei.summaryrecorder.R
 import com.kohei.summaryrecorder.di.ChunkSize
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import com.kohei.summaryrecorder.service.TranscriptionUploader
+import com.kohei.summaryrecorder.data.db.SummaryStatus
 import androidx.core.app.NotificationCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -27,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -75,6 +78,7 @@ class RecordingService : Service() {
     @Inject lateinit var chunkSize: ChunkSize
     @Inject lateinit var audioProvider: AudioProvider
     @Inject lateinit var summaryDao: com.kohei.summaryrecorder.data.db.SummaryDao
+    @Inject lateinit var summarizeUseCase: SummarizeUseCase
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var recordingManager: RecordingManager
@@ -82,7 +86,6 @@ class RecordingService : Service() {
     override fun onCreate() {
         super.onCreate()
         recordingManager = RecordingManager(chunkRepository, uploader, serviceScope)
-        // #3: クラッシュ残留UPLOADINGをFAILEDにリセット後、即時リトライ
         serviceScope.launch {
             chunkRepository.resetStuckUploads()
             uploader.retryFailedChunks()
@@ -97,7 +100,7 @@ class RecordingService : Service() {
                 val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
                     ?: UUID.randomUUID().toString()
 
-                startForeground(NOTIFICATION_ID, buildNotification("録音中..."),
+                startForeground(NOTIFICATION_ID, buildNotification("録音中...", pauseAction = true),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     } else {
@@ -129,7 +132,6 @@ class RecordingService : Service() {
                     } catch (e: Exception) {
                         android.util.Log.w("RecordingService", "stopRecording failed", e)
                     }
-                    // WavMerger + SummaryDao先行insert
                     if (sessionId != null) {
                         finalizeSession(sessionId)
                     }
@@ -141,33 +143,56 @@ class RecordingService : Service() {
                 serviceScope.launch {
                     recordingManager.pauseRecording()
                 }
-                updateNotification("一時停止中...")
+                updateNotification("一時停止中...", pauseAction = false)
             }
             ACTION_RESUME -> {
                 serviceScope.launch {
                     recordingManager.resumeRecording()
                 }
-                updateNotification("録音中...")
+                updateNotification("録音中...", pauseAction = true)
             }
         }
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    private val binder = RecordingBinder()
+
+    override fun onBind(intent: Intent?): IBinder = binder
+
+    inner class RecordingBinder : android.os.Binder() {
+        fun getService(): RecordingService = this@RecordingService
+        fun getCurrentSessionId(): String? = recordingManager.getCurrentSessionId()
+        fun getVolumeLevel(): Float {
+            val max = recordingManager.getMaxAmplitude()
+            return (max.toFloat() / 32767f).coerceIn(0f, 1f)
+        }
+    }
 
     override fun onDestroy() {
-        // 先にファイナライズ（WAVヘッダー書込み等）→ その後にスコープキャンセル
-        kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-            try {
-                kotlinx.coroutines.withTimeoutOrNull(2000L) {
-                    recordingManager.stopRecording()
+        val sessionId = recordingManager.getCurrentSessionId()
+        if (sessionId != null) {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                try {
+                    kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                        recordingManager.stopRecording()
+                        finalizeSession(sessionId)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("RecordingService", "onDestroy finalize failed", e)
                 }
-            } catch (e: Exception) {
-                android.util.Log.w("RecordingService", "Cleanup failed", e)
+            }
+        } else {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                try {
+                    kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                        recordingManager.stopRecording()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("RecordingService", "onDestroy cleanup failed", e)
+                }
             }
         }
         serviceScope.cancel()
-        // #1: WorkManagerのRetryWorkerをキャンセル（不要な定期実行を防止）
         WorkManager.getInstance(this).cancelUniqueWork("retry_transcription")
         super.onDestroy()
     }
@@ -181,65 +206,126 @@ class RecordingService : Service() {
         }
     }
 
-    private fun updateNotification(text: String) {
-        val notification = buildNotification(text)
+    private fun updateNotification(text: String, pauseAction: Boolean = true) {
+        val notification = buildNotification(text, pauseAction)
         val manager = getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
     }
 
+    /**
+     * 録音停止後のセッション確定処理。
+     * WavMerger → SummaryDao.insert(RECORDED) → SummarizeUseCase → DONE/ERROR → chunk DB削除
+     */
     private suspend fun finalizeSession(sessionId: String) {
         try {
             val chunkDir = File(filesDir, "recordings/$sessionId")
-            val chunkFiles = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                chunkDir.listFiles()
-                    ?.filter { it.name.endsWith(".wav") }
-                    ?.sortedBy { it.name }
-                    ?: emptyList()
-            }
+            val chunkFiles = collectChunkFiles(chunkDir)
 
             if (chunkFiles.isEmpty()) {
                 android.util.Log.w("RecordingService", "No chunk files for session $sessionId")
                 return
             }
 
-            val recordingsDir = File(filesDir, "recordings").apply { mkdirs() }
-            val mergedFile = File(recordingsDir, "$sessionId.wav")
+            val (mergedFile, durationMs) = mergeChunkFiles(chunkFiles, sessionId)
+            insertSummaryRecord(sessionId, mergedFile, durationMs)
+            executeSummarize(sessionId)
+            cleanupChunks(sessionId, chunkDir)
 
-            val durationMs = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                com.kohei.summaryrecorder.recorder.WavMerger.merge(chunkFiles, mergedFile)
-            }
-
-            chunkRepository.deleteBySession(sessionId)
-
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                chunkDir.deleteRecursively()
-            }
-
-            summaryDao.insert(
-                com.kohei.summaryrecorder.data.db.SummaryEntity(
-                    sessionId = sessionId,
-                    audioFilePath = mergedFile.absolutePath,
-                    durationMs = durationMs,
-                    status = com.kohei.summaryrecorder.data.db.SummaryStatus.RECORDED
-                )
-            )
         } catch (e: Exception) {
             android.util.Log.e("RecordingService", "finalizeSession failed", e)
+            try {
+                summaryDao.updateStatus(sessionId, SummaryStatus.ERROR, errorMessage = e.message)
+            } catch (_: Exception) {}
         }
     }
 
-    private fun buildNotification(text: String): Notification {
+    private suspend fun collectChunkFiles(chunkDir: File): List<File> {
+        return withContext(Dispatchers.IO) {
+            chunkDir.listFiles()
+                ?.filter { it.name.endsWith(".wav") }
+                ?.sortedBy { it.name }
+                ?: emptyList()
+        }
+    }
+
+    private suspend fun mergeChunkFiles(chunkFiles: List<File>, sessionId: String): Pair<File, Long> {
+        val recordingsDir = File(filesDir, "recordings").apply { mkdirs() }
+        val mergedFile = File(recordingsDir, "$sessionId.wav")
+        val durationMs = withContext(Dispatchers.IO) {
+            com.kohei.summaryrecorder.recorder.WavMerger.merge(chunkFiles, mergedFile)
+        }
+        return Pair(mergedFile, durationMs)
+    }
+
+    private suspend fun insertSummaryRecord(sessionId: String, mergedFile: File, durationMs: Long) {
+        summaryDao.insert(
+            com.kohei.summaryrecorder.data.db.SummaryEntity(
+                sessionId = sessionId,
+                audioFilePath = mergedFile.absolutePath,
+                durationMs = durationMs,
+                status = SummaryStatus.RECORDED
+            )
+        )
+    }
+
+    private suspend fun executeSummarize(sessionId: String) {
+        summaryDao.updateStatus(sessionId, SummaryStatus.SUMMARIZING)
+        val result = summarizeUseCase.execute(sessionId)
+        if (result.isSuccess) {
+            val output = result.getOrThrow()
+            summaryDao.updateStatusAndContent(
+                sessionId = sessionId,
+                status = SummaryStatus.DONE,
+                title = output.summaryResult.title,
+                summaryText = output.summaryResult.summaryText,
+                transcriptionText = output.transcriptionText
+            )
+        } else {
+            summaryDao.updateStatus(
+                sessionId = sessionId,
+                status = SummaryStatus.ERROR,
+                errorMessage = result.exceptionOrNull()?.message
+            )
+        }
+    }
+
+    private suspend fun cleanupChunks(sessionId: String, chunkDir: File) {
+        chunkRepository.deleteBySession(sessionId)
+        withContext(Dispatchers.IO) {
+            val deleted = chunkDir.deleteRecursively()
+            if (!deleted) {
+                android.util.Log.w("RecordingService", "Failed to delete chunk dir: $chunkDir")
+            }
+        }
+    }
+
+    private fun buildNotification(text: String, pauseAction: Boolean = true): Notification {
         val intent = android.content.Intent(this, com.kohei.summaryrecorder.ui.MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+        val actionIntent = if (pauseAction) {
+            PendingIntent.getService(
+                this, 1, pauseIntent(this),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        } else {
+            PendingIntent.getService(
+                this, 2, resumeIntent(this),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+        val actionLabel = if (pauseAction) "一時停止" else "再開"
+        val actionIcon = android.R.drawable.ic_media_pause
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SummaryRecorder")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .addAction(actionIcon, actionLabel, actionIntent)
             .build()
     }
 

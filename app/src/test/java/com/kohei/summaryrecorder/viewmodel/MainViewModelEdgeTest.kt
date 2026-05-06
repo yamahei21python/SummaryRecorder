@@ -1,14 +1,16 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.model.SummaryResult
-import com.kohei.summaryrecorder.data.model.SummarizeOutput
+import com.kohei.summaryrecorder.data.db.SummaryDao
+import com.kohei.summaryrecorder.data.db.SummaryEntity
+import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
-import com.kohei.summaryrecorder.service.ServiceRecordingController
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,8 +24,6 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,7 +35,10 @@ class MainViewModelEdgeTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var chunkRepo: ChunkRepository
     private lateinit var summarizeUseCase: SummarizeUseCase
-    private lateinit var controller: ServiceRecordingController
+    private lateinit var controller: RecordingController
+    private lateinit var summaryDao: SummaryDao
+    private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
+    private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
     private lateinit var viewModel: MainViewModel
@@ -45,14 +48,21 @@ class MainViewModelEdgeTest {
         Dispatchers.setMain(testDispatcher)
         chunkRepo = mockk(relaxed = true)
         summarizeUseCase = mockk(relaxed = true)
-        controller = mockk(relaxed = true)
+        controller = mockk<RecordingController>(relaxed = true)
+        summaryDao = mockk(relaxed = true)
+        deleteSummaryUseCase = mockk(relaxed = true)
+        application = mockk(relaxed = true)
         savedStateHandle = SavedStateHandle()
         chunksFlow = MutableStateFlow(emptyList())
 
         every { chunkRepo.getChunksFlow(any()) } returns chunksFlow
         every { chunkRepo.observeBySession(any()) } returns chunksFlow
+        every { summaryDao.observeAll() } returns flowOf(emptyList<SummaryEntity>())
+        every { controller.isReady } returns MutableStateFlow(true)
+        every { controller.currentVolumeLevel } returns 0f
+        coEvery { controller.awaitReady() } returns Unit
 
-        viewModel = MainViewModel(chunkRepo, summarizeUseCase, controller, savedStateHandle)
+        viewModel = MainViewModel(chunkRepo, summarizeUseCase, controller, summaryDao, deleteSummaryUseCase, application, savedStateHandle)
     }
 
     @After
@@ -62,95 +72,61 @@ class MainViewModelEdgeTest {
     }
 
     @Test
-    fun `T4 - stopRecording with no chunks does not leave isLoading forever`() {
+    fun `stopRecording with no chunks does not leave isLoading forever`() {
         viewModel.startRecording()
         assertTrue(viewModel.uiState.value.isRecording)
 
         viewModel.stopRecording()
 
         assertFalse(viewModel.uiState.value.isRecording)
-        assertFalse(viewModel.uiState.value.isLoading, "チャンクがない場合はスピナーが解除されること")
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
-    fun `T13 - double startRecording stops previous session and starts new one`() {
+    fun `double startRecording starts new session`() {
         viewModel.startRecording()
         val firstSessionId = viewModel.uiState.value.sessionId
 
         viewModel.startRecording()
         val secondSessionId = viewModel.uiState.value.sessionId
 
-        assertNotEquals(firstSessionId, secondSessionId, "セッションIDが変わっていること")
-        verify(atLeast = 1) { controller.stopRecording() }
+        assertNotEquals(firstSessionId, secondSessionId)
         verify(exactly = 2) { controller.startRecording(any()) }
     }
 
-    // B4: isLoading チラつきテスト
     @Test
     fun `stopRecording no chunks - isLoading becomes false immediately`() {
         viewModel.startRecording()
-        // チャンク0件のまま停止
         viewModel.stopRecording()
-
         assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
-    fun `stopRecording with chunks - isLoading stays true until allDone`() = runTest {
-        coEvery { summarizeUseCase.execute(any()) } returns Result.success(SummarizeOutput(SummaryResult("タイトル", "要約"), "転写"))
-
+    fun `pauseRecording sets isPaused true`() {
         viewModel.startRecording()
+        assertFalse(viewModel.uiState.value.isPaused)
 
-        val doneChunks = listOf(
-            ChunkEntity(id = 1, sessionId = viewModel.uiState.value.sessionId,
-                chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "t", isLast = true)
-        )
-        chunksFlow.value = doneChunks
-        advanceUntilIdle()
-
-        // チャンクありで停止
-        viewModel.stopRecording()
-        assertTrue(viewModel.uiState.value.isLoading, "チャンクありなら isLoading=true")
-
-        // 再emitで要約完了
-        chunksFlow.value = doneChunks.map { it.copy(updatedAt = it.updatedAt + 1) }
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.isLoading, "allDone後は isLoading=false")
-        assertEquals("要約", viewModel.uiState.value.summary)
-    }
-
-    // R7: SavedStateHandle テスト
-    @Test
-    fun `summarized persists across process death`() = runTest {
-        // SavedStateHandle に summarized=true を保存済の状態でVM再生成
-        savedStateHandle["summarized"] = true
-        savedStateHandle["session_id"] = "existing-session"
-
-        every { chunkRepo.getChunksFlow("existing-session") } returns chunksFlow
-
-        // 既にsummarized=trueのVM
-        val restoredViewModel = MainViewModel(chunkRepo, summarizeUseCase, controller, savedStateHandle)
-
-        // allDoneチャンクを流す
-        val doneChunks = listOf(
-            ChunkEntity(id = 1, sessionId = "existing-session",
-                chunkIndex = 0, filePath = "/c0.wav", status = ChunkStatus.DONE, transcriptionText = "t")
-        )
-        chunksFlow.value = doneChunks
-        advanceUntilIdle()
-
-        // startRecordingしない限り observeChunks が呼ばれないのでsummarizeも呼ばれない
-        coVerify(exactly = 0) { summarizeUseCase.execute(any()) }
+        viewModel.pauseRecording()
+        assertTrue(viewModel.uiState.value.isPaused)
     }
 
     @Test
-    fun `new session resets summarized`() {
-        savedStateHandle["summarized"] = true
-
+    fun `resumeRecording sets isPaused false`() {
         viewModel.startRecording()
+        viewModel.pauseRecording()
+        assertTrue(viewModel.uiState.value.isPaused)
 
-        // startRecording で summarized が false にリセットされる
-        assertFalse(savedStateHandle["summarized"] ?: true)
+        viewModel.resumeRecording()
+        assertFalse(viewModel.uiState.value.isPaused)
+    }
+
+    @Test
+    fun `initial UiState has correct defaults`() {
+        val state = viewModel.uiState.value
+        assertEquals(0, state.selectedTab)
+        assertFalse(state.isRecording)
+        assertFalse(state.isPaused)
+        assertEquals("", state.sessionId)
+        assertEquals(0, state.recordingSeconds)
     }
 }

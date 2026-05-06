@@ -1,16 +1,23 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import android.app.Application
+import android.os.StatFs
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.data.db.SessionHistory
+import com.kohei.summaryrecorder.data.db.SummaryDao
+import com.kohei.summaryrecorder.data.db.SummaryEntity
+import com.kohei.summaryrecorder.data.db.SummaryStatus
 import com.kohei.summaryrecorder.domain.controller.RecordingController
+import com.kohei.summaryrecorder.recorder.AudioConstants
 import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -25,25 +32,33 @@ class MainViewModel @Inject constructor(
     private val chunkRepository: ChunkRepository,
     private val summarizeUseCase: SummarizeUseCase,
     private val recordingController: RecordingController,
+    private val summaryDao: SummaryDao,
+    private val deleteSummaryUseCase: DeleteSummaryUseCase,
+    private val application: Application,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
-        private const val KEY_SUMMARIZED = "summarized"
         private const val KEY_SESSION_ID = "session_id"
         private const val KEY_IS_RECORDING = "is_recording"
+        private const val KEY_IS_PAUSED = "is_paused"
+        private const val KEY_RECORDING_SECONDS = "recording_seconds"
+        private const val RECORDINGS_DIR = "recordings"
     }
 
     data class UiState(
         val selectedTab: Int = 0,
         val isRecording: Boolean = false,
+        val isPaused: Boolean = false,
         val sessionId: String = "",
+        val recordingSeconds: Int = 0,
         val chunks: List<ChunkUiItem> = emptyList(),
         val summary: String? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
-        val sessions: List<SessionHistory> = emptyList(),
-        val isSessionsLoading: Boolean = false
+        val summaries: List<SummaryEntity> = emptyList(),
+        val unreadBadgeCount: Int = 0,
+        val volumeLevel: Float = 0f
     )
 
     data class ChunkUiItem(
@@ -55,12 +70,12 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    private var observeJob: Job? = null
-    private var summarized: Boolean
-        get() = savedStateHandle[KEY_SUMMARIZED] ?: false
-        set(value) { savedStateHandle[KEY_SUMMARIZED] = value }
+    private val _storageInfo = MutableStateFlow<Pair<Long, Long>>(0L to 0L)
+    val storageInfo: StateFlow<Pair<Long, Long>> = _storageInfo.asStateFlow()
 
-    // #9: プロセス死復帰 — SavedStateHandleからセッション復元
+    private var observeJob: Job? = null
+    private var timerJob: Job? = null
+
     private var persistedSessionId: String?
         get() = savedStateHandle[KEY_SESSION_ID]
         set(value) { savedStateHandle[KEY_SESSION_ID] = value }
@@ -69,34 +84,103 @@ class MainViewModel @Inject constructor(
         get() = savedStateHandle[KEY_IS_RECORDING] ?: false
         set(value) { savedStateHandle[KEY_IS_RECORDING] = value }
 
+    private var persistedIsPaused: Boolean
+        get() = savedStateHandle[KEY_IS_PAUSED] ?: false
+        set(value) { savedStateHandle[KEY_IS_PAUSED] = value }
+
+    private var persistedRecordingSeconds: Int
+        get() = savedStateHandle[KEY_RECORDING_SECONDS] ?: 0
+        set(value) { savedStateHandle[KEY_RECORDING_SECONDS] = value }
+
     init {
-        // #9: プロセス再生成時に前回のセッション観測を再開
-        val prevSession = persistedSessionId
-        if (prevSession != null && !summarized) {
-            observeChunks(prevSession)
+        observeSummaries()
+        restorePreviousSession()
+        retryAndCleanup()
+        startStoragePolling()
+        startVolumeMonitoring()
+    }
+
+    private fun observeSummaries() {
+        viewModelScope.launch {
+            summaryDao.observeAll().collect { list ->
+                val badgeCount = list.count { it.status == SummaryStatus.DONE && !it.isRead }
+                _uiState.update { it.copy(summaries = list, unreadBadgeCount = badgeCount) }
+            }
         }
     }
+
+    private fun restorePreviousSession() {
+        val prevSession = persistedSessionId
+        if (prevSession != null && persistedIsRecording) {
+            _uiState.update {
+                it.copy(
+                    isRecording = true,
+                    isPaused = persistedIsPaused,
+                    sessionId = prevSession,
+                    recordingSeconds = persistedRecordingSeconds
+                )
+            }
+            observeChunks(prevSession)
+            if (!persistedIsPaused) {
+                startTimer()
+            }
+        }
+    }
+
+    private fun retryAndCleanup() {
+        viewModelScope.launch {
+            recordingController.awaitReady()
+            retryPendingRecords()
+            cleanupOrphanFiles(recordingController.currentSessionId)
+        }
+    }
+
+    private fun startStoragePolling() {
+        viewModelScope.launch {
+            while (true) {
+                try { updateStorageInfo() } catch (_: Exception) {}
+                delay(5000)
+            }
+        }
+    }
+
+    private fun startVolumeMonitoring() {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    if (_uiState.value.isRecording && !_uiState.value.isPaused) {
+                        val level = recordingController.currentVolumeLevel
+                        _uiState.update { it.copy(volumeLevel = level) }
+                    } else {
+                        _uiState.update { it.copy(volumeLevel = 0f) }
+                    }
+                } catch (_: Exception) {}
+                delay(100)
+            }
+        }
+    }
+
+    // ===== Tab selection =====
 
     fun onTabSelected(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
-        if (index == 1) {
-            loadSessions()
-        }
     }
 
+    // ===== Recording controls =====
+
     fun startRecording() {
-        // 二重起動防止
-        stopRecording()
-        
         val sessionId = UUID.randomUUID().toString()
-        summarized = false
         persistedSessionId = sessionId
         persistedIsRecording = true
-        
+        persistedIsPaused = false
+        persistedRecordingSeconds = 0
+
         _uiState.update {
             it.copy(
                 isRecording = true,
+                isPaused = false,
                 sessionId = sessionId,
+                recordingSeconds = 0,
                 chunks = emptyList(),
                 summary = null,
                 error = null,
@@ -105,6 +189,7 @@ class MainViewModel @Inject constructor(
         }
         recordingController.startRecording(sessionId)
         observeChunks(sessionId)
+        startTimer()
     }
 
     fun stopRecording() {
@@ -112,9 +197,55 @@ class MainViewModel @Inject constructor(
 
         val hasChunks = _uiState.value.chunks.isNotEmpty()
         persistedIsRecording = false
-        _uiState.update { it.copy(isRecording = false, isLoading = hasChunks) }
+        persistedIsPaused = false
+        stopTimer()
+        _uiState.update {
+            it.copy(
+                isRecording = false,
+                isPaused = false,
+                recordingSeconds = 0,
+                isLoading = hasChunks
+            )
+        }
         recordingController.stopRecording()
     }
+
+    fun pauseRecording() {
+        if (!_uiState.value.isRecording || _uiState.value.isPaused) return
+        persistedIsPaused = true
+        _uiState.update { it.copy(isPaused = true) }
+        recordingController.pauseRecording()
+        stopTimer()
+    }
+
+    fun resumeRecording() {
+        if (!_uiState.value.isRecording || !_uiState.value.isPaused) return
+        persistedIsPaused = false
+        _uiState.update { it.copy(isPaused = false) }
+        recordingController.resumeRecording()
+        startTimer()
+    }
+
+    // ===== Timer =====
+
+    private fun startTimer() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                val current = _uiState.value.recordingSeconds
+                persistedRecordingSeconds = current + 1
+                _uiState.update { it.copy(recordingSeconds = current + 1) }
+            }
+        }
+    }
+
+    private fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
+    // ===== Chunk observation (UI表示のみ、要約はRecordingService側で完結) =====
 
     private fun observeChunks(sessionId: String) {
         observeJob?.cancel()
@@ -122,27 +253,11 @@ class MainViewModel @Inject constructor(
             chunkRepository.getChunksFlow(sessionId)
                 .collect { chunks ->
                     val items = chunks.map { it.toUiItem() }
-                    val hasLast = chunks.any { it.isLast }
-                    val allTerminal = chunks.isNotEmpty() && chunks.all {
-                        it.status == ChunkStatus.DONE || it.status == ChunkStatus.FAILED
-                    }
-
                     _uiState.update { it.copy(chunks = items) }
 
-                    val recording = _uiState.value.isRecording
-
-                    // ローディング解除（UIフィードバック）
-                    if (!recording && (allTerminal || items.isEmpty())) {
+                    // チャンクが空になったらローディング解除
+                    if (items.isEmpty()) {
                         _uiState.update { it.copy(isLoading = false) }
-                    }
-
-                    // 要約トリガー: 録音終了 + isLastあり + 全DONE + 未要約
-                    // NOTE: hasLast=false の間はキャンセルしない → 最終チャンク到着を待つ
-                    if (!recording && hasLast && chunks.all { it.status == ChunkStatus.DONE } && !summarized) {
-                        summarized = true
-                        summarizeAll(sessionId)
-                        // 要約完了後、リソースリーク防止のためobserve終了
-                        observeJob?.cancel()
                     }
                 }
         }
@@ -154,87 +269,134 @@ class MainViewModel @Inject constructor(
         transcription = transcriptionText
     )
 
-    private suspend fun summarizeAll(sessionId: String) {
-        val result = summarizeUseCase.execute(sessionId)
+    // ===== Retry pending records (app restart) =====
 
-        if (result.isSuccess) {
-            val output = result.getOrThrow()
-            _uiState.update {
-                it.copy(
-                    summary = output.summaryResult.summaryText,
-                    isLoading = false
+    private suspend fun retryPendingRecords() {
+        val pending = summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING))
+        for (entity in pending) {
+            summaryDao.updateStatus(entity.sessionId, SummaryStatus.SUMMARIZING)
+            val result = summarizeUseCase.execute(entity.sessionId)
+            if (result.isSuccess) {
+                val output = result.getOrThrow()
+                summaryDao.updateStatusAndContent(
+                    sessionId = entity.sessionId,
+                    status = SummaryStatus.DONE,
+                    title = output.summaryResult.title,
+                    summaryText = output.summaryResult.summaryText,
+                    transcriptionText = output.transcriptionText
+                )
+            } else {
+                summaryDao.updateStatus(
+                    sessionId = entity.sessionId,
+                    status = SummaryStatus.ERROR,
+                    errorMessage = result.exceptionOrNull()?.message
                 )
             }
-            // #2: 要約成功後にセッションデータを自動削除
-            try {
-                chunkRepository.deleteSessionData(sessionId)
-            } catch (e: Exception) {
-                // 削除失敗は致命的ではない。ログだけ残す
-                android.util.Log.w("MainViewModel", "Auto-cleanup failed for session $sessionId", e)
+        }
+    }
+
+    // ===== Orphan file cleanup (suspend化) =====
+
+    private suspend fun cleanupOrphanFiles(excludeSessionId: String?) {
+        val recordingsDir = File(application.filesDir, RECORDINGS_DIR)
+        if (!recordingsDir.exists()) return
+
+        val knownSessionIds = summaryDao.getAll().map { it.sessionId }.toMutableSet()
+        if (excludeSessionId != null) knownSessionIds.add(excludeSessionId)
+
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            recordingsDir.listFiles()?.forEach { file ->
+                if (file.isFile && file.name.endsWith(".wav")) {
+                    val sessionId = file.nameWithoutExtension
+                    if (sessionId !in knownSessionIds) {
+                        file.delete()
+                    }
+                } else if (file.isDirectory) {
+                    val sessionId = file.name
+                    if (sessionId !in knownSessionIds) {
+                        file.deleteRecursively()
+                    }
+                }
             }
-        } else {
-            _uiState.update {
-                it.copy(
-                    error = "要約に失敗しました: ${result.exceptionOrNull()?.message}",
-                    isLoading = false
+        }
+    }
+
+    // ===== Summary operations =====
+
+    fun deleteSummary(sessionId: String, audioFilePath: String) {
+        viewModelScope.launch {
+            deleteSummaryUseCase.execute(sessionId, audioFilePath)
+        }
+    }
+
+    fun retrySummary(sessionId: String) {
+        viewModelScope.launch {
+            summaryDao.updateStatus(sessionId, SummaryStatus.SUMMARIZING)
+            val result = summarizeUseCase.execute(sessionId)
+            if (result.isSuccess) {
+                val output = result.getOrThrow()
+                summaryDao.updateStatusAndContent(
+                    sessionId = sessionId,
+                    status = SummaryStatus.DONE,
+                    title = output.summaryResult.title,
+                    summaryText = output.summaryResult.summaryText,
+                    transcriptionText = output.transcriptionText
+                )
+            } else {
+                summaryDao.updateStatus(
+                    sessionId = sessionId,
+                    status = SummaryStatus.ERROR,
+                    errorMessage = result.exceptionOrNull()?.message
                 )
             }
         }
     }
 
-    // ===== 手動削除機能 =====
-
-    fun loadSessions() {
+    fun markAsRead(sessionId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSessionsLoading = true) }
-            try {
-                val sessions = chunkRepository.getSessionHistory()
-                _uiState.update { it.copy(sessions = sessions, isSessionsLoading = false) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isSessionsLoading = false) }
-            }
+            summaryDao.updateRead(sessionId, true)
         }
     }
 
-    fun deleteSession(sessionId: String) {
+    fun updateTitle(sessionId: String, title: String) {
         viewModelScope.launch {
-            try {
-                chunkRepository.deleteSessionData(sessionId)
-                // 一覧を再読込
-                val sessions = chunkRepository.getSessionHistory()
-                _uiState.update { it.copy(sessions = sessions) }
-            } catch (e: Exception) {
-                // 何もしない
-            }
+            summaryDao.updateTitle(sessionId, title)
         }
     }
 
-    fun retryLastSummary() {
-        val sessionId = _uiState.value.sessionId
-        if (sessionId.isBlank()) return
+    // ===== Storage info =====
 
-        _uiState.update { it.copy(error = null, isLoading = true) }
-        summarized = false
-        viewModelScope.launch {
-            summarizeAll(sessionId)
-        }
+    private fun updateStorageInfo() {
+        val stat = StatFs(application.filesDir.absolutePath)
+        val freeBytes = stat.availableBytes
+        val bytesPerSecond = AudioConstants.BYTES_PER_SECOND
+        val recordableHours = freeBytes / bytesPerSecond / 3600
+        _storageInfo.value = Pair(freeBytes / (1024 * 1024 * 1024), recordableHours)
     }
+
+    // ===== Utilities =====
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
 
-    // ユーティリティ: タイムスタンプ表示用
     fun formatDate(timestamp: Long): String {
         val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
         return sdf.format(Date(timestamp))
     }
 
-    fun formatSessionStatus(session: SessionHistory): String {
-        return if (session.failedChunks > 0) {
-            "${session.doneChunks}/${session.totalChunks} (${session.failedChunks}失敗)"
-        } else {
-            "${session.doneChunks}/${session.totalChunks} 完了"
-        }
+    fun formatDuration(ms: Long): String {
+        val totalSeconds = ms / 1000
+        val h = totalSeconds / 3600
+        val m = (totalSeconds % 3600) / 60
+        val s = totalSeconds % 60
+        return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+    }
+
+    fun formatTimer(seconds: Int): String {
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
+        val s = seconds % 60
+        return "%02d:%02d:%02d".format(h, m, s)
     }
 }
