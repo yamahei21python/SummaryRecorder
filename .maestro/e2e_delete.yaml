@@ -1,0 +1,33 @@
+appId: com.kohei.summaryrecorder
+---
+# Delete E2E: 要約カード削除フロー
+# 前提: 要約カードが1件以上存在すること (heavy_pipeline完了後に実行推奨)
+
+# Tab 2 (要約) を開く
+- tapOn: "要約"
+
+# カードが存在することを確認
+- assertNotVisible: "録音がありません"
+
+# 最初のカードの⋯メニューを開く
+- tapOn:
+    text: "⋯"
+    index: 0
+
+# 削除を選択
+- tapOn: "削除"
+
+# 確認ダイアログ
+- assertVisible: "削除確認"
+- assertVisible: "この録音を削除しますか？"
+
+# キャンセル (カードが残ることを確認)
+- tapOn: "キャンセル"
+- assertVisible: "⋯"
+
+# 再度削除 → 今度は実行
+- tapOn:
+    text: "⋯"
+    index: 0
+- tapOn: "削除"
+- tapOn: "削除"

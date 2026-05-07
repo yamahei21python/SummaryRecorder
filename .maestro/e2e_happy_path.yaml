@@ -1,27 +1,33 @@
 appId: com.kohei.summaryrecorder
 ---
-# E2E Happy Path
+# Light E2E: 録音→停止UI操作 (CI実行可, API不要)
 
-- assertVisible: "録音開始"
+# アプリ起動
+- launchApp
 
-# 録音開始
-- tapOn: "録音開始"
+# ===== 起動直後: Tab 0 (録音操作) =====
+- assertVisible: "● 録音"
+- assertVisible: "□ 停止"
 
-# チャンク完了待ち
-- assertVisible: "チャンク状態"
-- assertVisible: "完了"
+# ===== 録音開始 =====
+- tapOn: "● 録音"
 
-# 録音停止
-- tapOn: "録音停止"
+# 録音中のUI確認
+- assertVisible: "‖ 一時停止"
 
-# 要約結果が表示されるまで最大60秒リトライ
-- retry:
-    maxRetries: 30
-    commands:
-      - assertVisible: "要約結果"
+# ===== 一時停止 =====
+- tapOn: "‖ 一時停止"
+- assertVisible: "▶ 再開"
 
-# 履歴タブ
-- tapOn: "履歴"
+# ===== 再開 =====
+- tapOn: "▶ 再開"
+- assertVisible: "‖ 一時停止"
 
-# 自動削除確認
-- assertVisible: "履歴がありません"
+# ===== 録音停止 =====
+- tapOn: "□ 停止"
+
+# ===== Tab 2 (要約) 切り替え =====
+- tapOn: "要約"
+
+# ===== Tab 1 (音声確認) 切り替え =====
+- tapOn: "音声確認"

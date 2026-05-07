@@ -1,0 +1,27 @@
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+
+# External build artifacts
+external/llama.cpp/build/
+external/whisper.cpp/cmake/build/
+external/llama.cpp/*.o
+external/whisper.cpp/*.o
+
+# Models
+mlx_models/
+*.gguf
+
+# Coverage
+*.profraw
+
+# Docs (generated)
+docs/
+
+# macOS
+.DS_Store
+
+# Secrets
+local.properties

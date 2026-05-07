@@ -1,0 +1,105 @@
+name: SummaryRecorder
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  SummaryRecorder:
+    type: application
+    platform: macOS
+    sources:
+      - path: SummaryRecorder
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.SummaryRecorder
+        PRODUCT_NAME: SummaryRecorder
+        INFOPLIST_FILE: SummaryRecorder/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SummaryRecorder/SummaryRecorder.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: false
+        SWIFT_OBJC_BRIDGING_HEADER: SummaryRecorder/SummaryRecorder-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/build/whisper/include"
+          - "$(PROJECT_DIR)/build/llama/include"
+          - "$(PROJECT_DIR)/external/whisper.cpp/ggml/include"
+          - "$(PROJECT_DIR)/external/whisper.cpp/include"
+          - "$(PROJECT_DIR)/external/llama.cpp/ggml/include"
+          - "$(PROJECT_DIR)/external/llama.cpp/include"
+          - "$(PROJECT_DIR)/external/llama.cpp/common"
+        OTHER_LDFLAGS:
+          - "$(PROJECT_DIR)/external/whisper.cpp/cmake/build/src/libwhisper.a"
+          - "$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml.a"
+          - "$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml-cpu.a"
+          - "$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/ggml-metal/libggml-metal.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/src/libllama.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-metal/libggml-metal.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-cpu.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-base.a"
+          - "$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-blas/libggml-blas.a"
+          - "-framework Accelerate"
+          - "-framework Metal"
+          - "-framework Foundation"
+        OTHER_CPLUSPLUSFLAGS:
+          - "$(inherited)"
+          - "-std=c++17"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    dependencies: []
+    frameworks:
+      - Metal
+      - Accelerate
+    resources:
+      - path: SummaryRecorder/Resources
+      - path: SummaryRecorder/Resources/grammar.gbnf
+      - path: SummaryRecorder/Resources/jfk.wav
+      - path: SummaryRecorder/Resources/Scripts
+
+  SummaryRecorderTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SummaryRecorderTests
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.SummaryRecorderTests
+        PRODUCT_NAME: SummaryRecorderTests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/SummaryRecorder.app/Contents/MacOS/SummaryRecorder
+        BUNDLE_LOADER: $(TEST_HOST)
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: SummaryRecorderTests/Info.plist
+    dependencies:
+      - target: SummaryRecorder
+
+  SummaryRecorderUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: SummaryRecorderUITests
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.SummaryRecorderUITests
+        PRODUCT_NAME: SummaryRecorderUITests
+        TEST_TARGET_NAME: SummaryRecorder
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: SummaryRecorderUITests/Info.plist
+    dependencies:
+      - target: SummaryRecorder

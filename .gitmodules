@@ -1,0 +1,6 @@
+[submodule "PC/external/whisper.cpp"]
+	path = PC/external/whisper.cpp
+	url = https://github.com/ggerganov/whisper.cpp.git
+[submodule "PC/external/llama.cpp"]
+	path = PC/external/llama.cpp
+	url = https://github.com/ggerganov/llama.cpp.git

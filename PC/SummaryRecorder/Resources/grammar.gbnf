@@ -1,0 +1,11 @@
+root ::= object
+
+object ::= "{" space "\"title\"" space ":" space string space "," space "\"summaryText\"" space ":" space string space "}"
+
+string ::= "\"" char* "\""
+
+char ::= [^"\\] | "\\" escape
+
+escape ::= ["\\/bfnrt] | "u" [0-9a-fA-F]{4}
+
+space ::= [ \t\n\r]*
