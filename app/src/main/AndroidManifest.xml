@@ -12,8 +12,9 @@
     <application
         android:name=".SummaryRecorderApp"
         android:allowBackup="false"
-        android:icon="@android:drawable/ic_btn_speak_now"
-        android:label="SummaryRecorder"
+android:icon="@mipmap/ic_launcher"
+android:roundIcon="@mipmap/ic_launcher"
+android:label="SummaryRecorder"
         android:supportsRtl="true"
         android:theme="@style/Theme.SummaryRecorder">
 
