@@ -44,18 +44,21 @@ class SimpleRecorderTest {
 
     @Test
     fun `start creates WAV file with valid header`() = testScope.runTest {
-        val buffer = ShortArray(4096)
         every { audioProvider.read(any(), any()) } returns -1
         coEvery { audioProvider.start() } returns true
 
         val recorder = SimpleRecorder(outputDir, audioProvider, testScope)
         val file = recorder.start()
 
-        assertTrue(file.exists(), "WAV file should be created")
+        // start() returns File object but file is written in stop()
         assertTrue(file.name.endsWith(".wav"), "File should have .wav extension")
 
+        val stoppedFile = recorder.stop()
+        assertTrue(stoppedFile!!.exists(), "WAV file should exist after stop()")
+        assertTrue(stoppedFile.name.endsWith(".wav"))
+
         // WAVヘッダー検証 (Little-Endian)
-        RandomAccessFile(file, "r").use { raf ->
+        RandomAccessFile(stoppedFile, "r").use { raf ->
             val riff = ByteArray(4)
             raf.read(riff)
             assertEquals("RIFF", String(riff))
@@ -123,13 +126,12 @@ class SimpleRecorderTest {
 
         val stoppedFile = recorder.stop()
 
-        assertEquals(startedFile, stoppedFile, "stop() should return the same file")
-        assertTrue(stoppedFile!!.exists())
+        assertEquals(startedFile, stoppedFile, "stop() should return the same file as start()")
+        assertTrue(stoppedFile!!.exists(), "File should exist after stop()")
     }
 
     @Test
     fun `pause and resume toggle isPaused state`() = testScope.runTest {
-        // 読み込みをブロックして録音継続
         every { audioProvider.read(any(), any()) } coAnswers {
             Thread.sleep(100)
             -1
@@ -168,15 +170,13 @@ class SimpleRecorderTest {
         coEvery { audioProvider.start() } returns true
 
         val recorder = SimpleRecorder(outputDir, audioProvider, testScope)
-        val file = recorder.start()
-
-        // 録音完了待ち
+        recorder.start()
+        // コルーチンタスクを実行
         testScope.testScheduler.advanceUntilIdle()
-
-        recorder.stop()
+        val stoppedFile = recorder.stop()
 
         // PCMデータ検証（44byteヘッダー後）
-        RandomAccessFile(file, "r").use { raf ->
+        RandomAccessFile(stoppedFile!!, "r").use { raf ->
             val dataLength = raf.length() - 44
             assertEquals(8L, dataLength, "4 samples × 2 bytes = 8 bytes PCM data")
 
@@ -192,11 +192,11 @@ class SimpleRecorderTest {
         coEvery { audioProvider.start() } returns true
 
         val recorder = SimpleRecorder(outputDir, audioProvider, testScope)
-        val file = recorder.start()
-        recorder.stop()
+        recorder.start()
+        val file = recorder.stop()
 
         // ヘッダーのみ（44byte）
-        assertEquals(44L, file.length(), "Empty recording should be header only")
+        assertEquals(44L, file!!.length(), "Empty recording should be header only")
 
         RandomAccessFile(file, "r").use { raf ->
             raf.seek(40)

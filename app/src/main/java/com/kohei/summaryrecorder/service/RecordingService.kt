@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
@@ -83,6 +84,7 @@ class RecordingService : Service() {
             ACTION_START -> {
                 val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
                     ?: UUID.randomUUID().toString()
+                Log.d("RecordingService", "ACTION_START sessionId=$sessionId")
 
                 startForeground(NOTIFICATION_ID, buildNotification("録音中...", pauseAction = true),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -108,9 +110,11 @@ class RecordingService : Service() {
             }
             ACTION_STOP -> {
                 val sessionId = recordingManager.getCurrentSessionId()
+                Log.d("RecordingService", "ACTION_STOP sessionId=$sessionId")
                 serviceScope.launch {
                     try {
                         val wavFile = recordingManager.stopRecording()
+                        Log.d("RecordingService", "stopRecording returned wavFile=$wavFile, exists=${wavFile?.exists()}, size=${wavFile?.length()}")
                         if (sessionId != null && wavFile != null) {
                             finalizeSession(sessionId, wavFile)
                         }
@@ -156,6 +160,7 @@ class RecordingService : Service() {
     }
 
     override fun onDestroy() {
+        Log.d("RecordingService", "onDestroy called")
         val sessionId = recordingManager.getCurrentSessionId()
         if (sessionId != null) {
             kotlinx.coroutines.runBlocking(Dispatchers.IO) {
@@ -176,6 +181,18 @@ class RecordingService : Service() {
     }
 
     private suspend fun finalizeSession(sessionId: String, wavFile: File) {
+        Log.d("RecordingService", "finalizeSession: sessionId=$sessionId, wavFile=${wavFile.absolutePath}")
+        // Wait for filesystem sync (emulator fuse may lag after RAF.close)
+        var retries = 0
+        while (!wavFile.exists() && retries < 20) {
+            kotlinx.coroutines.delay(50)
+            retries++
+        }
+        if (!wavFile.exists()) {
+            Log.e("RecordingService", "WAV file does not exist after retries: ${wavFile.absolutePath}")
+            summaryDao.updateStatus(sessionId, SummaryStatus.ERROR, errorMessage = "WAV file not found: ${wavFile.name}")
+            return
+        }
         try {
             val durationMs = calcDuration(wavFile)
             summaryDao.insert(

@@ -2,6 +2,7 @@ package com.kohei.summaryrecorder.data.repository
 
 import com.kohei.summaryrecorder.data.api.GroqApiService
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -16,6 +17,7 @@ class TranscriptionRepository(
 ) : TranscriptionProvider {
 
     companion object {
+        private const val TAG = "TranscriptionRepo"
         private const val WAV_HEADER_SIZE = 44
     }
 
@@ -33,6 +35,7 @@ class TranscriptionRepository(
 
     private suspend fun transcribeSingleFile(file: File): Result<String> {
         return try {
+            Log.d(TAG, "transcribeSingleFile: ${file.name}, size=${file.length()}")
             val fileBody = file.asRequestBody("audio/wav".toMediaType())
             val filePart = MultipartBody.Part.createFormData(
                 "file", file.name, fileBody
@@ -44,9 +47,15 @@ class TranscriptionRepository(
                 language = "ja".toRequestBody("text/plain".toMediaType()),
                 responseFormat = "json".toRequestBody("text/plain".toMediaType())
             )
+            Log.d(TAG, "transcribeSingleFile: success, text='${response.text}'")
             Result.success(response.text)
         } catch (e: Exception) {
-            Result.failure(e)
+            val detail = if (e is retrofit2.HttpException) {
+                val body = e.response()?.errorBody()?.string()
+                "HTTP ${e.code()}: $body"
+            } else e.message.orEmpty()
+            Log.e(TAG, "transcribeSingleFile failed: $detail", e)
+            Result.failure(Exception(detail, e))
         }
     }
 
