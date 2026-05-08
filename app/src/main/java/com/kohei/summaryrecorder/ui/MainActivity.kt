@@ -20,7 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -179,7 +179,7 @@ fun MainScreen(viewModel: MainViewModel, playbackSpeed: Float, onSpeedChange: (F
                                 }
                             }
                         ) {
-                            Icon(Icons.Default.Article, stringResource(R.string.cd_summary))
+                            Icon(Icons.AutoMirrored.Filled.Article, stringResource(R.string.cd_summary))
                         }
                     },
                     label = { Text(stringResource(R.string.tab_label_summary)) }
@@ -682,7 +682,7 @@ fun SummaryListScreen(
         if (uiState.summaries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Article, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                    Icon(Icons.AutoMirrored.Filled.Article, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(8.dp))
                     Text(stringResource(R.string.empty_no_recordings))
                     Text(stringResource(R.string.empty_start_recording), style = MaterialTheme.typography.bodySmall)
