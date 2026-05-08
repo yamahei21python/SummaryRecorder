@@ -140,12 +140,6 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
-    // MockWebServer (debug builds only: E2E/Maestro用)
-    debugImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("org.junit.vintage:junit-vintage-engine:5.10.0")
@@ -162,8 +156,6 @@ dependencies {
     testImplementation("com.google.dagger:hilt-android-testing:2.54")
     kspTest("com.google.dagger:hilt-android-compiler:2.54")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.work:work-testing:2.9.0")
-    testImplementation("androidx.work:work-testing:2.9.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
 
     // Media3 ExoPlayer
