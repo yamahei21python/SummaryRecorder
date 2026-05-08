@@ -5,12 +5,7 @@ struct BackupManager: Sendable {
     let recordingsDirectory: URL
 
     init(recordingsDirectory: URL? = nil) {
-        if let dir = recordingsDirectory {
-            self.recordingsDirectory = dir
-        } else {
-            self.recordingsDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-                .first!.appendingPathComponent("recordings", isDirectory: true)
-        }
+        self.recordingsDirectory = recordingsDirectory ?? AppPaths.recordingsDirectory
     }
 
     /// Export sessions + WAV files to ZIP
@@ -87,13 +82,14 @@ struct BackupManager: Sendable {
                 try fm.copyItem(at: audioURL, to: destURL)
             }
 
-            // Create Session with ERROR status for incomplete sessions
-            let status: String
+            let status: SessionStatus
             if backupSession.status == SessionStatus.summarizing.rawValue ||
                backupSession.status == SessionStatus.recorded.rawValue {
-                status = SessionStatus.error.rawValue
+                status = .error
+            } else if let s = SessionStatus(rawValue: backupSession.status) {
+                status = s
             } else {
-                status = backupSession.status
+                status = .error
             }
 
             let session = Session(
@@ -106,7 +102,7 @@ struct BackupManager: Sendable {
                 wavFileName: backupSession.wavFileName,
                 durationMs: backupSession.durationMs,
                 status: status,
-                errorMessage: status == SessionStatus.error.rawValue ? "リストア後: 再処理が必要" : backupSession.errorMessage
+                errorMessage: status == .error ? "リストア後: 再処理が必要" : backupSession.errorMessage
             )
             restoredSessions.append(session)
             imported += 1
@@ -128,7 +124,7 @@ struct BackupManager: Sendable {
                 transcriptionText: session.transcriptionText,
                 wavFileName: session.wavFileName,
                 durationMs: session.durationMs,
-                status: session.status,
+                status: session.status.rawValue,
                 errorMessage: session.errorMessage
             )
         }

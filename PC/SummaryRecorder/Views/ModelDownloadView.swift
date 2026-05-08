@@ -22,7 +22,7 @@ struct ModelDownloadView: View {
 
             modelRow(
                 label: "Whisper (文字起こし)",
-                filename: "ggml-base.en.bin (~140MB)",
+                filename: "ggml-medium.bin (~1.5GB)",
                 progress: downloadService.whisperProgress,
                 status: downloadService.whisperStatus,
                 error: downloadService.whisperError
@@ -35,7 +35,7 @@ struct ModelDownloadView: View {
                 error: downloadService.llamaError
             )
 
-            Text("初回のみ・合計約3.6GB")
+            Text("初回のみ・合計約4GB")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -73,9 +73,7 @@ struct ModelDownloadView: View {
         hasStarted = true
         Task {
             do {
-                let urls = try await downloadService.downloadAllModels()
-                appConfig.whisperModelPath = urls.whisperURL.path
-                appConfig.llamaModelPath = urls.llamaURL.path
+                _ = try await downloadService.downloadAllModels()
             } catch {
                 // error handled by service's published state
             }

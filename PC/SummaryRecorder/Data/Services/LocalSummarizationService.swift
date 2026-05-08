@@ -7,9 +7,13 @@ final class LocalSummarizationService: SummarizationService {
         self.llamaBridge = llamaBridge
     }
 
-    // Convenience init with model path for production use
-    convenience init(modelPath: String) {
-        let bridge = LLamaBridgeSwift(modelPath: modelPath)
+    convenience init(modelPath: String, systemPrompt: String = LLamaBridgeSwift.defaultSystemPrompt) {
+        let bridge = LLamaBridgeSwift(modelPath: modelPath, systemPrompt: systemPrompt)
+        self.init(llamaBridge: bridge)
+    }
+
+    convenience init(systemPrompt: String = LLamaBridgeSwift.defaultSystemPrompt) {
+        let bridge = LLamaBridgeSwift(systemPrompt: systemPrompt)
         self.init(llamaBridge: bridge)
     }
 
@@ -18,6 +22,11 @@ final class LocalSummarizationService: SummarizationService {
 
         guard !cancelState.isCancelled else {
             throw CancellationError()
+        }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return SummaryOutput(title: formatFallbackTitle(), summaryText: "文字起こしテキストが空です")
         }
 
         let json = try await llamaBridge.generate(prompt: text, cancelState: cancelState)
@@ -32,8 +41,16 @@ final class LocalSummarizationService: SummarizationService {
     // MARK: - Private
 
     private func parseOutput(json: String) throws -> SummaryOutput {
+        // Empty output guard
+        guard !json.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return SummaryOutput(title: formatFallbackTitle(), summaryText: "要約結果が空です")
+        }
+
+        // Step 0: Strip thinking content (double-guard in case ObjC misses)
+        var raw = stripThinkingContent(json)
+
         // Step 1: Extract JSON from markdown code blocks
-        var raw = json
+        raw = raw
             .replacingOccurrences(of: "```json", with: "")
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -47,7 +64,7 @@ final class LocalSummarizationService: SummarizationService {
         if let data = raw.data(using: .utf8),
            let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             let title = parsed["title"] as? String ?? ""
-            let summaryText = parsed["summaryText"] as? String ?? ""
+            let summaryText = stringifyValue(parsed["summaryText"])
             if !title.isEmpty || !summaryText.isEmpty {
                 return SummaryOutput(
                     title: title.isEmpty ? formatFallbackTitle() : title,
@@ -61,26 +78,47 @@ final class LocalSummarizationService: SummarizationService {
             return repaired
         }
 
-        // Step 5: Fallback — raw text as summaryText
-        return SummaryOutput(title: formatFallbackTitle(), summaryText: json)
+        // Step 5: Fallback — cleaned text as summaryText (strip any remaining think tags)
+        return SummaryOutput(title: formatFallbackTitle(), summaryText: raw.isEmpty ? "要約結果が空です" : raw)
     }
 
     // MARK: - JSON Extraction Helpers
 
+    /// Strip thinking content from model output (double-guard)
+    /// Uses string operations (NSRegularExpression can't match | in ICU regex)
+    private func stripThinkingContent(_ text: String) -> String {
+        var result = text
+        let startTag = "<|channel>"
+        let endTag = "<channel|>"
+
+        // Remove all <|channel>...<channel|> blocks (including thought content)
+        while let startRange = result.range(of: startTag) {
+            if let endRange = result.range(of: endTag, range: startRange.lowerBound..<result.endIndex) {
+                result.removeSubrange(startRange.lowerBound..<endRange.upperBound)
+            } else {
+                // Unclosed block — remove from startTag to end
+                result.removeSubrange(startRange.lowerBound..<result.endIndex)
+                break
+            }
+        }
+        // Pattern 2: trailing <turn|>
+        result = result.replacingOccurrences(of: "<turn|>", with: "")
+        return result
+    }
+
     /// Find first JSON object containing "title" from raw text
     private func extractJSON(from text: String) -> String? {
-        // Try to find balanced braces
         guard let start = text.firstIndex(of: "{") else { return nil }
         var depth = 0
-        var end = start
-        for i in text[start...] {
-            if i == "{" { depth += 1 }
-            if i == "}" { depth -= 1 }
-            if depth == 0 { break }
-            end = text.index(after: end)
+        for idx in text.indices[start...] {
+            if text[idx] == "{" { depth += 1 }
+            if text[idx] == "}" { depth -= 1 }
+            if depth == 0 {
+                let candidate = String(text[start...idx])
+                return candidate.contains("\"title\"") ? candidate : nil
+            }
         }
-        let candidate = String(text[start...end])
-        return candidate.contains("\"title\"") ? candidate : nil
+        return nil
     }
 
     /// Repair incomplete JSON and parse
@@ -108,7 +146,7 @@ final class LocalSummarizationService: SummarizationService {
         }
 
         let title = parsed["title"] as? String ?? ""
-        let summaryText = parsed["summaryText"] as? String ?? ""
+        let summaryText = stringifyValue(parsed["summaryText"])
         guard !title.isEmpty || !summaryText.isEmpty else { return nil }
 
         return SummaryOutput(
@@ -118,9 +156,16 @@ final class LocalSummarizationService: SummarizationService {
     }
 
     private func formatFallbackTitle() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy/MM/dd HH:mm"
-        return formatter.string(from: Date())
+        AppFormatters.fallbackTitle()
+    }
+
+    /// Convert Any JSON value to String (handles String, [String], nested values)
+    private func stringifyValue(_ value: Any?) -> String {
+        guard let value else { return "" }
+        if let str = value as? String { return str }
+        if let arr = value as? [String] { return arr.joined(separator: "\n") }
+        if let arr = value as? [Any] { return arr.compactMap { stringifyValue($0) }.joined(separator: "\n") }
+        return ""
     }
 }
 
@@ -134,23 +179,24 @@ protocol LLamaBridgeProtocol: Sendable {
 
 final class LLamaBridgeSwift: LLamaBridgeProtocol, @unchecked Sendable {
     private let objcBridge: LLamaBridgeObjC
-    private let systemPrompt = """
-    指示に従い、以下のテキストを要約してください。
+    private let systemPrompt: String
 
-    出力ルール:
-    1. 必ず以下のJSON形式のみを出力すること
-    2. JSON以外のテキスト（挨拶、説明、マークダウン）は一切出力しない
-    3. titleは20文字以内
-    4. summaryTextは主要なポイントを3〜5個含む
+    static let defaultSystemPrompt = """
+    以下のテキストを要約してください。
 
-    出力形式:
-    {"title": "要約タイトル", "summaryText": "要約本文"}
-
-    例:
-    {"title": "会議の議事録", "summaryText": "・新規プロジェクトの開始を決定\\n・予算は500万円以内\\n・次回会議は来週水曜日"}
+    以下のJSON形式で出力してください。
+    {
+        "title": "要約タイトル(20文字以内)",
+        "summaryText": "要約本文"
+    }
+    ルール:
+    - titleは内容を表す簡潔なタイトル
+    - summaryTextは箇条書きで重要ポイントをまとめる
+    - JSONのみ出力(マークダウンコードブロックなし)
     """
 
-    init(modelPath: String = "") {
+    init(modelPath: String = "", systemPrompt: String = defaultSystemPrompt) {
+        self.systemPrompt = systemPrompt
         if modelPath.isEmpty {
             self.objcBridge = LLamaBridgeObjC()
         } else {

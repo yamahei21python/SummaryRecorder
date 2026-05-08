@@ -1,69 +1,151 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @ObservedObject var appConfig = AppConfig.shared
-    @State private var lastSaved: Date?
+    @ObservedObject var appConfig: AppConfig
+    @Binding var showSettings: Bool
+    @State private var showGroqKey = false
+    @State private var showGeminiKey = false
 
     var body: some View {
-        Form {
-            // Transcription Mode
-            Section("文字起こし") {
-                Picker("モード", selection: $appConfig.transcriptionMode) {
-                    ForEach(TranscriptionMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // ヘッダー
+                HStack {
+                    Text("設定")
+                        .font(.title2.bold())
+                    Spacer()
+                    Button("閉じる") {
+                        showSettings = false
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                .padding(.bottom, 4)
+
+                // 文字起こしセクション
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("文字起こし")
+                            .font(.headline)
+                        Picker("モード", selection: $appConfig.transcriptionMode) {
+                            ForEach(TranscriptionMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        if appConfig.transcriptionMode == .groq {
+                            apiKeyField(
+                                title: "Groq API Key",
+                                key: $appConfig.groqAPIKey,
+                                showKey: $showGroqKey
+                            )
+                        }
+
+                        if appConfig.transcriptionMode == .mlx {
+                            Text("whisper.cpp (in-process)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
 
-                if appConfig.transcriptionMode == .groq {
-                    SecureField("Groq API Key", text: $appConfig.groqAPIKey)
-                        .onSubmit { save() }
-                }
+                // 要約セクション
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("要約")
+                            .font(.headline)
 
-                if appConfig.transcriptionMode == .mlx {
-                    Text("pip install lightning-whisper-mlx")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+                        Picker("モード", selection: $appConfig.summarizationMode) {
+                            ForEach(SummarizationMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
 
-            // Summarization Mode
-            Section("要約") {
-                Picker("モード", selection: $appConfig.summarizationMode) {
-                    ForEach(SummarizationMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
+                        Toggle("自動要約", isOn: $appConfig.autoSummarize)
+
+                        if appConfig.summarizationMode == .gemini {
+                            apiKeyField(
+                                title: "Gemini API Key",
+                                key: $appConfig.geminiAPIKey,
+                                showKey: $showGeminiKey
+                            )
+                        }
+
+                        if appConfig.summarizationMode == .local {
+                            Text("Gemma 4 (local)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
 
-                Toggle("自動要約", isOn: $appConfig.autoSummarize)
+                // 要約指示セクション
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("要約指示")
+                            .font(.headline)
 
-                if appConfig.summarizationMode == .gemini {
-                    SecureField("Gemini API Key", text: $appConfig.geminiAPIKey)
-                        .onSubmit { save() }
+                        TextField("要約の指示", text: $appConfig.summaryInstruction, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(2...5)
+
+                        HStack {
+                            Text("出力形式は固定（JSON）")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button("デフォルトに戻す") {
+                                appConfig.summaryInstruction = AppConfig.defaultSummaryInstruction
+                            }
+                            .controlSize(.small)
+                        }
+                    }
                 }
 
-                if appConfig.summarizationMode == .local {
-                    ModelDownloadView()
+                // データセクション
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("データ")
+                            .font(.headline)
+
+                        HStack {
+                            Text("録音ファイル")
+                                .font(.body)
+                            Spacer()
+                            Button {
+                                NSWorkspace.shared.open(AppPaths.recordingsDirectory)
+                            } label: {
+                                Text("フォルダを開く")
+                            }
+                            .controlSize(.small)
+                        }
+                    }
                 }
             }
-
-            // Save status
-            if let saved = lastSaved {
-                Section {
-                    Text("保存済: \(saved.formatted(date: .omitted, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            .padding(20)
         }
-        .formStyle(.grouped)
-        .frame(width: 450, height: 380)
-        .onDisappear { save() }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func save() {
-        appConfig.saveAPIKeys()
-        lastSaved = Date()
+    // MARK: - API Key Field
+
+    private func apiKeyField(title: String, key: Binding<String>, showKey: Binding<Bool>) -> some View {
+        HStack {
+            if showKey.wrappedValue {
+                TextField(title, text: key)
+                    .textFieldStyle(.roundedBorder)
+            } else {
+                SecureField(title, text: key)
+                    .textFieldStyle(.roundedBorder)
+            }
+            Button {
+                showKey.wrappedValue.toggle()
+            } label: {
+                Image(systemName: showKey.wrappedValue ? "eye.slash" : "eye")
+            }
+            .buttonStyle(.borderless)
+        }
     }
 }

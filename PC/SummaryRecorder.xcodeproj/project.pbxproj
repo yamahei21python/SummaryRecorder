@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		039D709F5DBA0FC876A80764 /* WavHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FC961FDCE7A41D5B08650B /* WavHeader.swift */; };
+		10F9EE49B02158836AFD6133 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55EE8032DB6554312DDB493 /* Constants.swift */; };
 		158BACD4F60FD3969FBB4600 /* SummaryRecorderE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3C44E9E036C85844314BE3 /* SummaryRecorderE2ETests.swift */; };
 		15BDB99D3952905D6F0F8B0D /* GroqTranscriptionServiceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FF90F80001EDD89E20BE338 /* GroqTranscriptionServiceTest.swift */; };
 		1FFA6254F657DC5994F93F83 /* WavHeaderTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = D40276A35089DA904D1D6270 /* WavHeaderTest.swift */; };
@@ -18,7 +19,6 @@
 		2D02225021B47D09DCA14919 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC785EC4A0FB984BC24BADCB /* SessionDetailView.swift */; };
 		33EC0EFA264139AB0C3BD40D /* AudioRecorderEdgeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B7B3AED21C11D6A2656C285 /* AudioRecorderEdgeTest.swift */; };
 		365B4D5648C85BCC87772D9E /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B2D8CAB91FE4ECA8FD4FD1 /* MockURLProtocol.swift */; };
-		377A1AC1A51CA9A94197F199 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2234609DFBE138E231131A9 /* Store.swift */; };
 		3828FA07F67C4EA3F7B49220 /* TempDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8FD4CA7DCDAC4C266F75E0 /* TempDirectory.swift */; };
 		3A88C3515EF942DC2A1C9B7C /* GroqTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B38897610187425E358833C0 /* GroqTranscriptionService.swift */; };
 		404E0C9B12F62385287B22E9 /* BackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CE7248659C636F35A4379D /* BackupManager.swift */; };
@@ -29,14 +29,15 @@
 		4948876DE13D7B02FCACE393 /* SessionStatusTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08B619D6E5BDC9F86EB5E57B /* SessionStatusTest.swift */; };
 		498012C3A445835E175BAC3A /* SummaryRecorderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3057AE8DEB0A65A4A5D3DD2F /* SummaryRecorderApp.swift */; };
 		4B58F65819BA32498F915635 /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBC31450A3F7D79E837608B /* SessionRepository.swift */; };
+		4FA4A7ACDBCB8551C373AF99 /* AVAudioPlayerRateTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9896EE5A54536A3B2C4592 /* AVAudioPlayerRateTest.swift */; };
 		5C8C43A639F31324547A65FC /* Chunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = C834E8B63E019B04572D60A5 /* Chunk.swift */; };
-		5D8774F3F414D35A9E89CB02 /* KeychainManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E814838C5104CC4947A5BD5E /* KeychainManagerTest.swift */; };
 		60218A0E9358A592607618BC /* WhisperBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 059EE310658ACEBCE4D02165 /* WhisperBridge.mm */; };
 		6B1A934954207B4D8309EF09 /* transcribe.py in Resources */ = {isa = PBXBuildFile; fileRef = 4637FD3CBBFAE6DC6FEB6B0C /* transcribe.py */; };
 		6D12118542710763E1A7A84C /* AudioRecorderTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE3925DEAB053CC4C37C374 /* AudioRecorderTest.swift */; };
 		70D7A1CAA0454245C99A0A6E /* BackupManagerExportTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B303A935E70C00A8D8E48F5 /* BackupManagerExportTest.swift */; };
 		72064FA2B842916571037418 /* ModelDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 180B400E63D000A13783600F /* ModelDownloadView.swift */; };
 		721037E3ACD2ED9DA3BDFF57 /* LLamaBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 6C098B507EA33EC7772E95B7 /* LLamaBridge.mm */; };
+		7210FA7C751A78959B3160D5 /* ThinkModeOutputTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7610F397ACAFBB0FC03600F3 /* ThinkModeOutputTest.swift */; };
 		77A663918B62A92C85ECC926 /* BookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C797BFA188789AE65A7D1B4E /* BookmarkManager.swift */; };
 		7C742706815346A0B047C0EA /* MockHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55AA8A8B3DD9CEF63AA9F6A4 /* MockHelpers.swift */; };
 		851BB6C7BA2A14E4AFB2FCC1 /* LocalSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B3234541046E4B0E34900F3 /* LocalSummarizationService.swift */; };
@@ -44,30 +45,29 @@
 		87DFC422A5F4230635D444A4 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75BAE66B50810DE18916A70 /* Session.swift */; };
 		8ED5967A0951DC814636CA0C /* WavHeaderOverflowTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61C04F624D1A34C3A7B803B /* WavHeaderOverflowTest.swift */; };
 		90A157CC018B3B8CA74FEADE /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F3E27F6A8A5E066AA050FE7 /* AudioRecorder.swift */; };
+		9773A3398710C50900F1AAD5 /* SummarizingOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFCD20A82FD002AAE01A43C /* SummarizingOverlayView.swift */; };
 		9CBDC2BEDDC5D0103E6706DE /* ModelDownloadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31F209CAC0D0A61C8BE107A /* ModelDownloadService.swift */; };
 		A07A5319DB9340B4E79A4F75 /* SummarizationOutputParseTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE219429E0ED2E872B4FB45C /* SummarizationOutputParseTest.swift */; };
 		A3216B98F88434963384F62E /* LocalTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7074A428E90591B28575A89 /* LocalTranscriptionService.swift */; };
 		AC9047C216415D6A2E3B8732 /* ChunkStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = F637D3B0B56435C6CFA5C73E /* ChunkStatus.swift */; };
 		B1B49F929D0576C0D143A738 /* grammar.gbnf in Resources */ = {isa = PBXBuildFile; fileRef = 85489F3C54E93CBE0AFB7606 /* grammar.gbnf */; };
-		B1D03D1BA6DB9C941F35446E /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9085C8DED3363864B58ADCAB /* KeychainManager.swift */; };
 		B7A07E1AF542C9914D65AD52 /* RecordingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45D262D7FCB40E25310CD0A5 /* RecordingToolbar.swift */; };
 		C1EAF0CFF33018922062B1AC /* BackupManagerImportTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42141EE6AFC954A72F7FFB7D /* BackupManagerImportTest.swift */; };
 		C6F349D04D97150A069C3F4A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D8B2D7C466DE74FEEE6C39 /* SettingsView.swift */; };
 		D727D7F106091EF7940D55D0 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E408476E55C23C819A2945 /* AppConfig.swift */; };
 		DAC1E049BFA4BB17ED38D7CD /* SessionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E423950AD1A8BD6DA09776A1 /* SessionStatus.swift */; };
 		DBAA87C62246AF0DC55E8FEF /* AudioRecorderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47184DCDD9C0463B8FE0886 /* AudioRecorderProtocol.swift */; };
+		E2798018B7637D631D505607 /* RecordingOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714BAE2CA08F2CE6AC7F1B63 /* RecordingOverlayView.swift */; };
 		E33A5494C2E9691DD6DAC075 /* CancelState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788747EB2C9AFD8E66A5B6F2 /* CancelState.swift */; };
 		E519231A6E93CB756ED02BF3 /* CancelStateTimeoutTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5217B80BCC4DA26E04C1A9 /* CancelStateTimeoutTest.swift */; };
 		E7B4B3E9810444B121F9E390 /* SummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EAF6C4F108CC121DA35E5B4 /* SummarizationService.swift */; };
 		EE9924B608C5BD55B6368771 /* ChunkStatusTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4521E32EC34BCE091996BC6 /* ChunkStatusTest.swift */; };
 		F18450DBC375B046F2F93F1B /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19CA9D36E317D8C22E4334A /* SidebarView.swift */; };
-		F3ACAF4595168066DAE588E5 /* SummarizeUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859D9DF22DE2746C1AFDBA58 /* SummarizeUseCase.swift */; };
 		F5829FFCC766B8545BBA6202 /* CancelStateTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707ED6CEA500F247F638F1FA /* CancelStateTest.swift */; };
 		F5FDDA49F92E75ED82C4C26E /* DeleteSessionUseCaseTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB29C95A308AD2E0CE1CD915 /* DeleteSessionUseCaseTest.swift */; };
 		F6CFAF478C9455D363739F43 /* TestWavFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBE88B40A2E4065A7EEA7BF /* TestWavFactory.swift */; };
 		F6E7B48810BB99B4657989AD /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF06D9166CF64BA8F65D89D /* MainViewModel.swift */; };
 		F771817287BAE1B6268018FC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA380772554870682629A969 /* ContentView.swift */; };
-		FF6A8A43E9033D26A6E7C52B /* MLXTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B64047F22ADBCD0DE0454B /* MLXTranscriptionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,16 +101,17 @@
 		3057AE8DEB0A65A4A5D3DD2F /* SummaryRecorderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryRecorderApp.swift; sourceTree = "<group>"; };
 		312AFA7A4C0C11D598D539B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		377AC8AF440E6DBF07838E8B /* GeminiSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiSummarizationService.swift; sourceTree = "<group>"; };
+		3E9896EE5A54536A3B2C4592 /* AVAudioPlayerRateTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVAudioPlayerRateTest.swift; sourceTree = "<group>"; };
 		3FF90F80001EDD89E20BE338 /* GroqTranscriptionServiceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroqTranscriptionServiceTest.swift; sourceTree = "<group>"; };
 		40B001F5B6F03514D90D9606 /* SummarizeUseCaseTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeUseCaseTest.swift; sourceTree = "<group>"; };
 		42141EE6AFC954A72F7FFB7D /* BackupManagerImportTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupManagerImportTest.swift; sourceTree = "<group>"; };
 		45D262D7FCB40E25310CD0A5 /* RecordingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingToolbar.swift; sourceTree = "<group>"; };
 		4637FD3CBBFAE6DC6FEB6B0C /* transcribe.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = transcribe.py; sourceTree = "<group>"; };
 		48945CE2E4DEA1F35AE92558 /* SummaryRecorder-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SummaryRecorder-Bridging-Header.h"; sourceTree = "<group>"; };
-		48B64047F22ADBCD0DE0454B /* MLXTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXTranscriptionService.swift; sourceTree = "<group>"; };
 		4E6805B684D465A52FA8577B /* DeleteSessionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteSessionUseCase.swift; sourceTree = "<group>"; };
 		4F3E27F6A8A5E066AA050FE7 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
 		55AA8A8B3DD9CEF63AA9F6A4 /* MockHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHelpers.swift; sourceTree = "<group>"; };
+		5BFCD20A82FD002AAE01A43C /* SummarizingOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizingOverlayView.swift; sourceTree = "<group>"; };
 		5EAF6C4F108CC121DA35E5B4 /* SummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationService.swift; sourceTree = "<group>"; };
 		60D8B2D7C466DE74FEEE6C39 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		62D8B22250BA7FBC3827DA63 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -118,16 +119,16 @@
 		6B6058071554CB499CDC515C /* LLamaBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LLamaBridge.h; sourceTree = "<group>"; };
 		6C098B507EA33EC7772E95B7 /* LLamaBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LLamaBridge.mm; sourceTree = "<group>"; };
 		707ED6CEA500F247F638F1FA /* CancelStateTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancelStateTest.swift; sourceTree = "<group>"; };
+		714BAE2CA08F2CE6AC7F1B63 /* RecordingOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingOverlayView.swift; sourceTree = "<group>"; };
 		72E521E2467E741F093D85CB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7610F397ACAFBB0FC03600F3 /* ThinkModeOutputTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkModeOutputTest.swift; sourceTree = "<group>"; };
 		788747EB2C9AFD8E66A5B6F2 /* CancelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancelState.swift; sourceTree = "<group>"; };
 		7B303A935E70C00A8D8E48F5 /* BackupManagerExportTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupManagerExportTest.swift; sourceTree = "<group>"; };
 		7DE3925DEAB053CC4C37C374 /* AudioRecorderTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorderTest.swift; sourceTree = "<group>"; };
 		821F4F0F86C00BFD612B990D /* SummaryRecorder.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SummaryRecorder.entitlements; sourceTree = "<group>"; };
 		85489F3C54E93CBE0AFB7606 /* grammar.gbnf */ = {isa = PBXFileReference; path = grammar.gbnf; sourceTree = "<group>"; };
-		859D9DF22DE2746C1AFDBA58 /* SummarizeUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeUseCase.swift; sourceTree = "<group>"; };
 		8B71493BD8515B025F061069 /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
 		8F94BAD237F99F8FD94F74D9 /* WavRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavRepair.swift; sourceTree = "<group>"; };
-		9085C8DED3363864B58ADCAB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		93FC961FDCE7A41D5B08650B /* WavHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavHeader.swift; sourceTree = "<group>"; };
 		95981E31E0E07F19A339E0BB /* jfk.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = jfk.wav; sourceTree = "<group>"; };
 		9976933BA0A761124B2899B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -150,13 +151,12 @@
 		D0CE7248659C636F35A4379D /* BackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupManager.swift; sourceTree = "<group>"; };
 		D40276A35089DA904D1D6270 /* WavHeaderTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavHeaderTest.swift; sourceTree = "<group>"; };
 		D4521E32EC34BCE091996BC6 /* ChunkStatusTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkStatusTest.swift; sourceTree = "<group>"; };
+		D55EE8032DB6554312DDB493 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		D5E408476E55C23C819A2945 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		E423950AD1A8BD6DA09776A1 /* SessionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStatus.swift; sourceTree = "<group>"; };
-		E814838C5104CC4947A5BD5E /* KeychainManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManagerTest.swift; sourceTree = "<group>"; };
 		EA380772554870682629A969 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EE3C44E9E036C85844314BE3 /* SummaryRecorderE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryRecorderE2ETests.swift; sourceTree = "<group>"; };
 		EF52C921D319A103F9D96170 /* SummaryRecorder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SummaryRecorder.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F2234609DFBE138E231131A9 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		F637D3B0B56435C6CFA5C73E /* ChunkStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkStatus.swift; sourceTree = "<group>"; };
 		FC5217B80BCC4DA26E04C1A9 /* CancelStateTimeoutTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancelStateTimeoutTest.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -167,6 +167,7 @@
 			children = (
 				3FF90F80001EDD89E20BE338 /* GroqTranscriptionServiceTest.swift */,
 				BE219429E0ED2E872B4FB45C /* SummarizationOutputParseTest.swift */,
+				7610F397ACAFBB0FC03600F3 /* ThinkModeOutputTest.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -175,7 +176,6 @@
 			isa = PBXGroup;
 			children = (
 				4E6805B684D465A52FA8577B /* DeleteSessionUseCase.swift */,
-				859D9DF22DE2746C1AFDBA58 /* SummarizeUseCase.swift */,
 			);
 			path = UseCases;
 			sourceTree = "<group>";
@@ -185,10 +185,12 @@
 			children = (
 				EA380772554870682629A969 /* ContentView.swift */,
 				180B400E63D000A13783600F /* ModelDownloadView.swift */,
+				714BAE2CA08F2CE6AC7F1B63 /* RecordingOverlayView.swift */,
 				45D262D7FCB40E25310CD0A5 /* RecordingToolbar.swift */,
 				BC785EC4A0FB984BC24BADCB /* SessionDetailView.swift */,
 				60D8B2D7C466DE74FEEE6C39 /* SettingsView.swift */,
 				C19CA9D36E317D8C22E4334A /* SidebarView.swift */,
+				5BFCD20A82FD002AAE01A43C /* SummarizingOverlayView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -226,7 +228,6 @@
 		1FFB3E16FEED9CA5497DE47A /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
-				F2234609DFBE138E231131A9 /* Store.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -278,7 +279,6 @@
 				B38897610187425E358833C0 /* GroqTranscriptionService.swift */,
 				6B3234541046E4B0E34900F3 /* LocalSummarizationService.swift */,
 				B7074A428E90591B28575A89 /* LocalTranscriptionService.swift */,
-				48B64047F22ADBCD0DE0454B /* MLXTranscriptionService.swift */,
 				B31F209CAC0D0A61C8BE107A /* ModelDownloadService.swift */,
 			);
 			path = Services;
@@ -343,7 +343,6 @@
 		943F3FFA3F25E0A7ED749D28 /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				E814838C5104CC4947A5BD5E /* KeychainManagerTest.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -353,7 +352,7 @@
 			children = (
 				D5E408476E55C23C819A2945 /* AppConfig.swift */,
 				C797BFA188789AE65A7D1B4E /* BookmarkManager.swift */,
-				9085C8DED3363864B58ADCAB /* KeychainManager.swift */,
+				D55EE8032DB6554312DDB493 /* Constants.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -444,6 +443,7 @@
 			children = (
 				9B7B3AED21C11D6A2656C285 /* AudioRecorderEdgeTest.swift */,
 				7DE3925DEAB053CC4C37C374 /* AudioRecorderTest.swift */,
+				3E9896EE5A54536A3B2C4592 /* AVAudioPlayerRateTest.swift */,
 				A61C04F624D1A34C3A7B803B /* WavHeaderOverflowTest.swift */,
 				9CB8FEB70DE5BE9A5F381AF0 /* WavHeaderSeekTest.swift */,
 				D40276A35089DA904D1D6270 /* WavHeaderTest.swift */,
@@ -590,18 +590,18 @@
 				E33A5494C2E9691DD6DAC075 /* CancelState.swift in Sources */,
 				5C8C43A639F31324547A65FC /* Chunk.swift in Sources */,
 				AC9047C216415D6A2E3B8732 /* ChunkStatus.swift in Sources */,
+				10F9EE49B02158836AFD6133 /* Constants.swift in Sources */,
 				F771817287BAE1B6268018FC /* ContentView.swift in Sources */,
 				4320588CBD9A1BDBB8504BD2 /* DeleteSessionUseCase.swift in Sources */,
 				472152E6DF69DBFF742326F4 /* GeminiSummarizationService.swift in Sources */,
 				3A88C3515EF942DC2A1C9B7C /* GroqTranscriptionService.swift in Sources */,
-				B1D03D1BA6DB9C941F35446E /* KeychainManager.swift in Sources */,
 				721037E3ACD2ED9DA3BDFF57 /* LLamaBridge.mm in Sources */,
 				851BB6C7BA2A14E4AFB2FCC1 /* LocalSummarizationService.swift in Sources */,
 				A3216B98F88434963384F62E /* LocalTranscriptionService.swift in Sources */,
-				FF6A8A43E9033D26A6E7C52B /* MLXTranscriptionService.swift in Sources */,
 				F6E7B48810BB99B4657989AD /* MainViewModel.swift in Sources */,
 				9CBDC2BEDDC5D0103E6706DE /* ModelDownloadService.swift in Sources */,
 				72064FA2B842916571037418 /* ModelDownloadView.swift in Sources */,
+				E2798018B7637D631D505607 /* RecordingOverlayView.swift in Sources */,
 				B7A07E1AF542C9914D65AD52 /* RecordingToolbar.swift in Sources */,
 				87DFC422A5F4230635D444A4 /* Session.swift in Sources */,
 				2D02225021B47D09DCA14919 /* SessionDetailView.swift in Sources */,
@@ -609,9 +609,8 @@
 				DAC1E049BFA4BB17ED38D7CD /* SessionStatus.swift in Sources */,
 				C6F349D04D97150A069C3F4A /* SettingsView.swift in Sources */,
 				F18450DBC375B046F2F93F1B /* SidebarView.swift in Sources */,
-				377A1AC1A51CA9A94197F199 /* Store.swift in Sources */,
 				E7B4B3E9810444B121F9E390 /* SummarizationService.swift in Sources */,
-				F3ACAF4595168066DAE588E5 /* SummarizeUseCase.swift in Sources */,
+				9773A3398710C50900F1AAD5 /* SummarizingOverlayView.swift in Sources */,
 				498012C3A445835E175BAC3A /* SummaryRecorderApp.swift in Sources */,
 				2AB7A468354700ABD6A844A9 /* TranscriptionService.swift in Sources */,
 				039D709F5DBA0FC876A80764 /* WavHeader.swift in Sources */,
@@ -632,6 +631,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4FA4A7ACDBCB8551C373AF99 /* AVAudioPlayerRateTest.swift in Sources */,
 				33EC0EFA264139AB0C3BD40D /* AudioRecorderEdgeTest.swift in Sources */,
 				6D12118542710763E1A7A84C /* AudioRecorderTest.swift in Sources */,
 				70D7A1CAA0454245C99A0A6E /* BackupManagerExportTest.swift in Sources */,
@@ -641,7 +641,6 @@
 				EE9924B608C5BD55B6368771 /* ChunkStatusTest.swift in Sources */,
 				F5FDDA49F92E75ED82C4C26E /* DeleteSessionUseCaseTest.swift in Sources */,
 				15BDB99D3952905D6F0F8B0D /* GroqTranscriptionServiceTest.swift in Sources */,
-				5D8774F3F414D35A9E89CB02 /* KeychainManagerTest.swift in Sources */,
 				7C742706815346A0B047C0EA /* MockHelpers.swift in Sources */,
 				365B4D5648C85BCC87772D9E /* MockURLProtocol.swift in Sources */,
 				4948876DE13D7B02FCACE393 /* SessionStatusTest.swift in Sources */,
@@ -649,6 +648,7 @@
 				22D6EA004858352CEA07A222 /* SummarizeUseCaseTest.swift in Sources */,
 				3828FA07F67C4EA3F7B49220 /* TempDirectory.swift in Sources */,
 				F6CFAF478C9455D363739F43 /* TestWavFactory.swift in Sources */,
+				7210FA7C751A78959B3160D5 /* ThinkModeOutputTest.swift in Sources */,
 				8ED5967A0951DC814636CA0C /* WavHeaderOverflowTest.swift in Sources */,
 				26F50290755404999770F031 /* WavHeaderSeekTest.swift in Sources */,
 				1FFA6254F657DC5994F93F83 /* WavHeaderTest.swift in Sources */,
@@ -689,6 +689,8 @@
 					"$(PROJECT_DIR)/external/llama.cpp/ggml/include",
 					"$(PROJECT_DIR)/external/llama.cpp/include",
 					"$(PROJECT_DIR)/external/llama.cpp/common",
+					"$(PROJECT_DIR)/external/llama.cpp/vendor",
+					"/opt/homebrew/opt/openssl@3/include",
 				);
 				INFOPLIST_FILE = SummaryRecorder/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -704,15 +706,20 @@
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml.a",
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml-cpu.a",
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/ggml-metal/libggml-metal.a",
+					"$(PROJECT_DIR)/external/llama.cpp/build/common/libllama-common.a",
+					"$(PROJECT_DIR)/external/llama.cpp/build/vendor/cpp-httplib/libcpp-httplib.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/src/libllama.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-metal/libggml-metal.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-cpu.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-base.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-blas/libggml-blas.a",
+					"/opt/homebrew/opt/openssl@3/lib/libssl.a",
+					"/opt/homebrew/opt/openssl@3/lib/libcrypto.a",
 					"-framework Accelerate",
 					"-framework Metal",
 					"-framework Foundation",
+					"-framework Security",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SummaryRecorder;
 				PRODUCT_NAME = SummaryRecorder;
@@ -938,6 +945,8 @@
 					"$(PROJECT_DIR)/external/llama.cpp/ggml/include",
 					"$(PROJECT_DIR)/external/llama.cpp/include",
 					"$(PROJECT_DIR)/external/llama.cpp/common",
+					"$(PROJECT_DIR)/external/llama.cpp/vendor",
+					"/opt/homebrew/opt/openssl@3/include",
 				);
 				INFOPLIST_FILE = SummaryRecorder/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -953,15 +962,20 @@
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml.a",
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/libggml-cpu.a",
 					"$(PROJECT_DIR)/external/whisper.cpp/cmake/build/ggml/src/ggml-metal/libggml-metal.a",
+					"$(PROJECT_DIR)/external/llama.cpp/build/common/libllama-common.a",
+					"$(PROJECT_DIR)/external/llama.cpp/build/vendor/cpp-httplib/libcpp-httplib.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/src/libllama.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-metal/libggml-metal.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-cpu.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/libggml-base.a",
 					"$(PROJECT_DIR)/external/llama.cpp/build/ggml/src/ggml-blas/libggml-blas.a",
+					"/opt/homebrew/opt/openssl@3/lib/libssl.a",
+					"/opt/homebrew/opt/openssl@3/lib/libcrypto.a",
 					"-framework Accelerate",
 					"-framework Metal",
 					"-framework Foundation",
+					"-framework Security",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SummaryRecorder;
 				PRODUCT_NAME = SummaryRecorder;

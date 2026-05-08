@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 final class BookmarkManager: @unchecked Sendable {
-    private let bookmarkKey = "model_bookmark_data"
+    private let bookmarkKey = UDKey.modelBookmark
 
     func saveBookmark(for url: URL) throws {
         let bookmark = try url.bookmarkData(

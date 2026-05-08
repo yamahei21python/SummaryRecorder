@@ -3,6 +3,7 @@ import SwiftUI
 struct SidebarView: View {
     @ObservedObject var viewModel: MainViewModel
     @ObservedObject private var appConfig = AppConfig.shared
+    @Binding var showSettings: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,7 +18,7 @@ struct SidebarView: View {
             }
             .listStyle(.sidebar)
 
-            // モード切替バー
+            // モード切替バー + 設定ボタン
             VStack(spacing: 6) {
                 HStack {
                     Text("文字起こし")
@@ -31,6 +32,11 @@ struct SidebarView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 140)
+                    .onChange(of: appConfig.transcriptionMode) { _, new in
+                        if new == .groq && appConfig.groqAPIKey.isEmpty {
+                            appConfig.transcriptionMode = .mlx
+                        }
+                    }
                 }
                 HStack {
                     Text("要約")
@@ -44,21 +50,28 @@ struct SidebarView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 140)
+                    .onChange(of: appConfig.summarizationMode) { _, new in
+                        if new == .gemini && appConfig.geminiAPIKey.isEmpty {
+                            appConfig.summarizationMode = .local
+                        }
+                    }
                 }
+                Divider()
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("設定", systemImage: "gearshape")
+                        .font(.caption)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Color(.controlBackgroundColor))
         }
         .navigationSplitViewColumnWidth(min: 200, ideal: 250)
-    }
-
-    private var freeStorageText: String {
-        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        let freeSpace = values?.volumeAvailableCapacityForImportantUsage ?? 0
-        let gb = Double(freeSpace) / 1_073_741_824
-        return String(format: "%.1f GB 空き", gb)
     }
 }
 
@@ -112,24 +125,15 @@ struct SessionRowView: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        if let status = SessionStatus(rawValue: session.status) {
-            switch status {
+        switch session.status {
         case .recorded:
-            Image(systemName: "circle.fill")
-                .foregroundStyle(.gray)
-                .font(.caption2)
+            Image(systemName: "circle.fill").foregroundStyle(.gray).font(.caption2)
         case .summarizing:
-            ProgressView()
-                .controlSize(.mini)
+            ProgressView().controlSize(.mini)
         case .done:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.caption2)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).font(.caption2)
         case .error:
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-                .font(.caption2)
-            }
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red).font(.caption2)
         }
     }
 }

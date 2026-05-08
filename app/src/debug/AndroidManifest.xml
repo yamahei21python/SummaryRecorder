@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug-only: E2E heavy test用パイプライントリガー -->
+    <application>
+        <receiver
+            android:name=".debug.DebugPipelineReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.kohei.summaryrecorder.DEBUG_TRIGGER_PIPELINE" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

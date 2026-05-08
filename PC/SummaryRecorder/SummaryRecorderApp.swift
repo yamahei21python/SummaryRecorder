@@ -25,7 +25,18 @@ struct SummaryRecorderApp: App {
         .modelContainer(for: [Session.self, Chunk.self])
 
         Settings {
-            SettingsView()
+            SettingsWindowView(appConfig: appConfig)
         }
+    }
+}
+
+// MARK: - Settings Window Wrapper (Cmd+,)
+
+struct SettingsWindowView: View {
+    @ObservedObject var appConfig: AppConfig
+    @State private var dummy = true
+
+    var body: some View {
+        SettingsView(appConfig: appConfig, showSettings: $dummy)
     }
 }

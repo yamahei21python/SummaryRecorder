@@ -61,7 +61,7 @@ struct GroqTranscriptionService: TranscriptionService {
     }
 
     private func buildRequest(wavURL: URL) throws -> URLRequest {
-        let url = URL(string: "https://api.groq.com/openai/v1/audio/transcriptions")!
+        let url = URL(string: APIEndpoint.groqTranscription)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -74,7 +74,7 @@ struct GroqTranscriptionService: TranscriptionService {
         let wavData = try Data(contentsOf: wavURL)
 
         body.appendMultipart(boundary: boundary, name: "file", filename: wavURL.lastPathComponent, mimeType: "audio/wav", data: wavData)
-        body.appendMultipart(boundary: boundary, name: "model", data: "whisper-large-v3-turbo")
+        body.appendMultipart(boundary: boundary, name: "model", data: GroqModel.transcription)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         request.httpBody = body

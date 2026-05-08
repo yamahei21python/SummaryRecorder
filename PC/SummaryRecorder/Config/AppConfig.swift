@@ -3,8 +3,8 @@ import SwiftUI
 // MARK: - Enums
 
 enum TranscriptionMode: String, CaseIterable, Codable, Sendable {
-    case mlx
     case groq
+    case mlx
 }
 
 extension TranscriptionMode {
@@ -35,104 +35,101 @@ extension SummarizationMode {
 @MainActor
 final class AppConfig: ObservableObject {
     @Published var transcriptionMode: TranscriptionMode {
-        didSet { UserDefaults.standard.set(transcriptionMode.rawValue, forKey: "transcription_mode") }
+        didSet { UserDefaults.standard.set(transcriptionMode.rawValue, forKey: UDKey.transcriptionMode) }
     }
     @Published var summarizationMode: SummarizationMode {
-        didSet { UserDefaults.standard.set(summarizationMode.rawValue, forKey: "summarization_mode") }
+        didSet { UserDefaults.standard.set(summarizationMode.rawValue, forKey: UDKey.summarizationMode) }
     }
     @Published var autoSummarize: Bool {
-        didSet { UserDefaults.standard.set(autoSummarize, forKey: "auto_summarize") }
+        didSet { UserDefaults.standard.set(autoSummarize, forKey: UDKey.autoSummarize) }
     }
-    @Published var groqAPIKey: String = ""
-    @Published var geminiAPIKey: String = ""
-    var whisperModelPath: String {
-        get { UserDefaults.standard.string(forKey: "whisper_model_path") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "whisper_model_path") }
+    @Published var groqAPIKey: String = "" {
+        didSet { UserDefaults.standard.set(groqAPIKey, forKey: UDKey.groqAPIKey) }
     }
-    var llamaModelPath: String {
-        get {
-            if let path = UserDefaults.standard.string(forKey: "llama_model_path"), !path.isEmpty {
-                return path
-            }
-            // フォールバック: Application Support/models/ を自動検索
-            let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-                .appendingPathComponent("models", isDirectory: true)
-            let autoPath = dir.appendingPathComponent("google_gemma-4-E2B-it-Q4_K_M.gguf")
-            if FileManager.default.fileExists(atPath: autoPath.path) {
-                return autoPath.path
-            }
-            return ""
-        }
-        set { UserDefaults.standard.set(newValue, forKey: "llama_model_path") }
+    @Published var geminiAPIKey: String = "" {
+        didSet { UserDefaults.standard.set(geminiAPIKey, forKey: UDKey.geminiAPIKey) }
+    }
+    @Published var summaryInstruction: String {
+        didSet { UserDefaults.standard.set(summaryInstruction, forKey: UDKey.summaryInstruction) }
     }
 
-    /// モデルファイル実在確認 (MLXは不要、LLaMAのみ)
-    var isLLaMAModelDownloaded: Bool {
-        !llamaModelPath.isEmpty && FileManager.default.fileExists(atPath: llamaModelPath)
+    /// 固定の出力様式（ユーザー非表示）
+    static let outputFormatSuffix = """
+    以下のJSON形式で出力してください。
+    {
+        "title": "要約タイトル(20文字以内)",
+        "summaryText": "要約本文"
     }
-    var areModelsDownloaded: Bool { isLLaMAModelDownloaded }
+    ルール:
+    - titleは内容を表す簡潔なタイトル
+    - summaryTextは箇条書きで重要ポイントをまとめる
+    - JSONのみ出力(マークダウンコードブロックなし)
+    """
+
+    /// ユーザー編集可能なデフォルト指示
+    static let defaultSummaryInstruction = "以下のテキストを要約してください。"
+
+    var whisperModelPath: String {
+        AppPaths.modelsDirectory.appendingPathComponent(ModelFileName.whisper).path
+    }
+
+    var llamaModelPath: String {
+        AppPaths.modelsDirectory.appendingPathComponent(ModelFileName.llama).path
+    }
+
+    /// モデルファイル実在確認
+    var isWhisperModelDownloaded: Bool {
+        FileManager.default.fileExists(atPath: whisperModelPath)
+    }
+    var isLLaMAModelDownloaded: Bool {
+        FileManager.default.fileExists(atPath: llamaModelPath)
+    }
+    var areModelsDownloaded: Bool { isWhisperModelDownloaded && isLLaMAModelDownloaded }
 
     static let shared = AppConfig()
-    private let keychain = KeychainManager()
 
     private init() {
         let ud = UserDefaults.standard
-        let tm = TranscriptionMode(rawValue: ud.string(forKey: "transcription_mode") ?? "") ?? .mlx
-        let sm = SummarizationMode(rawValue: ud.string(forKey: "summarization_mode") ?? "") ?? .gemini
-        let auto = ud.object(forKey: "auto_summarize") as? Bool ?? true
+        let tm = TranscriptionMode(rawValue: ud.string(forKey: UDKey.transcriptionMode) ?? "") ?? .mlx
+        let sm = SummarizationMode(rawValue: ud.string(forKey: UDKey.summarizationMode) ?? "") ?? .local
+        let auto = ud.object(forKey: UDKey.autoSummarize) as? Bool ?? true
 
         _transcriptionMode = Published(wrappedValue: tm)
         _summarizationMode = Published(wrappedValue: sm)
         _autoSummarize = Published(wrappedValue: auto)
 
-        // 1. local.properties → Keychainに自動保存
+        let savedInstruction = ud.string(forKey: UDKey.summaryInstruction) ?? Self.defaultSummaryInstruction
+        _summaryInstruction = Published(wrappedValue: savedInstruction)
+
+        // APIキー復元 (local.propertiesがなければUserDefaultsから)
+        groqAPIKey = ud.string(forKey: UDKey.groqAPIKey) ?? ""
+        geminiAPIKey = ud.string(forKey: UDKey.geminiAPIKey) ?? ""
+
         importFromLocalProperties()
-        // 2. Keychainから読込（1で保存した値 or 以前の保存値）
-        loadAPIKeysFromKeychain()
     }
 
-    /// workspace rootのlocal.propertiesからAPI Keyを読んでKeychain保存
+    /// local.propertiesからAPI Keyを読込
     private func importFromLocalProperties() {
-        guard let url = localPropertiesURL(),
-              let content = try? String(contentsOf: url, encoding: .utf8)
-        else { return }
+        // 優先順: 1. Application Support 2. Bundle
+        let urls: [URL?] = [
+            AppPaths.localProperties,
+            Bundle.main.url(forResource: "local", withExtension: "properties"),
+        ]
+        for case let url? in urls where FileManager.default.fileExists(atPath: url.path) {
+            guard let content = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            NSLog("[AppConfig] importing keys from %@", url.path)
 
-        let lines = content.components(separatedBy: .newlines)
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("groq.api.key=") {
-                let key = String(trimmed.dropFirst("groq.api.key=".count))
-                if !key.isEmpty { keychain.set(key: "groq_api_key", value: key) }
-            } else if trimmed.hasPrefix("gemini.api.key=") {
-                let key = String(trimmed.dropFirst("gemini.api.key=".count))
-                if !key.isEmpty { keychain.set(key: "gemini_api_key", value: key) }
+            let lines = content.components(separatedBy: .newlines)
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("groq.api.key=") {
+                    groqAPIKey = String(trimmed.dropFirst("groq.api.key=".count))
+                } else if trimmed.hasPrefix("gemini.api.key=") {
+                    geminiAPIKey = String(trimmed.dropFirst("gemini.api.key=".count))
+                }
             }
+            break
         }
-    }
-
-    private func localPropertiesURL() -> URL? {
-        // #file → .../SummaryRecorder/PC/SummaryRecorder/Config/AppConfig.swift
-        let url = URL(fileURLWithPath: #file)
-        // 4 levels up → workspace root (/Users/kohei/Myproject/SummaryRecorder/)
-        let workspaceRoot = url
-            .deletingLastPathComponent() // Config/
-            .deletingLastPathComponent() // SummaryRecorder/
-            .deletingLastPathComponent() // PC/
-            .deletingLastPathComponent() // SummaryRecorder/ (workspace root)
-        let props = workspaceRoot.appendingPathComponent("local.properties")
-        return FileManager.default.fileExists(atPath: props.path) ? props : nil
-    }
-
-    /// KeychainからAPI Keyを読み込む
-    func loadAPIKeysFromKeychain() {
-        groqAPIKey = keychain.get(key: "groq_api_key") ?? ""
-        geminiAPIKey = keychain.get(key: "gemini_api_key") ?? ""
-    }
-
-    /// 現在のAPI KeyをKeychainに保存
-    func saveAPIKeys() {
-        keychain.set(key: "groq_api_key", value: groqAPIKey)
-        keychain.set(key: "gemini_api_key", value: geminiAPIKey)
     }
 
     func makeTranscriptionService() -> TranscriptionService {
@@ -140,21 +137,21 @@ final class AppConfig: ObservableObject {
         case .groq:
             return GroqTranscriptionService(apiKey: groqAPIKey)
         case .mlx:
-            return MLXTranscriptionService()
+            let path = whisperModelPath
+            return LocalTranscriptionService(modelPath: path)
         }
     }
 
     func makeSummarizationService() -> SummarizationService {
+        let instruction = summaryInstruction.isEmpty ? Self.defaultSummaryInstruction : summaryInstruction
+        let prompt = instruction + "\n\n" + Self.outputFormatSuffix
         switch summarizationMode {
         case .gemini:
-            return GeminiSummarizationService(apiKey: geminiAPIKey)
+            return GeminiSummarizationService(apiKey: geminiAPIKey, summaryPrompt: prompt)
         case .local:
             let path = llamaModelPath
-            NSLog("[AppConfig] makeSummarizationService: llamaModelPath='%@' isEmpty=%d", path, path.isEmpty)
-            if path.isEmpty {
-                return LocalSummarizationService()
-            }
-            return LocalSummarizationService(modelPath: path)
+            NSLog("[AppConfig] makeSummarizationService: llamaModelPath='%@'", path)
+            return LocalSummarizationService(modelPath: path, systemPrompt: prompt)
         }
     }
 }

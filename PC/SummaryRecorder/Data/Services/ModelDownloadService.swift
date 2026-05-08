@@ -16,22 +16,15 @@ final class ModelDownloadService: NSObject, ObservableObject, URLSessionDownload
 
     // MARK: - Model URLs
 
-    private static let whisperRemoteURL = URL(
-        string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
-    )!
-    private static let llamaRemoteURL = URL(
-        string: "https://huggingface.co/bartowski/google_gemma-4-E2B-it-GGUF/resolve/main/google_gemma-4-E2B-it-Q4_K_M.gguf"
-    )!
+    private static let whisperRemoteURL = URL(string: APIEndpoint.whisperDownload)!
+    private static let llamaRemoteURL = URL(string: APIEndpoint.llamaDownload)!
 
-    private static let whisperFilename = "ggml-base.en.bin"
-    private static let llamaFilename = "google_gemma-4-E2B-it-Q4_K_M.gguf"
+    private static let whisperFilename = ModelFileName.whisper
+    private static let llamaFilename = ModelFileName.llama
 
     // MARK: - Storage
 
-    private static var modelsDirectory: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("models", isDirectory: true)
-    }
+    private static var modelsDirectory: URL { AppPaths.modelsDirectory }
 
     private var whisperTask: URLSessionDownloadTask?
     private var llamaTask: URLSessionDownloadTask?

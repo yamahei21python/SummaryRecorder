@@ -4,14 +4,7 @@ struct DeleteSessionUseCase: Sendable {
     let recordingsDirectory: URL
 
     init(recordingsDirectory: URL? = nil) {
-        if let dir = recordingsDirectory {
-            self.recordingsDirectory = dir
-        } else {
-            self.recordingsDirectory = FileManager.default
-                .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-                .first!
-                .appendingPathComponent("recordings", isDirectory: true)
-        }
+        self.recordingsDirectory = recordingsDirectory ?? AppPaths.recordingsDirectory
     }
 
     func execute(session: Session) throws {

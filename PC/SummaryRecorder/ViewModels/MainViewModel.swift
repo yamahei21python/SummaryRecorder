@@ -43,7 +43,6 @@ final class MainViewModel: ObservableObject {
         self.appConfig = appConfig
         self.modelContext = modelContext
 
-        // Bind recorder state
         recorder.$state
             .receive(on: RunLoop.main)
             .assign(to: \.recorderState, on: self)
@@ -59,13 +58,22 @@ final class MainViewModel: ObservableObject {
             .assign(to: \.audioLevel, on: self)
             .store(in: &cancellables)
 
-        // Forward appConfig changes to trigger view updates
         appConfig.objectWillChange
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+    }
+
+    // MARK: - Persistence Helper
+
+    private func saveContext(_ message: String = "") {
+        do {
+            try modelContext.save()
+        } catch {
+            NSLog("[MainViewModel] save failed: %@ — %@", message, error.localizedDescription)
+        }
     }
 
     // MARK: - Session List
@@ -80,13 +88,40 @@ final class MainViewModel: ObservableObject {
             errorMessage = "セッション取得失敗: \(error.localizedDescription)"
             showError = true
         }
+        cleanupOrphanedRecordings()
+    }
+
+    private func cleanupOrphanedRecordings() {
+        let fm = FileManager.default
+        let recordingsDir = AppPaths.recordingsDirectory
+
+        guard let diskFiles = try? fm.contentsOfDirectory(at: recordingsDir, includingPropertiesForKeys: nil) else { return }
+
+        let dbFileNames = Set(sessions.map { $0.wavFileName })
+
+        for fileURL in diskFiles {
+            let fileName = fileURL.lastPathComponent
+            if fileName.hasSuffix(".wav") && !dbFileNames.contains(fileName) {
+                try? fm.removeItem(at: fileURL)
+                NSLog("[Cleanup] Deleted orphaned WAV: \(fileName)")
+            }
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: fileURL.path, isDirectory: &isDir), isDir.boolValue {
+                let sessionId = fileName
+                let hasSession = sessions.contains { $0.sessionId == sessionId }
+                if !hasSession {
+                    try? fm.removeItem(at: fileURL)
+                    NSLog("[Cleanup] Deleted orphaned chunk dir: \(sessionId)")
+                }
+            }
+        }
     }
 
     func selectSession(_ session: Session) {
         selectedSession = session
         if !session.isRead {
             session.isRead = true
-            try? modelContext.save()
+            saveContext("selectSession")
         }
     }
 
@@ -95,7 +130,6 @@ final class MainViewModel: ObservableObject {
     func startRecording() async {
         guard canStartRecording else { return }
 
-        // Request microphone permission if needed
         let permission = AVCaptureDevice.authorizationStatus(for: .audio)
         if permission == .notDetermined {
             let granted = await AVCaptureDevice.requestAccess(for: .audio)
@@ -111,24 +145,20 @@ final class MainViewModel: ObservableObject {
         }
 
         do {
-            let recordingsDir = FileManager.default
-                .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-                .first!
-                .appendingPathComponent("recordings", isDirectory: true)
+            let recordingsDir = AppPaths.recordingsDirectory
             try FileManager.default.createDirectory(at: recordingsDir, withIntermediateDirectories: true)
 
             let url = try await recorder.start(outputDirectory: recordingsDir)
             currentRecordingURL = url
 
-            let sessionId = UUID(uuidString: url.deletingPathExtension().lastPathComponent)!.uuidString
             let session = Session(
-                sessionId: sessionId,
+                sessionId: UUID().uuidString,
                 wavFileName: url.lastPathComponent,
                 durationMs: 0,
-                status: SessionStatus.recorded.rawValue
+                status: .recorded
             )
             modelContext.insert(session)
-            try? modelContext.save()
+            saveContext("startRecording")
 
             selectedSession = session
             fetchSessions()
@@ -138,27 +168,21 @@ final class MainViewModel: ObservableObject {
         }
     }
 
-    func pauseRecording() async {
-        await recorder.pause()
-    }
-
-    func resumeRecording() async {
-        await recorder.resume()
-    }
+    func pauseRecording() async { await recorder.pause() }
+    func resumeRecording() async { await recorder.resume() }
 
     func stopRecording() async {
         guard recorderState != .idle else { return }
-
-        // Capture duration BEFORE stop resets it
         let finalDuration = recordingDuration
 
         do {
             _ = try await recorder.stop()
+            recorderState = .idle
             currentRecordingURL = nil
 
             if let session = selectedSession {
                 session.durationMs = finalDuration * 1000
-                try? modelContext.save()
+                saveContext("stopRecording")
             }
 
             await transcribe()
@@ -176,31 +200,34 @@ final class MainViewModel: ObservableObject {
               let wavURL = resolveWavURL(for: session) else { return }
 
         isTranscribing = true
-        session.status = SessionStatus.summarizing.rawValue
+        session.status = .summarizing
         let cancelState = CancelState()
         currentCancelState = cancelState
-        try? modelContext.save()
+        saveContext("transcribe-start")
 
         do {
             let service = appConfig.makeTranscriptionService()
             let text = try await service.transcribe(wavURL: wavURL, cancelState: cancelState)
 
             session.transcriptionText = text
-            session.status = SessionStatus.recorded.rawValue
+            session.status = .recorded
 
             if appConfig.autoSummarize {
+                isTranscribing = false
+                currentCancelState = nil
                 await summarize()
             }
         } catch is CancellationError {
-            session.status = SessionStatus.recorded.rawValue
+            session.status = .recorded
         } catch {
-            session.status = SessionStatus.error.rawValue
+            session.status = .error
             session.errorMessage = error.localizedDescription
+            NSLog("[Transcription] error: %@", error.localizedDescription)
             errorMessage = "文字起こし失敗: \(error.localizedDescription)"
             showError = true
         }
 
-        try? modelContext.save()
+        saveContext("transcribe-end")
         isTranscribing = false
         currentCancelState = nil
         fetchSessions()
@@ -209,15 +236,13 @@ final class MainViewModel: ObservableObject {
     // MARK: - Summarization
 
     func summarize() async {
-        guard let session = selectedSession,
-              let status = SessionStatus(rawValue: session.status),
-              status != .summarizing else { return }
+        guard let session = selectedSession, session.status != .summarizing else { return }
 
         isSummarizing = true
-        session.status = SessionStatus.summarizing.rawValue
+        session.status = .summarizing
         let cancelState = CancelState()
         currentCancelState = cancelState
-        try? modelContext.save()
+        saveContext("summarize-start")
 
         do {
             let service = appConfig.makeSummarizationService()
@@ -230,17 +255,18 @@ final class MainViewModel: ObservableObject {
             if !session.isTitleEdited {
                 session.title = output.title
             }
-            session.status = SessionStatus.done.rawValue
+            session.status = .done
         } catch is CancellationError {
-            session.status = SessionStatus.recorded.rawValue
+            session.status = .recorded
         } catch {
-            session.status = SessionStatus.error.rawValue
+            session.status = .error
             session.errorMessage = error.localizedDescription
+            NSLog("[Summarization] error: %@", error.localizedDescription)
             errorMessage = "要約失敗: \(error.localizedDescription)"
             showError = true
         }
 
-        try? modelContext.save()
+        saveContext("summarize-end")
         isSummarizing = false
         currentCancelState = nil
         fetchSessions()
@@ -249,17 +275,11 @@ final class MainViewModel: ObservableObject {
     // MARK: - Delete
 
     func deleteSession(_ session: Session) {
-        // Delete audio file
-        let recordingsDir = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent("recordings", isDirectory: true)
-        let fileURL = recordingsDir.appendingPathComponent(session.wavFileName)
-        try? FileManager.default.removeItem(at: fileURL)
+        let deleteUseCase = DeleteSessionUseCase()
+        try? deleteUseCase.execute(session: session)
 
-        // Delete from SwiftData
         modelContext.delete(session)
-        try? modelContext.save()
+        saveContext("deleteSession")
 
         if selectedSession?.sessionId == session.sessionId {
             selectedSession = nil
@@ -271,68 +291,66 @@ final class MainViewModel: ObservableObject {
 
     func updateTitle(_ newTitle: String) {
         guard let session = selectedSession else { return }
-        let truncated = String(newTitle.prefix(20))
-        session.title = truncated
-        if newTitle.count > 0 {
-            session.isTitleEdited = true
-        }
-        try? modelContext.save()
+        session.title = String(newTitle.prefix(20))
+        if !newTitle.isEmpty { session.isTitleEdited = true }
+        saveContext("updateTitle")
     }
 
     // MARK: - Retry
 
     func retryTranscription() async {
         guard let session = selectedSession else { return }
-        session.status = SessionStatus.recorded.rawValue
-        try? modelContext.save()
+        session.status = .recorded
+        saveContext("retryTranscription")
         await transcribe()
     }
 
     func retrySummarization() async {
         guard let session = selectedSession else { return }
-        session.status = SessionStatus.recorded.rawValue
+        session.status = .recorded
         session.errorMessage = nil
-        try? modelContext.save()
+        saveContext("retrySummarization")
         await summarize()
+    }
+
+    func resetStuckSession() {
+        guard let session = selectedSession else { return }
+        currentCancelState?.cancel()
+        isSummarizing = false
+        isTranscribing = false
+        session.status = .recorded
+        session.errorMessage = nil
+        saveContext("resetStuckSession")
+        fetchSessions()
     }
 
     // MARK: - E2E Test
 
-    /// E2Eテスト開始
+    #if DEBUG
     func startE2ETest() async {
-        print("[E2E] args=\(CommandLine.arguments)")
-        guard let bundledURL = Bundle.main.url(forResource: "jfk", withExtension: "wav")
-        else { return }
+        NSLog("[E2E] args=%@", CommandLine.arguments.description)
+        guard let bundledURL = Bundle.main.url(forResource: "jfk", withExtension: "wav") else { return }
 
         let isLocal = CommandLine.arguments.contains("-E2E-LOCAL")
         guard CommandLine.arguments.contains("-E2E") || isLocal else { return }
 
-        if isLocal {
-            setupLocalModes()
-        } else {
-            setupCloudModes()
-        }
+        if isLocal { setupLocalModes() } else { setupCloudModes() }
 
         try? copyTestFile(from: bundledURL)
         let session = createTestSession()
 
         modelContext.insert(session)
-        try? modelContext.save()
+        saveContext("e2e-insert")
         selectedSession = session
         fetchSessions()
 
         await transcribe()
-        // summarize() is called inside transcribe() when autoSummarize is true
-        if !appConfig.autoSummarize {
-            await summarize()
-        }
+        if !appConfig.autoSummarize { await summarize() }
 
-        // E2E test complete — print result and exit
         if let s = selectedSession {
-            print("[E2E-RESULT] title='\(s.title)' summaryText='\(s.summaryText ?? "")' status=\(s.status)")
+            NSLog("[E2E-RESULT] title='%@' summaryText='%@' status=%@", s.title, s.summaryText ?? "", String(describing: s.status))
         }
-        print("[E2E] DONE — exiting")
-        fflush(stdout)
+        NSLog("[E2E] DONE — exiting")
         exit(0)
     }
 
@@ -342,50 +360,36 @@ final class MainViewModel: ObservableObject {
     }
 
     private func setupLocalModes() {
-        print("[E2E-LOCAL] llamaModelPath='\(appConfig.llamaModelPath)'")
-        print("[E2E-LOCAL] areModelsDownloaded=\(appConfig.areModelsDownloaded)")
+        NSLog("[E2E-LOCAL] llamaModelPath='%@'", appConfig.llamaModelPath)
+        NSLog("[E2E-LOCAL] areModelsDownloaded=%d", appConfig.areModelsDownloaded)
         appConfig.transcriptionMode = .mlx
         appConfig.summarizationMode = .local
     }
 
     private func copyTestFile(from bundledURL: URL) throws {
-        let recordingsDir = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent("recordings", isDirectory: true)
+        let recordingsDir = AppPaths.recordingsDirectory
         try FileManager.default.createDirectory(at: recordingsDir, withIntermediateDirectories: true)
-
         let destURL = recordingsDir.appendingPathComponent("jfk_e2e.wav")
         try? FileManager.default.removeItem(at: destURL)
         try FileManager.default.copyItem(at: bundledURL, to: destURL)
     }
 
     private func createTestSession() -> Session {
-        Session(
-            sessionId: UUID().uuidString,
-            wavFileName: "jfk_e2e.wav",
-            durationMs: 11000,
-            status: SessionStatus.recorded.rawValue
-        )
+        Session(sessionId: UUID().uuidString, wavFileName: "jfk_e2e.wav", durationMs: 11000, status: .recorded)
     }
+    #endif
 
     // MARK: - Private
 
     private func resolveWavURL(for session: Session) -> URL? {
-        let recordingsDir = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent("recordings", isDirectory: true)
-        let url = recordingsDir.appendingPathComponent(session.wavFileName)
+        let url = AppPaths.recordingsDirectory.appendingPathComponent(session.wavFileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     private func fullTranscriptionText(for session: Session) -> String {
-        if !session.transcriptionText.isEmpty {
-            return session.transcriptionText
-        }
+        if !session.transcriptionText.isEmpty { return session.transcriptionText }
         return session.chunks
-            .filter { $0.status == ChunkStatus.done.rawValue }
+            .filter { $0.status == .done }
             .sorted { $0.chunkIndex < $1.chunkIndex }
             .compactMap { $0.transcriptionText }
             .joined(separator: "\n\n")

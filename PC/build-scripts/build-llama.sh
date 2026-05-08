@@ -27,10 +27,12 @@ cmake -B build \
     -DLLAMA_BUILD_EXAMPLES=OFF \
     -DLLAMA_BUILD_TESTS=OFF \
     -DLLAMA_BUILD_SERVER=OFF \
+    -DLLAMA_BUILD_COMMON=ON \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="14.0" \
     -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
     -DCMAKE_C_FLAGS="-O2 -DNDEBUG"
 
-cmake --build build -j"$(sysctl -n hw.ncpu)" --target llama
+cmake --build build -j"$(sysctl -n hw.ncpu)" --target llama --target llama-common --target ggml --target ggml-metal --target ggml-cpu --target ggml-base --target ggml-blas --target cpp-httplib
 
 # Copy library
 cp build/src/libllama.a "${INSTALL_DIR}/lib/"

@@ -33,11 +33,29 @@ final class AudioRecorder: AudioRecorderProtocol {
         }
 
         let sessionId = UUID().uuidString
-        let url = outputDirectory.appendingPathComponent("\(sessionId).wav")
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let timestamp = formatter.string(from: Date())
+        let url = outputDirectory.appendingPathComponent("\(timestamp).wav")
         outputFileURL = url
 
-        // Create WAV file with placeholder header (44 bytes zero-filled)
-        FileManager.default.createFile(atPath: url.path, contents: Data(count: 44))
+        // Create WAV file with proper 44-byte header
+        var header = Data(capacity: 44)
+        header.append(contentsOf: [UInt8]("RIFF".utf8))     // 0-3:  ChunkID
+        header.append(Data(repeating: 0, count: 4))          // 4-7:  ChunkSize (placeholder)
+        header.append(contentsOf: [UInt8]("WAVE".utf8))      // 8-11: Format
+        header.append(contentsOf: [UInt8]("fmt ".utf8))      // 12-15: Subchunk1ID
+        withUnsafeBytes(of: UInt32(16).littleEndian) { header.append(Data($0)) }     // 16-19: Subchunk1Size (PCM=16)
+        withUnsafeBytes(of: UInt16(1).littleEndian) { header.append(Data($0)) }      // 20-21: AudioFormat (1=PCM)
+        withUnsafeBytes(of: UInt16(1).littleEndian) { header.append(Data($0)) }      // 22-23: NumChannels (Mono)
+        withUnsafeBytes(of: UInt32(16000).littleEndian) { header.append(Data($0)) }  // 24-27: SampleRate
+        withUnsafeBytes(of: UInt32(32000).littleEndian) { header.append(Data($0)) }  // 28-31: ByteRate (16000*1*2)
+        withUnsafeBytes(of: UInt16(2).littleEndian) { header.append(Data($0)) }      // 32-33: BlockAlign (1*2)
+        withUnsafeBytes(of: UInt16(16).littleEndian) { header.append(Data($0)) }     // 34-35: BitsPerSample
+        header.append(contentsOf: [UInt8]("data".utf8))      // 36-39: Subchunk2ID
+        header.append(Data(repeating: 0, count: 4))          // 40-43: Subchunk2Size (placeholder)
+
+        FileManager.default.createFile(atPath: url.path, contents: header)
         guard let handle = try? FileHandle(forWritingTo: url) else {
             throw RecorderError.fileCreationFailed
         }

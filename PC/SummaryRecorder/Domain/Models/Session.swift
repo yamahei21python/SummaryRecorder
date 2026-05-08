@@ -11,7 +11,7 @@ final class Session {
     var transcriptionText: String
     var wavFileName: String
     var durationMs: Double
-    var status: String
+    var status: SessionStatus
     var isRead: Bool
     var errorMessage: String?
     @Relationship(deleteRule: .cascade) var chunks: [Chunk]
@@ -24,7 +24,7 @@ final class Session {
          transcriptionText: String = "",
          wavFileName: String = "",
          durationMs: Double = 0,
-         status: SessionStatus.RawValue = SessionStatus.recorded.rawValue,
+         status: SessionStatus = .recorded,
          isRead: Bool = false,
          errorMessage: String? = nil) {
         self.sessionId = sessionId
