@@ -1,7 +1,7 @@
 import Foundation
 
 struct WavRepair {
-    static let headerSize = 44
+    static let headerSize = WavConstants.headerSize
 
     /// 不完全WAV修復
     /// - Returns: true=修復成功, false=修復不可(ユーザー破棄確認要)

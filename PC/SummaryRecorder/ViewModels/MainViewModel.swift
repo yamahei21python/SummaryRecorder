@@ -291,7 +291,7 @@ final class MainViewModel: ObservableObject {
 
     func updateTitle(_ newTitle: String) {
         guard let session = selectedSession else { return }
-        session.title = String(newTitle.prefix(20))
+        session.title = String(newTitle.prefix(AppLimits.titleMaxLength))
         if !newTitle.isEmpty { session.isTitleEdited = true }
         saveContext("updateTitle")
     }

@@ -16,8 +16,8 @@ final class ModelDownloadService: NSObject, ObservableObject, URLSessionDownload
 
     // MARK: - Model URLs
 
-    private static let whisperRemoteURL = URL(string: APIEndpoint.whisperDownload)!
-    private static let llamaRemoteURL = URL(string: APIEndpoint.llamaDownload)!
+    private static let whisperRemoteURL = APIEndpoint.whisperDownload
+    private static let llamaRemoteURL = APIEndpoint.llamaDownload
 
     private static let whisperFilename = ModelFileName.whisper
     private static let llamaFilename = ModelFileName.llama

@@ -16,7 +16,7 @@ struct GeminiSummarizationService: SummarizationService {
             throw CancellationError()
         }
 
-        let url = URL(string: APIEndpoint.geminiSummarization)!
+        let url = APIEndpoint.geminiSummarization
 
         let prompt = """
         \(summaryPrompt)

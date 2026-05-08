@@ -39,21 +39,22 @@ final class AudioRecorder: AudioRecorderProtocol {
         let url = outputDirectory.appendingPathComponent("\(timestamp).wav")
         outputFileURL = url
 
-        // Create WAV file with proper 44-byte header
-        var header = Data(capacity: 44)
-        header.append(contentsOf: [UInt8]("RIFF".utf8))     // 0-3:  ChunkID
-        header.append(Data(repeating: 0, count: 4))          // 4-7:  ChunkSize (placeholder)
-        header.append(contentsOf: [UInt8]("WAVE".utf8))      // 8-11: Format
-        header.append(contentsOf: [UInt8]("fmt ".utf8))      // 12-15: Subchunk1ID
-        withUnsafeBytes(of: UInt32(16).littleEndian) { header.append(Data($0)) }     // 16-19: Subchunk1Size (PCM=16)
-        withUnsafeBytes(of: UInt16(1).littleEndian) { header.append(Data($0)) }      // 20-21: AudioFormat (1=PCM)
-        withUnsafeBytes(of: UInt16(1).littleEndian) { header.append(Data($0)) }      // 22-23: NumChannels (Mono)
-        withUnsafeBytes(of: UInt32(16000).littleEndian) { header.append(Data($0)) }  // 24-27: SampleRate
-        withUnsafeBytes(of: UInt32(32000).littleEndian) { header.append(Data($0)) }  // 28-31: ByteRate (16000*1*2)
-        withUnsafeBytes(of: UInt16(2).littleEndian) { header.append(Data($0)) }      // 32-33: BlockAlign (1*2)
-        withUnsafeBytes(of: UInt16(16).littleEndian) { header.append(Data($0)) }     // 34-35: BitsPerSample
-        header.append(contentsOf: [UInt8]("data".utf8))      // 36-39: Subchunk2ID
-        header.append(Data(repeating: 0, count: 4))          // 40-43: Subchunk2Size (placeholder)
+        // Create WAV file with proper header
+        let headerSize = WavConstants.headerSize
+        var header = Data(capacity: headerSize)
+        header.append(contentsOf: [UInt8]("RIFF".utf8))                  // 0-3:  ChunkID
+        header.append(Data(repeating: 0, count: 4))                      // 4-7:  ChunkSize (placeholder)
+        header.append(contentsOf: [UInt8]("WAVE".utf8))                  // 8-11: Format
+        header.append(contentsOf: [UInt8]("fmt ".utf8))                  // 12-15: Subchunk1ID
+        withUnsafeBytes(of: WavConstants.subchunk1Size.littleEndian) { header.append(Data($0)) }     // 16-19: Subchunk1Size
+        withUnsafeBytes(of: WavConstants.audioFormat.littleEndian) { header.append(Data($0)) }       // 20-21: AudioFormat
+        withUnsafeBytes(of: WavConstants.channels.littleEndian) { header.append(Data($0)) }          // 22-23: NumChannels
+        withUnsafeBytes(of: WavConstants.sampleRate.littleEndian) { header.append(Data($0)) }        // 24-27: SampleRate
+        withUnsafeBytes(of: WavConstants.byteRate.littleEndian) { header.append(Data($0)) }          // 28-31: ByteRate
+        withUnsafeBytes(of: WavConstants.blockAlign.littleEndian) { header.append(Data($0)) }        // 32-33: BlockAlign
+        withUnsafeBytes(of: WavConstants.bitsPerSample.littleEndian) { header.append(Data($0)) }     // 34-35: BitsPerSample
+        header.append(contentsOf: [UInt8]("data".utf8))                  // 36-39: Subchunk2ID
+        header.append(Data(repeating: 0, count: 4))                      // 40-43: Subchunk2Size (placeholder)
 
         FileManager.default.createFile(atPath: url.path, contents: header)
         guard let handle = try? FileHandle(forWritingTo: url) else {
@@ -78,7 +79,7 @@ final class AudioRecorder: AudioRecorderProtocol {
                   let srcData = buffer.floatChannelData else { return }
 
             // Calculate output length (16kHz resampling)
-            let outRate: Double = 16000
+            let outRate = Double(WavConstants.sampleRate)
             let outLength = Int(Double(srcLength) * outRate / srcRate)
             guard outLength > 0 else { return }
 
@@ -227,9 +228,9 @@ enum WavWriter {
         defer { try? handle.close() }
 
         let fileSize = try handle.seekToEnd()
-        guard fileSize >= 44 else { return }
+        guard fileSize >= WavConstants.headerSize else { return }
 
-        let dataLength = UInt32(fileSize - 44)
+        let dataLength = UInt32(fileSize - numericCast(WavConstants.headerSize))
         let riffChunkSize = UInt32(fileSize - 8)
 
         handle.seek(toFileOffset: 4)

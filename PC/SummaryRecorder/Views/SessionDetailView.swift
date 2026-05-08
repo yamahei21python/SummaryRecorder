@@ -1,5 +1,4 @@
 import SwiftUI
-import AVFoundation
 
 struct SessionDetailView: View {
     @ObservedObject var viewModel: MainViewModel
@@ -7,11 +6,7 @@ struct SessionDetailView: View {
     @State private var selectedTab = 1
     @State private var isEditingTitle = false
     @State private var titleText = ""
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var isPlaying = false
-    @State private var playbackTime: TimeInterval = 0
-    @State private var playbackSpeed: Float = 1.0
-    @State private var progressTimer: Timer?
+    @StateObject private var playbackManager = AudioPlaybackManager()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,9 +29,11 @@ struct SessionDetailView: View {
             playbackControls
         }
         .padding()
-        .onAppear { playbackTime = 0; isPlaying = false }
-        .onChange(of: session.id) { _, _ in stopPlayback() }
-        .onDisappear { stopPlayback() }
+        .onAppear {
+            playbackManager.stop()
+        }
+        .onChange(of: session.id) { _, _ in playbackManager.stop() }
+        .onDisappear { playbackManager.stop() }
     }
 
     // MARK: - Header
@@ -169,74 +166,33 @@ struct SessionDetailView: View {
 
     private var playbackControls: some View {
         HStack(spacing: 16) {
-            Button(action: togglePlayback) {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill").font(.title2)
+            Button(action: {
+                if playbackManager.isPlaying {
+                    playbackManager.toggle()
+                } else {
+                    playbackManager.setup(for: session.wavFileName)
+                }
+            }) {
+                Image(systemName: playbackManager.isPlaying ? "pause.fill" : "play.fill").font(.title2)
             }
-            Slider(value: $playbackTime, in: 0...totalDuration) { editing in
-                if !editing { audioPlayer?.currentTime = playbackTime }
+            Slider(value: $playbackManager.playbackTime, in: 0...playbackManager.totalDuration) { editing in
+                if !editing { playbackManager.seek(to: playbackManager.playbackTime) }
             }
-            Text(formatPlaybackTime(playbackTime)).font(.caption.monospacedDigit()).frame(width: 50)
+            Text(playbackManager.formatTime(playbackManager.playbackTime)).font(.caption.monospacedDigit()).frame(width: 50)
             Text("/").foregroundStyle(.secondary)
-            Text(formatPlaybackTime(totalDuration)).font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 50)
-            Picker("速度", selection: $playbackSpeed) {
+            Text(playbackManager.formatTime(playbackManager.totalDuration)).font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 50)
+            Picker("速度", selection: $playbackManager.playbackSpeed) {
                 Text("0.5x").tag(Float(0.5)); Text("1.0x").tag(Float(1.0))
                 Text("1.5x").tag(Float(1.5)); Text("2.0x").tag(Float(2.0))
             }
             .pickerStyle(.segmented).frame(width: 160).id("speedPicker")
-            .onChange(of: playbackSpeed) { _, _ in applyPlaybackSpeed() }
+            .onChange(of: playbackManager.playbackSpeed) { _, _ in
+                if playbackManager.isPlaying {
+                    playbackManager.toggle()
+                    playbackManager.toggle()
+                }
+            }
         }
         .padding(.horizontal).padding(.vertical, 8)
-    }
-
-    private var totalDuration: TimeInterval { session.durationMs / 1000.0 }
-
-    private func applyPlaybackSpeed() {
-        guard let player = audioPlayer else { return }
-        player.enableRate = true
-        player.rate = playbackSpeed
-    }
-
-    private func togglePlayback() {
-        if isPlaying {
-            audioPlayer?.pause()
-            progressTimer?.invalidate(); progressTimer = nil
-            isPlaying = false
-        } else {
-            if let player = audioPlayer {
-                applyPlaybackSpeed(); player.play(); startProgressTimer()
-            } else { setupPlayer() }
-            isPlaying = true
-        }
-    }
-
-    private func setupPlayer() {
-        let url = AppPaths.recordingsDirectory.appendingPathComponent(session.wavFileName)
-        guard FileManager.default.fileExists(atPath: url.path) else { return }
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-            applyPlaybackSpeed()
-            audioPlayer?.play()
-            startProgressTimer()
-            isPlaying = true
-        } catch { }
-    }
-
-    private func startProgressTimer() {
-        progressTimer?.invalidate()
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            guard let player = audioPlayer, player.isPlaying else { return }
-            playbackTime = player.currentTime
-        }
-    }
-
-    private func stopPlayback() {
-        audioPlayer?.stop(); audioPlayer = nil
-        progressTimer?.invalidate(); progressTimer = nil
-        playbackTime = 0; isPlaying = false
-    }
-
-    private func formatPlaybackTime(_ time: TimeInterval) -> String {
-        String(format: "%d:%02d", Int(time) / 60, Int(time) % 60)
     }
 }

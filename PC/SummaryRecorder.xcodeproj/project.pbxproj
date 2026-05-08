@@ -30,6 +30,7 @@
 		498012C3A445835E175BAC3A /* SummaryRecorderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3057AE8DEB0A65A4A5D3DD2F /* SummaryRecorderApp.swift */; };
 		4B58F65819BA32498F915635 /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBC31450A3F7D79E837608B /* SessionRepository.swift */; };
 		4FA4A7ACDBCB8551C373AF99 /* AVAudioPlayerRateTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9896EE5A54536A3B2C4592 /* AVAudioPlayerRateTest.swift */; };
+		51CF7E1586E791297E7BC6F0 /* AudioPlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230D3BEC06C6A64388E9DCF /* AudioPlaybackManager.swift */; };
 		5C8C43A639F31324547A65FC /* Chunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = C834E8B63E019B04572D60A5 /* Chunk.swift */; };
 		60218A0E9358A592607618BC /* WhisperBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 059EE310658ACEBCE4D02165 /* WhisperBridge.mm */; };
 		6B1A934954207B4D8309EF09 /* transcribe.py in Resources */ = {isa = PBXBuildFile; fileRef = 4637FD3CBBFAE6DC6FEB6B0C /* transcribe.py */; };
@@ -134,6 +135,7 @@
 		9976933BA0A761124B2899B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9B7B3AED21C11D6A2656C285 /* AudioRecorderEdgeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorderEdgeTest.swift; sourceTree = "<group>"; };
 		9CB8FEB70DE5BE9A5F381AF0 /* WavHeaderSeekTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavHeaderSeekTest.swift; sourceTree = "<group>"; };
+		A230D3BEC06C6A64388E9DCF /* AudioPlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackManager.swift; sourceTree = "<group>"; };
 		A47184DCDD9C0463B8FE0886 /* AudioRecorderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorderProtocol.swift; sourceTree = "<group>"; };
 		A61C04F624D1A34C3A7B803B /* WavHeaderOverflowTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavHeaderOverflowTest.swift; sourceTree = "<group>"; };
 		AAF06D9166CF64BA8F65D89D /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
@@ -360,6 +362,7 @@
 		E8EB9578D62B33D65DCF7250 /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				A230D3BEC06C6A64388E9DCF /* AudioPlaybackManager.swift */,
 				4F3E27F6A8A5E066AA050FE7 /* AudioRecorder.swift */,
 				93FC961FDCE7A41D5B08650B /* WavHeader.swift */,
 				8F94BAD237F99F8FD94F74D9 /* WavRepair.swift */,
@@ -583,6 +586,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D727D7F106091EF7940D55D0 /* AppConfig.swift in Sources */,
+				51CF7E1586E791297E7BC6F0 /* AudioPlaybackManager.swift in Sources */,
 				90A157CC018B3B8CA74FEADE /* AudioRecorder.swift in Sources */,
 				DBAA87C62246AF0DC55E8FEF /* AudioRecorderProtocol.swift in Sources */,
 				404E0C9B12F62385287B22E9 /* BackupManager.swift in Sources */,

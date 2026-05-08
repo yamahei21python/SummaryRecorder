@@ -21,7 +21,7 @@ struct WavHeader: Sendable {
     }
 
     init(data: Data) throws {
-        guard data.count >= 44 else {
+        guard data.count >= WavConstants.headerSize else {
             throw WavError.fileTooSmall
         }
 

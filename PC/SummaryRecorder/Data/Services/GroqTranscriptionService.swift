@@ -5,7 +5,7 @@ struct GroqTranscriptionService: TranscriptionService {
     let session: URLSession
     let maxChunkSize: Int
 
-    init(apiKey: String, session: URLSession = .shared, maxChunkSize: Int = 25 * 1024 * 1024) {
+    init(apiKey: String, session: URLSession = .shared, maxChunkSize: Int = AppLimits.maxGroqChunkSize) {
         self.apiKey = apiKey
         self.session = session
         self.maxChunkSize = maxChunkSize
@@ -61,7 +61,7 @@ struct GroqTranscriptionService: TranscriptionService {
     }
 
     private func buildRequest(wavURL: URL) throws -> URLRequest {
-        let url = URL(string: APIEndpoint.groqTranscription)!
+        let url = APIEndpoint.groqTranscription
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -91,9 +91,9 @@ struct GroqTranscriptionService: TranscriptionService {
 
     private func splitWavFile(url: URL, maxChunkSize: Int) throws -> [URL] {
         let data = try Data(contentsOf: url)
-        let header = data.prefix(44)
-        let pcmData = data.dropFirst(44)
-        let pcmPerChunk = maxChunkSize - 44
+        let header = data.prefix(WavConstants.headerSize)
+        let pcmData = data.dropFirst(WavConstants.headerSize)
+        let pcmPerChunk = maxChunkSize - WavConstants.headerSize
 
         guard pcmPerChunk > 0 else {
             throw TranscriptionError.fileTooLarge
@@ -106,7 +106,7 @@ struct GroqTranscriptionService: TranscriptionService {
         while offset < pcmData.endIndex {
             let end = min(offset + pcmPerChunk, pcmData.endIndex)
             let chunkPCM = pcmData[offset..<end]
-            let chunkSize = 44 + chunkPCM.count
+            let chunkSize = WavConstants.headerSize + chunkPCM.count
 
             var chunkData = Data(capacity: chunkSize)
             chunkData.append(header)
