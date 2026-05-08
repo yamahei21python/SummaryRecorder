@@ -2,67 +2,58 @@ package com.kohei.summaryrecorder.service
 
 import android.util.Log
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import com.kohei.summaryrecorder.data.db.ChunkEntity
-import com.kohei.summaryrecorder.data.db.ChunkStatus
-import com.kohei.summaryrecorder.recorder.GaplessRecorder
+import com.kohei.summaryrecorder.recorder.SimpleRecorder
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 class RecordingManager(
-    private val chunkRepository: ChunkRepository,
-    private val uploader: TranscriptionUploader,
     baseScope: CoroutineScope
 ) {
     private val recorderScope = CoroutineScope(baseScope.coroutineContext + Job())
-    private val uploadScope = CoroutineScope(baseScope.coroutineContext + SupervisorJob())
     private val mutex = Mutex()
-    private val recorderRef = AtomicReference<GaplessRecorder?>(null)
+    private var recorder: SimpleRecorder? = null
     private var currentSessionId: String? = null
     private var currentAudioProvider: AudioProvider? = null
+    private var currentOutputFile: File? = null
 
     suspend fun startRecording(
         sessionId: String,
         outputDir: File,
-        chunkSizeBytes: Long,
         audioProvider: AudioProvider
-    ) {
+    ): File {
         mutex.withLock {
-            recorderRef.get()?.stop()
+            recorder?.stop()
             currentSessionId = sessionId
             currentAudioProvider = audioProvider
-            val recorder = GaplessRecorder(
+            val newRecorder = SimpleRecorder(
                 outputDir = outputDir,
-                chunkSizeBytes = chunkSizeBytes,
-                onChunkComplete = { chunkIndex, file, isLast ->
-                    onChunkRecorded(sessionId, chunkIndex, file, isLast)
-                    Unit
-                },
                 audioProvider = audioProvider,
                 coroutineScope = recorderScope
             )
-            recorderRef.set(recorder)
+            recorder = newRecorder
             try {
-                recorder.start()
+                val file = newRecorder.start()
+                currentOutputFile = file
+                return file
             } catch (e: Exception) {
-                recorderRef.set(null)
+                recorder = null
                 Log.e("RecordingManager", "startRecording failed", e)
                 throw e
             }
         }
     }
 
-    suspend fun stopRecording() {
-        mutex.withLock {
-            recorderRef.getAndSet(null)?.stop()
+    suspend fun stopRecording(): File? {
+        return mutex.withLock {
+            val file = recorder?.stop()
+            currentOutputFile = file
+            recorder = null
             currentSessionId = null
             currentAudioProvider = null
+            file
         }
     }
 
@@ -71,44 +62,10 @@ class RecordingManager(
     fun getMaxAmplitude(): Int = currentAudioProvider?.getMaxAmplitude() ?: 0
 
     suspend fun pauseRecording() {
-        mutex.withLock {
-            recorderRef.get()?.pause()
-        }
+        mutex.withLock { recorder?.pause() }
     }
 
     suspend fun resumeRecording() {
-        mutex.withLock {
-            recorderRef.get()?.resume()
-        }
-    }
-
-    /**
-     * 録音停止後のセッション確定処理はRecordingService側で行う。
-     * （filesDirへのアクセスが必要なため）
-     */
-
-    private fun onChunkRecorded(sessionId: String, chunkIndex: Int, file: File, isLast: Boolean) {
-        uploadScope.launch {
-            val entity = ChunkEntity(
-                sessionId = sessionId,
-                chunkIndex = chunkIndex,
-                filePath = file.absolutePath,
-                status = ChunkStatus.PENDING,
-                isLast = isLast
-            )
-            try {
-                val id = chunkRepository.insert(entity)
-                if (id == -1L) {
-                    Log.e("RecordingManager", "Failed to insert chunk $chunkIndex into database")
-                    return@launch
-                }
-                val result = uploader.uploadChunk(entity.copy(id = id))
-                if (result.isFailure) {
-                    Log.w("RecordingManager", "uploadChunk failed: ${result.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                Log.w("RecordingManager", "onChunkRecorded failed", e)
-            }
-        }
+        mutex.withLock { recorder?.resume() }
     }
 }

@@ -1,7 +1,6 @@
 package com.kohei.summaryrecorder.data.db
 
-import android.content.ContentValues
-import android.database.sqlite.SQLiteDatabase
+import android.content.Context
 import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
@@ -15,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -77,7 +77,7 @@ class AppDatabaseMigrationTest {
         createV1Database()
 
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .allowMainThreadQueries()
             .build()
 
@@ -105,37 +105,30 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 1 to 2 preserves existing chunks data`() = runTest {
+    fun `migration 1 to 2 then 2 to 3 preserves summaries data`() = runTest {
         createV1Database()
 
-        // Insert chunk data into v1 DB directly
-        val rawDb = SQLiteDatabase.openDatabase(
-            context.getDatabasePath(dbName).absolutePath, null,
-            SQLiteDatabase.OPEN_READWRITE
-        )
-        val values = ContentValues().apply {
-            put("session_id", "session-1")
-            put("chunk_index", 0)
-            put("file_path", "/recordings/chunk_0.wav")
-            put("status", "DONE")
-            put("transcription_text", "テスト文字起こし")
-            put("created_at", 1000L)
-            put("updated_at", 1000L)
-            put("is_last", 1)
-        }
-        rawDb.insert("chunks", null, values)
-        rawDb.close()
-
-        // Open with migration
+        // Insert summaries via migration 1→2
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .allowMainThreadQueries()
             .build()
 
-        // Verify chunks preserved via direct query
-        val cursor = db.openHelper.readableDatabase.query("SELECT * FROM chunks WHERE session_id = 'session-1'")
-        assertTrue(cursor.moveToFirst())
-        assertEquals("テスト文字起こし", cursor.getString(cursor.getColumnIndexOrThrow("transcription_text")))
+        val dao = db.summaryDao()
+        dao.insert(SummaryEntity(
+            sessionId = "s1", createdAt = 2000L, title = "テスト",
+            summaryText = "要約", transcriptionText = "転写",
+            audioFilePath = "/f.wav", durationMs = 5000L,
+            status = SummaryStatus.RECORDED
+        ))
+
+        // Verify summaries still accessible after full migration
+        val entity = dao.getBySessionId("s1")!!
+        assertEquals("テスト", entity.title)
+
+        // Verify chunks table was dropped
+        val cursor = db.openHelper.readableDatabase.query("SELECT name FROM sqlite_master WHERE type='table' AND name='chunks'")
+        assertFalse(cursor.moveToFirst(), "chunks table should be dropped after migration 2→3")
         cursor.close()
 
         db.close()
@@ -146,7 +139,7 @@ class AppDatabaseMigrationTest {
         createV1Database()
 
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .allowMainThreadQueries()
             .build()
 

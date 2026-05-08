@@ -3,15 +3,15 @@ package com.kohei.summaryrecorder.viewmodel
 import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
-import com.kohei.summaryrecorder.data.db.ChunkEntity
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.controller.RecordingController
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
-import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,6 +26,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelRetryTest {
@@ -36,9 +37,8 @@ class MainViewModelRetryTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private lateinit var chunkRepository: ChunkRepository
-    private lateinit var summarizeUseCase: SummarizeUseCase
-    private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
+    private lateinit var transcriptionProvider: TranscriptionProvider
+    private lateinit var summaryProvider: SummaryProvider
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
@@ -50,9 +50,8 @@ class MainViewModelRetryTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        chunkRepository = mockk<ChunkRepository>(relaxed = true)
-        summarizeUseCase = mockk<SummarizeUseCase>()
-        chunksFlow = MutableStateFlow(emptyList())
+        transcriptionProvider = mockk<TranscriptionProvider>(relaxed = true)
+        summaryProvider = mockk<SummaryProvider>(relaxed = true)
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
@@ -60,7 +59,6 @@ class MainViewModelRetryTest {
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         summariesFlow = MutableStateFlow(emptyList())
-        every { chunkRepository.getChunksFlow(any()) } returns chunksFlow
         every { recordingController.isReady } returns MutableStateFlow(true)
         every { recordingController.currentVolumeLevel } returns 0f
         every { recordingController.currentSessionId } returns null
@@ -78,50 +76,72 @@ class MainViewModelRetryTest {
     }
 
     private fun createViewModel() = MainViewModel(
-        chunkRepository, summarizeUseCase, recordingController, summaryDao, deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+        transcriptionProvider, summaryProvider, recordingController, summaryDao,
+        deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
     )
 
     // ===== retryPendingRecords (init内で呼ばれる) =====
 
     @Test
     fun `retryPendingRecords retries RECORDED records on init`() {
+        val filesDir = tempFolder.newFolder("retry1")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
         val recordedEntity = SummaryEntity(
-            sessionId = "s1", audioFilePath = "/f.wav", durationMs = 1000L,
+            sessionId = "s1", audioFilePath = wavFile.absolutePath, durationMs = 1000L,
             status = SummaryStatus.RECORDED
         )
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(recordedEntity)
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.success("text")
+        coEvery { summaryProvider.summarize("text") } returns Result.success(
+            SummaryResult(title = "title", summaryText = "summary")
+        )
 
         createViewModel()
 
-        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { transcriptionProvider.transcribe(any()) }
+        coVerify { summaryProvider.summarize("text") }
+        coVerify { summaryDao.updateStatusAndContent(any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `retryPendingRecords retries SUMMARIZING records on init`() {
+        val filesDir = tempFolder.newFolder("retry2")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
         val summarizingEntity = SummaryEntity(
-            sessionId = "s2", audioFilePath = "/f.wav", durationMs = 2000L,
+            sessionId = "s2", audioFilePath = wavFile.absolutePath, durationMs = 2000L,
             status = SummaryStatus.SUMMARIZING
         )
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(summarizingEntity)
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.success("text")
+        coEvery { summaryProvider.summarize("text") } returns Result.success(
+            SummaryResult(title = "title", summaryText = "summary")
+        )
 
         createViewModel()
 
-        coVerify { summarizeUseCase.executeAndPersist("s2", summaryDao) }
+        coVerify { summaryDao.updateStatus("s2", SummaryStatus.SUMMARIZING) }
+        coVerify { transcriptionProvider.transcribe(any()) }
+        coVerify { summaryProvider.summarize("text") }
     }
 
     @Test
     fun `retryPendingRecords handles mixed success and failure`() {
-        val e1 = SummaryEntity(sessionId = "s1", status = SummaryStatus.RECORDED, audioFilePath = "/f1.wav")
-        val e2 = SummaryEntity(sessionId = "s2", status = SummaryStatus.SUMMARIZING, audioFilePath = "/f2.wav")
+        val filesDir = tempFolder.newFolder("retry3")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
+        val e1 = SummaryEntity(sessionId = "s1", status = SummaryStatus.RECORDED, audioFilePath = wavFile.absolutePath)
+        val e2 = SummaryEntity(sessionId = "s2", status = SummaryStatus.SUMMARIZING, audioFilePath = wavFile.absolutePath)
         coEvery { summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING)) } returns listOf(e1, e2)
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.success("text")
+        coEvery { summaryProvider.summarize("text") } returns Result.success(
+            SummaryResult(title = "title", summaryText = "summary")
+        )
 
         createViewModel()
 
-        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
-        coVerify { summarizeUseCase.executeAndPersist("s2", summaryDao) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { summaryDao.updateStatus("s2", SummaryStatus.SUMMARIZING) }
+        coVerify(exactly = 2) { transcriptionProvider.transcribe(any()) }
     }
 
     @Test
@@ -130,29 +150,44 @@ class MainViewModelRetryTest {
 
         createViewModel()
 
-        coVerify(exactly = 0) { summarizeUseCase.executeAndPersist(any(), any()) }
+        coVerify(exactly = 0) { transcriptionProvider.transcribe(any()) }
+        coVerify(exactly = 0) { summaryProvider.summarize(any()) }
     }
 
     // ===== retrySummary (手動再試行) =====
 
     @Test
     fun `retrySummary success path`() {
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        val filesDir = tempFolder.newFolder("retry4")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
+        coEvery { summaryDao.getBySessionId("s1") } returns SummaryEntity(
+            sessionId = "s1", audioFilePath = wavFile.absolutePath, status = SummaryStatus.ERROR
+        )
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.success("text")
+        coEvery { summaryProvider.summarize("text") } returns Result.success(
+            SummaryResult(title = "title", summaryText = "summary")
+        )
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { summaryDao.updateStatusAndContent(any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `retrySummary failure path sets ERROR`() {
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        val filesDir = tempFolder.newFolder("retry5")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
+        coEvery { summaryDao.getBySessionId("s1") } returns SummaryEntity(
+            sessionId = "s1", audioFilePath = wavFile.absolutePath, status = SummaryStatus.ERROR
+        )
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.failure(RuntimeException("fail"))
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.ERROR, errorMessage = "fail") }
     }
 
     // ===== clearError =====

@@ -2,7 +2,6 @@ package com.kohei.summaryrecorder.di
 
 import android.content.Context
 import com.kohei.summaryrecorder.data.db.AppDatabase
-import com.kohei.summaryrecorder.data.db.ChunkDao
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import androidx.room.Room
 import dagger.Module
@@ -24,13 +23,8 @@ object DatabaseModule {
             AppDatabase::class.java,
             AppDatabase.DB_NAME
         )
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .build()
-    }
-
-    @Provides
-    fun provideChunkDao(db: AppDatabase): ChunkDao {
-        return db.chunkDao()
     }
 
     @Provides

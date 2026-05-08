@@ -1,8 +1,8 @@
 package com.kohei.summaryrecorder.debug
 
 import com.kohei.summaryrecorder.data.db.SummaryDao
-import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
-import com.kohei.summaryrecorder.service.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -15,7 +15,7 @@ import dagger.hilt.components.SingletonComponent
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PipelineEntryPoint {
-    fun transcriptionUploader(): TranscriptionUploader
-    fun summarizeUseCase(): SummarizeUseCase
+    fun transcriptionProvider(): TranscriptionProvider
+    fun summaryProvider(): SummaryProvider
     fun summaryDao(): SummaryDao
 }

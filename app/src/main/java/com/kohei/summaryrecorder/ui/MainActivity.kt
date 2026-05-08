@@ -48,7 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.kohei.summaryrecorder.R
-import com.kohei.summaryrecorder.audio.DebugConfig
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
 import com.kohei.summaryrecorder.ui.theme.SummaryRecorderTheme
@@ -67,10 +66,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (intent.getBooleanExtra("debug", false)) {
-            DebugConfig.debugMode = true
-        }
 
         val permissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

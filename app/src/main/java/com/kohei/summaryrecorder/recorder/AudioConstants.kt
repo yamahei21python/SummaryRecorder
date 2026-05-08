@@ -2,7 +2,7 @@ package com.kohei.summaryrecorder.recorder
 
 /**
  * オーディオフォーマット定数集約。
- * GaplessRecorder / RealAudioProvider 共用。
+ * SimpleRecorder / RealAudioProvider 共用。
  */
 object AudioConstants {
     const val SAMPLE_RATE = 16000

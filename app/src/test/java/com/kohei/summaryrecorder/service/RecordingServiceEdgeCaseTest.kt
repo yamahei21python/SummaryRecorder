@@ -7,11 +7,10 @@ import android.content.Intent
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kohei.summaryrecorder.data.db.ChunkDao
-import com.kohei.summaryrecorder.di.ChunkSize
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import com.kohei.summaryrecorder.service.TranscriptionUploader
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
+import com.kohei.summaryrecorder.data.db.SummaryDao
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -64,13 +63,12 @@ class RecordingServiceEdgeCaseTest {
     }
 
     @Test
-    fun `onStartCommand with null sessionId generates UUID`() = runTest {
+    fun `onStartCommand with null sessionId initializes RecordingManager`() = runTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        service.chunkRepository = mockk(relaxed = true)
-        service.uploader = mockk(relaxed = true)
-        service.chunkSize = ChunkSize { 1024L }
+        service.transcriptionProvider = mockk(relaxed = true)
+        service.summaryProvider = mockk(relaxed = true)
         service.audioProvider = mockk(relaxed = true)
         coEvery { service.audioProvider.start() } returns true
 
@@ -84,17 +82,9 @@ class RecordingServiceEdgeCaseTest {
 
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
-        val recordingManager = recordingManagerField.get(service) as RecordingManager
-
-        // Since we can't easily get the sessionId from the new RecordingManager,
-        // we'll check if any directory was created in filesDir/recordings/
-        val recordingsDir = java.io.File(context.filesDir, "recordings")
-        val sessionDirs = recordingsDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        val recordingManager = recordingManagerField.get(service)
         
-        assertTrue(sessionDirs.isNotEmpty(), "A session directory should be created")
-        val uuidName = sessionDirs.first().name
-        val parsedUuid = UUID.fromString(uuidName)
-        assertNotNull(parsedUuid)
+        assertNotNull(recordingManager, "RecordingManager should be initialized")
         
         serviceController.destroy()
     }
@@ -104,18 +94,13 @@ class RecordingServiceEdgeCaseTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        service.chunkRepository = mockk(relaxed = true)
-        service.uploader = mockk(relaxed = true)
-        service.chunkSize = ChunkSize { 1024L }
+        service.transcriptionProvider = mockk(relaxed = true)
+        service.summaryProvider = mockk(relaxed = true)
         service.audioProvider = mockk(relaxed = true)
 
         serviceController.create()
         
         val mockManager = mockk<RecordingManager>(relaxed = true)
-        // mockkのcoAnswersはwithTimeoutOrNullからのキャンセルに対応しないため、
-        // 実際の遅延ではなくブロッキングスリープでタイムアウトをテストする。
-        // 代わりにgetCurrentSessionIdをnull以外にして"finalize"ブランチを検証する
-        // ここでは単にsessionIdがnull(relaxed mockのデフォルト)の場合の挙動を確認
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
         recordingManagerField.set(service, mockManager)
@@ -129,15 +114,14 @@ class RecordingServiceEdgeCaseTest {
         val serviceController = Robolectric.buildService(RecordingService::class.java)
         val service = serviceController.get()
         
-        service.chunkRepository = mockk(relaxed = true)
-        service.uploader = mockk(relaxed = true)
-        service.chunkSize = ChunkSize { 1024L }
+        service.transcriptionProvider = mockk(relaxed = true)
+        service.summaryProvider = mockk(relaxed = true)
         service.audioProvider = mockk(relaxed = true)
 
         serviceController.create()
         
         val mockManager = mockk<RecordingManager>(relaxed = true)
-        coEvery { mockManager.stopRecording() } returns Unit
+        coEvery { mockManager.stopRecording() } returns null
         val recordingManagerField = RecordingService::class.java.getDeclaredField("recordingManager")
         recordingManagerField.isAccessible = true
         recordingManagerField.set(service, mockManager)

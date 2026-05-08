@@ -6,16 +6,14 @@ import android.os.StatFs
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kohei.summaryrecorder.data.db.ChunkEntity
-import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
-import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.recorder.AudioConstants
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
+import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
-import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -31,8 +29,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val chunkRepository: ChunkRepository,
-    private val summarizeUseCase: SummarizeUseCase,
+    private val transcriptionProvider: TranscriptionProvider,
+    private val summaryProvider: SummaryProvider,
     private val recordingController: RecordingController,
     private val summaryDao: SummaryDao,
     private val deleteSummaryUseCase: DeleteSummaryUseCase,
@@ -56,7 +54,6 @@ class MainViewModel @Inject constructor(
         val isPaused: Boolean = false,
         val sessionId: String = "",
         val recordingSeconds: Int = 0,
-        val chunks: List<ChunkUiItem> = emptyList(),
         val summary: String? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
@@ -65,19 +62,12 @@ class MainViewModel @Inject constructor(
         val volumeLevel: Float = 0f
     )
 
-    data class ChunkUiItem(
-        val index: Int,
-        val status: ChunkStatus,
-        val transcription: String?
-    )
-
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private val _storageInfo = MutableStateFlow<Pair<Long, Long>>(0L to 0L)
     val storageInfo: StateFlow<Pair<Long, Long>> = _storageInfo.asStateFlow()
 
-    private var observeJob: Job? = null
     private var timerJob: Job? = null
 
     private var persistedSessionId: String?
@@ -112,7 +102,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             summaryDao.observeAll().collect { list ->
                 val badgeCount = list.count { it.status == SummaryStatus.DONE && !it.isRead }
-                _uiState.update { it.copy(summaries = list, unreadBadgeCount = badgeCount) }
+                val loading = list.any { it.status == SummaryStatus.RECORDED || it.status == SummaryStatus.SUMMARIZING }
+                _uiState.update { it.copy(summaries = list, unreadBadgeCount = badgeCount, isLoading = loading) }
             }
         }
     }
@@ -120,7 +111,6 @@ class MainViewModel @Inject constructor(
     private fun restorePreviousSession() {
         val prevSession = persistedSessionId
         if (prevSession != null && persistedIsRecording) {
-            // 開始時刻から経過秒数を再計算（プロセスキル後のズレ補正）
             val startTime = persistedRecordingStartTime
             val elapsedSeconds = if (startTime > 0 && !persistedIsPaused) {
                 ((System.currentTimeMillis() - startTime) / 1000).toInt()
@@ -137,7 +127,6 @@ class MainViewModel @Inject constructor(
                     recordingSeconds = elapsedSeconds
                 )
             }
-            observeChunks(prevSession)
             if (!persistedIsPaused) {
                 startTimer()
             }
@@ -200,21 +189,18 @@ class MainViewModel @Inject constructor(
                 isPaused = false,
                 sessionId = sessionId,
                 recordingSeconds = 0,
-                chunks = emptyList(),
                 summary = null,
                 error = null,
                 isLoading = false
             )
         }
         recordingController.startRecording(sessionId)
-        observeChunks(sessionId)
         startTimer()
     }
 
     fun stopRecording() {
         if (!_uiState.value.isRecording) return
 
-        val hasChunks = _uiState.value.chunks.isNotEmpty()
         persistedIsRecording = false
         persistedIsPaused = false
         stopTimer()
@@ -223,7 +209,7 @@ class MainViewModel @Inject constructor(
                 isRecording = false,
                 isPaused = false,
                 recordingSeconds = 0,
-                isLoading = hasChunks
+                isLoading = true
             )
         }
         recordingController.stopRecording()
@@ -264,40 +250,16 @@ class MainViewModel @Inject constructor(
         timerJob = null
     }
 
-    // ===== Chunk observation (UI表示のみ、要約はRecordingService側で完結) =====
-
-    private fun observeChunks(sessionId: String) {
-        observeJob?.cancel()
-        observeJob = viewModelScope.launch {
-            chunkRepository.getChunksFlow(sessionId)
-                .collect { chunks ->
-                    val items = chunks.map { it.toUiItem() }
-                    _uiState.update { it.copy(chunks = items) }
-
-                    // チャンクが空になったらローディング解除
-                    if (items.isEmpty()) {
-                        _uiState.update { it.copy(isLoading = false) }
-                    }
-                }
-        }
-    }
-
-    private fun ChunkEntity.toUiItem() = ChunkUiItem(
-        index = chunkIndex,
-        status = status,
-        transcription = transcriptionText
-    )
-
     // ===== Retry pending records (app restart) =====
 
     private suspend fun retryPendingRecords() {
         val pending = summaryDao.getByStatus(listOf(SummaryStatus.RECORDED, SummaryStatus.SUMMARIZING))
         for (entity in pending) {
-            summarizeUseCase.executeAndPersist(entity.sessionId, summaryDao)
+            retrySession(entity)
         }
     }
 
-    // ===== Orphan file cleanup (suspend化) =====
+    // ===== Orphan file cleanup =====
 
     private suspend fun cleanupOrphanFiles(excludeSessionId: String?) {
         val recordingsDir = File(application.filesDir, RECORDINGS_DIR)
@@ -333,7 +295,45 @@ class MainViewModel @Inject constructor(
 
     fun retrySummary(sessionId: String) {
         viewModelScope.launch {
-            summarizeUseCase.executeAndPersist(sessionId, summaryDao)
+            val entity = summaryDao.getBySessionId(sessionId) ?: return@launch
+            retrySession(entity)
+        }
+    }
+
+    private suspend fun retrySession(entity: SummaryEntity) {
+        summaryDao.updateStatus(entity.sessionId, SummaryStatus.SUMMARIZING)
+        try {
+            val wavFile = File(entity.audioFilePath)
+            if (!wavFile.exists()) {
+                summaryDao.updateStatus(entity.sessionId, SummaryStatus.ERROR, errorMessage = "音声ファイルが見つかりません")
+                return
+            }
+
+            val transcriptionResult = transcriptionProvider.transcribe(wavFile)
+            if (transcriptionResult.isFailure) {
+                summaryDao.updateStatus(entity.sessionId, SummaryStatus.ERROR, errorMessage = transcriptionResult.exceptionOrNull()?.message)
+                return
+            }
+            val transcriptionText = transcriptionResult.getOrThrow()
+
+            val summaryResult = summaryProvider.summarize(transcriptionText)
+            if (summaryResult.isFailure) {
+                summaryDao.updateStatus(entity.sessionId, SummaryStatus.ERROR, errorMessage = summaryResult.exceptionOrNull()?.message)
+                return
+            }
+            val output = summaryResult.getOrThrow()
+
+            summaryDao.updateStatusAndContent(
+                sessionId = entity.sessionId,
+                status = SummaryStatus.DONE,
+                title = output.title,
+                summaryText = output.summaryText,
+                transcriptionText = transcriptionText
+            )
+        } catch (e: Exception) {
+            try {
+                summaryDao.updateStatus(entity.sessionId, SummaryStatus.ERROR, errorMessage = e.message)
+            } catch (_: Exception) {}
         }
     }
 

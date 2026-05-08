@@ -1,9 +1,6 @@
 package com.kohei.summaryrecorder.service
 
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import io.mockk.coEvery
-import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -18,13 +15,14 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 /**
  * RecordingManager: audioProvider.start()失敗時の挙動検証。
  *
  * startRecording内でrecorder.start()がIllegalStateExceptionを投げた時:
- * - recorderRefがnullにリセットされる（再試行可能）
+ * - recorderがnullにリセットされる（再試行可能）
  * - 例外が呼び出し元に伝播する
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -36,8 +34,6 @@ class RecordingManagerStartFailureTest {
     private val tempDir: File by lazy { tempFolder.root }
 
     private lateinit var testScope: TestScope
-    private val mockRepo = mockk<ChunkRepository>(relaxed = true)
-    private val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -68,47 +64,50 @@ class RecordingManagerStartFailureTest {
 
     @Test
     fun `startRecording throws when audioProvider start fails`() = runTest {
-        val manager = RecordingManager(mockRepo, mockUploader, testScope)
+        val manager = RecordingManager(testScope)
 
         assertFailsWith<IllegalStateException> {
-            manager.startRecording("sess", tempDir, 1024L, failingProvider)
+            manager.startRecording("sess", tempDir, failingProvider)
         }
     }
 
     @Test
-    fun `startRecording resets recorderRef on failure`() = runTest {
-        val manager = RecordingManager(mockRepo, mockUploader, testScope)
+    fun `startRecording resets recorder on failure`() = runTest {
+        val manager = RecordingManager(testScope)
 
         try {
-            manager.startRecording("sess", tempDir, 1024L, failingProvider)
+            manager.startRecording("sess", tempDir, failingProvider)
         } catch (_: IllegalStateException) {
             // 期待される例外
         }
 
-        // recorderRefがnull → stopRecordingが例外なく完了する
-        manager.stopRecording() // recorderRef==nullなので何もしない
+        // recorderがnull → stopRecordingが例外なく完了する
+        val result = manager.stopRecording()
+        assertNull(result)
     }
 
     @Test
     fun `startRecording can be retried after failure`() = runTest {
-        val manager = RecordingManager(mockRepo, mockUploader, testScope)
+        val manager = RecordingManager(testScope)
 
         // 1回目: 失敗
         try {
-            manager.startRecording("sess", tempDir, 1024L, failingProvider)
+            manager.startRecording("sess", tempDir, failingProvider)
         } catch (_: IllegalStateException) {
             // 期待される例外
         }
 
+        // recorderがnullであることを確認
+        val recorderField = RecordingManager::class.java.getDeclaredField("recorder")
+        recorderField.isAccessible = true
+        assertNull(recorderField.get(manager), "失敗後recorderがnull")
+
         // 2回目: 成功するproviderで再試行
-        manager.startRecording("sess", tempDir, 1024L, successProvider)
+        manager.startRecording("sess", tempDir, successProvider)
         advanceUntilIdle()
 
-        // リフレクションでrecorderRefが非nullであることを確認
-        val recorderField = RecordingManager::class.java.getDeclaredField("recorderRef")
-        recorderField.isAccessible = true
-        val ref = recorderField.get(manager) as java.util.concurrent.atomic.AtomicReference<*>
-        assertTrue(ref.get() != null, "再試行後recorderRefが非null")
+        // recorderが非nullであることを確認
+        assertNotNull(recorderField.get(manager), "再試行後recorderが非null")
 
         // クリーンアップ
         manager.stopRecording()

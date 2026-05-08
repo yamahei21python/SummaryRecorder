@@ -1,65 +1,33 @@
 package com.kohei.summaryrecorder.service
 
-import com.kohei.summaryrecorder.data.db.ChunkEntity
-import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.domain.repository.AudioProvider
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
-import io.mockk.*
-import kotlinx.coroutines.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RecordingManagerConcurrencyTest {
 
     @Test
-    fun `multiple rapid chunks are all inserted and uploaded`() = runTest(UnconfinedTestDispatcher()) {
-        val mockRepo = mockk<ChunkRepository>(relaxed = true)
-        val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
-
-        val manager = RecordingManager(mockRepo, mockUploader, this)
-
-        val sessionId = "test-session"
-        val files = listOf(File("chunk0.wav"), File("chunk1.wav"), File("chunk2.wav"))
-
-        files.forEachIndexed { index, file ->
-            launch {
-                val entity = ChunkEntity(
-                    sessionId = sessionId,
-                    chunkIndex = index,
-                    filePath = file.absolutePath,
-                    status = ChunkStatus.PENDING
-                )
-                mockRepo.insert(entity)
-                mockUploader.uploadChunk(entity)
-            }
-        }
-
-        advanceUntilIdle()
-
-        coVerify(exactly = 3) { mockRepo.insert(any()) }
-        coVerify(exactly = 3) { mockUploader.uploadChunk(any()) }
-    }
-
-    @Test
     fun `concurrent start and stop - no exception`() = runTest(UnconfinedTestDispatcher()) {
-        val mockRepo = mockk<ChunkRepository>(relaxed = true)
-        val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
         val mockAudioProvider = mockk<AudioProvider>(relaxed = true)
         every { mockAudioProvider.start() } returns true
         every { mockAudioProvider.read(any(), any()) } returns -1
 
-        val manager = RecordingManager(mockRepo, mockUploader, this)
+        val manager = RecordingManager(this)
         val tempDir = createTempDir()
 
         coroutineScope {
             launch {
-                manager.startRecording("s1", tempDir, 1024L, mockAudioProvider)
+                manager.startRecording("s1", tempDir, mockAudioProvider)
             }
             launch {
                 manager.stopRecording()
@@ -72,20 +40,18 @@ class RecordingManagerConcurrencyTest {
 
     @Test
     fun `double start stops previous recorder`() = runTest(UnconfinedTestDispatcher()) {
-        val mockRepo = mockk<ChunkRepository>(relaxed = true)
-        val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
         val mockAudioProvider = mockk<AudioProvider>(relaxed = true)
         every { mockAudioProvider.start() } returns true
         every { mockAudioProvider.read(any(), any()) } returns -1
 
-        val manager = RecordingManager(mockRepo, mockUploader, this)
+        val manager = RecordingManager(this)
         val tempDir = createTempDir()
 
-        manager.startRecording("s1", tempDir, 1024L, mockAudioProvider)
+        manager.startRecording("s1", tempDir, mockAudioProvider)
         advanceUntilIdle()
 
         // 2回目のstartRecording → 1回目のrecorder.stop() が呼ばれる
-        manager.startRecording("s2", tempDir, 1024L, mockAudioProvider)
+        manager.startRecording("s2", tempDir, mockAudioProvider)
         advanceUntilIdle()
 
         // AudioProvider.start が2回呼ばれる（1回目+2回目）
@@ -94,10 +60,7 @@ class RecordingManagerConcurrencyTest {
 
     @Test
     fun `stop without start - no exception`() = runTest(UnconfinedTestDispatcher()) {
-        val mockRepo = mockk<ChunkRepository>(relaxed = true)
-        val mockUploader = mockk<TranscriptionUploader>(relaxed = true)
-
-        val manager = RecordingManager(mockRepo, mockUploader, this)
+        val manager = RecordingManager(this)
 
         // recorder は null のまま
         manager.stopRecording()

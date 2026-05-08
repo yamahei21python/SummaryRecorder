@@ -3,16 +3,15 @@ package com.kohei.summaryrecorder.viewmodel
 import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
-import com.kohei.summaryrecorder.data.db.ChunkEntity
-import com.kohei.summaryrecorder.data.db.ChunkStatus
 import com.kohei.summaryrecorder.data.db.SummaryDao
 import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.data.db.SummaryStatus
+import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.controller.RecordingController
-import com.kohei.summaryrecorder.domain.repository.ChunkRepository
+import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
+import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
-import com.kohei.summaryrecorder.domain.usecase.SummarizeUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,7 +20,6 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -30,6 +28,8 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTabSessionTest {
@@ -37,9 +37,11 @@ class MainViewModelTabSessionTest {
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    private lateinit var chunkRepository: ChunkRepository
-    private lateinit var summarizeUseCase: SummarizeUseCase
-    private lateinit var chunksFlow: MutableStateFlow<List<ChunkEntity>>
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+
+    private lateinit var transcriptionProvider: TranscriptionProvider
+    private lateinit var summaryProvider: SummaryProvider
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
@@ -51,9 +53,8 @@ class MainViewModelTabSessionTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        chunkRepository = mockk<ChunkRepository>(relaxed = true)
-        summarizeUseCase = mockk<SummarizeUseCase>()
-        chunksFlow = MutableStateFlow(emptyList())
+        transcriptionProvider = mockk<TranscriptionProvider>(relaxed = true)
+        summaryProvider = mockk<SummaryProvider>(relaxed = true)
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
@@ -61,11 +62,15 @@ class MainViewModelTabSessionTest {
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         summariesFlow = MutableStateFlow(emptyList())
-        every { chunkRepository.getChunksFlow(any()) } returns chunksFlow
         every { recordingController.isReady } returns MutableStateFlow(true)
         every { recordingController.currentVolumeLevel } returns 0f
+        every { recordingController.currentSessionId } returns null
         every { summaryDao.observeAll() } returns summariesFlow
         coEvery { recordingController.awaitReady() } returns Unit
+        coEvery { summaryDao.getByStatus(any()) } returns emptyList()
+        coEvery { summaryDao.getAll() } returns emptyList()
+        val filesDir = tempFolder.newFolder("files")
+        every { application.filesDir } returns filesDir
     }
 
     @After
@@ -75,7 +80,8 @@ class MainViewModelTabSessionTest {
     }
 
     private fun createViewModel() = MainViewModel(
-        chunkRepository, summarizeUseCase, recordingController, summaryDao, deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+        transcriptionProvider, summaryProvider, recordingController, summaryDao,
+        deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
     )
 
     @Test
@@ -120,17 +126,25 @@ class MainViewModelTabSessionTest {
     }
 
     @Test
-    fun `retrySummary updates status and calls summarize`() {
+    fun `retrySummary updates status and calls transcription and summary`() {
+        val filesDir = tempFolder.newFolder("retryFiles")
+        val wavFile = File(filesDir, "f.wav").also { it.writeText("dummy") }
         coEvery { summaryDao.getBySessionId("s1") } returns SummaryEntity(
-            sessionId = "s1", audioFilePath = "/f.wav", durationMs = 1000L,
+            sessionId = "s1", audioFilePath = wavFile.absolutePath, durationMs = 1000L,
             status = SummaryStatus.ERROR, errorMessage = "prev error"
         )
-        coEvery { summarizeUseCase.executeAndPersist(any(), any()) } returns Unit
+        coEvery { transcriptionProvider.transcribe(any()) } returns Result.success("transcribed text")
+        coEvery { summaryProvider.summarize("transcribed text") } returns Result.success(
+            SummaryResult(title = "title", summaryText = "summary")
+        )
 
         val vm = createViewModel()
         vm.retrySummary("s1")
 
-        coVerify { summarizeUseCase.executeAndPersist("s1", summaryDao) }
+        coVerify { summaryDao.updateStatus("s1", SummaryStatus.SUMMARIZING) }
+        coVerify { transcriptionProvider.transcribe(any()) }
+        coVerify { summaryProvider.summarize("transcribed text") }
+        coVerify { summaryDao.updateStatusAndContent(any(), any(), any(), any(), any()) }
     }
 
     @Test

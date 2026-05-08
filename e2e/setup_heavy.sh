@@ -29,36 +29,28 @@ fi
 
 # ===== 2. DB内の既存データをクリーン =====
 echo "🧹 既存DBデータをクリーンアップ..."
-adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"DELETE FROM chunks; DELETE FROM summaries;\"" 2>/dev/null || true
+adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"DELETE FROM summaries;\"" 2>/dev/null || true
 echo "✅ クリーンアップ完了"
 
 # ===== 3. 録音ディレクトリ作成 + WAVファイルpush =====
 echo "📁 録音ディレクトリ作成..."
-adb shell "mkdir -p $RECORDINGS_DIR/$SESSION_ID"
+adb shell "mkdir -p $RECORDINGS_DIR"
 
 echo "📤 WAVファイルpush..."
-adb push "$TEST_WAV" "$RECORDINGS_DIR/$SESSION_ID/chunk_0.wav"
+adb push "$TEST_WAV" "$RECORDINGS_DIR/$SESSION_ID.wav"
 
 # ===== 4. DBにテストデータ投入 =====
 echo "💾 DBにテストデータ投入..."
 
-# sqlite3で直接DB操作
-# chunk: PENDING状態でinsert (Groq転写待ち)
-# summary: RECORDED状態でinsert (Gemini要約待ち)
-# 注意: adb shell内で()が解釈されるため、カラム名指定なしで全カラム分VALUESを渡す
-# chunks: session_id, chunk_index, file_path, status, transcription_text, created_at, updated_at, is_last, id(AUTO)
-adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"INSERT INTO chunks VALUES ('$SESSION_ID', 0, '$RECORDINGS_DIR/$SESSION_ID/chunk_0.wav', 'PENDING', NULL, $NOW_MS, $NOW_MS, 1, NULL);\""
+# summary: RECORDED状態でinsert (Groq転写→Gemini要約待ち)
 # summaries: session_id, created_at, title, summary_text, transcription_text, audio_file_path, duration_ms, status, is_read, error_message
-adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"INSERT INTO summaries VALUES ('$SESSION_ID', $NOW_MS, '', '', '', '$RECORDINGS_DIR/$SESSION_ID/chunk_0.wav', 6000, 'RECORDED', 0, NULL);\""
+adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"INSERT INTO summaries VALUES ('$SESSION_ID', $NOW_MS, '', '', '', '$RECORDINGS_DIR/$SESSION_ID.wav', 6000, 'RECORDED', 0, NULL);\""
 
 echo "✅ DB投入完了"
 
 # ===== 5. 確認 =====
 echo ""
 echo "=== 投入データ確認 ==="
-echo "Chunks:"
-adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"SELECT id, session_id, status FROM chunks WHERE session_id='$SESSION_ID';\"" 2>/dev/null || true
-echo ""
 echo "Summaries:"
 adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"SELECT session_id, status, duration_ms FROM summaries WHERE session_id='$SESSION_ID';\"" 2>/dev/null || true
 
@@ -92,8 +84,6 @@ done
 echo ""
 echo "=== Result ==="
 adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"SELECT session_id, status, title, substr(summary_text,1,100) FROM summaries WHERE session_id='$SESSION_ID';\""
-echo ""
-adb shell "sqlite3 /data/data/$PACKAGE/databases/$DB_NAME \"SELECT id, status, substr(transcription_text,1,80) FROM chunks WHERE session_id='$SESSION_ID';\""
 echo ""
 echo "次のコマンドでHeavy E2EをUI検証:"
 echo "  maestro test .maestro/e2e_heavy_pipeline.yaml"

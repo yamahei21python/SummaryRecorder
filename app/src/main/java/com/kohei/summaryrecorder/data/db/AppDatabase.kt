@@ -8,13 +8,12 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [ChunkEntity::class, SummaryEntity::class],
-    version = 2,
+    entities = [SummaryEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun chunkDao(): ChunkDao
     abstract fun summaryDao(): SummaryDao
 
     companion object {
@@ -36,6 +35,12 @@ abstract class AppDatabase : RoomDatabase() {
                         error_message TEXT DEFAULT NULL
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS chunks")
             }
         }
 
