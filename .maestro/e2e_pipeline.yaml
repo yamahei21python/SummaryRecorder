@@ -1,0 +1,68 @@
+appId: com.kohei.summaryrecorder
+---
+# Pipeline E2E: 録音→要約→編集→削除 統合フロー
+# 実行前に ./e2e/run_e2e.sh でプロキシ設定必須
+
+# ===== アプリ起動 =====
+- launchApp
+
+# ===== 録音 〜5秒 =====
+- tapOn: "● 録音"
+- assertVisible: "‖ 一時停止"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "□ 停止"
+
+# ===== 要約タブに移動 =====
+- tapOn: "要約"
+
+# ===== 要約完了待ち（最大120秒） =====
+- retry:
+    maxRetries: 60
+    commands:
+      - assertNotVisible: "録音がありません"
+
+# ===== カードタップ→詳細画面 =====
+- tapOn:
+    text: "\\d{4}/\\d{2}/\\d{2}.*"
+    index: 0
+
+# ===== 詳細画面確認 =====
+- assertVisible: "←"
+- assertVisible: "✏編集"
+- assertVisible: "要約"
+- assertVisible: "読みおこし"
+
+# ===== 読みおこしタブ確認 =====
+- tapOn: "読みおこし"
+
+# ===== 戻る =====
+- tapOn: "←"
+
+# ===== もう一度カードタップ（編集のため） =====
+- tapOn:
+    text: "\\d{4}/\\d{2}/\\d{2}.*"
+    index: 0
+
+# ===== 編集ダイアログ確認・保存 =====
+- tapOn: "✏編集"
+- assertVisible: "タイトル編集"
+- assertVisible: "保存"
+- tapOn: "保存"
+
+# ===== 戻る（リスト画面へ） =====
+- tapOn: "←"
+
+# ===== 削除 =====
+- tapOn:
+    text: "⋯"
+    index: 0
+- assertVisible: "削除"
+- tapOn: "削除"
+- assertVisible: "削除確認"
+- tapOn: "削除"
+
+# ===== 削除完了確認 =====
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "録音がありません"

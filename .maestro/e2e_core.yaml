@@ -1,0 +1,53 @@
+appId: com.kohei.summaryrecorder
+---
+# Core E2E: 設定UI確認 + 録音操作確認 (CI可, API不要)
+# 初期値確認はDBで実施
+
+# ===== アプリ起動 =====
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ===== 設定ダイアログ開く =====
+- assertVisible: "設定"
+- tapOn:
+    text: "設定"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "閉じる"
+
+# ===== 「デフォルトに戻す」ボタン確認 =====
+- assertVisible: "デフォルトに戻す"
+- tapOn: "デフォルトに戻す"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# ===== 閉じる =====
+- tapOn: "閉じる"
+- assertNotVisible: "閉じる"
+
+# ===== 録音操作 =====
+- assertVisible: "● 録音"
+- assertVisible: "□ 停止"
+
+# ===== 録音開始 =====
+- tapOn: "● 録音"
+- assertVisible: "‖ 一時停止"
+
+# ===== 一時停止 =====
+- tapOn: "‖ 一時停止"
+- assertVisible: "▶ 再開"
+
+# ===== 再開 =====
+- tapOn: "▶ 再開"
+- assertVisible: "‖ 一時停止"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ===== 録音停止 =====
+- tapOn: "□ 停止"
+
+# ===== Tab切り替え確認 =====
+- tapOn: "要約"
+- tapOn: "音声確認"

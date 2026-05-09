@@ -1,7 +1,6 @@
 package com.kohei.summaryrecorder.viewmodel
 
 import android.app.Application
-import android.net.Uri
 import android.os.StatFs
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -14,16 +13,12 @@ import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
-import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -34,7 +29,6 @@ class MainViewModel @Inject constructor(
     private val recordingController: RecordingController,
     private val summaryDao: SummaryDao,
     private val deleteSummaryUseCase: DeleteSummaryUseCase,
-    private val backupRestoreUseCase: BackupRestoreUseCase,
     private val application: Application,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -349,28 +343,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // ===== Backup / Restore =====
-
-    fun exportBackup(uri: Uri) {
-        viewModelScope.launch {
-            val result = backupRestoreUseCase.exportToUri(uri)
-            if (result.isSuccess) {
-                _uiState.update { it.copy(error = null) }
-            } else {
-                _uiState.update { it.copy(error = "エクスポート失敗: ${result.exceptionOrNull()?.message}") }
-            }
-        }
-    }
-
-    fun importBackup(uri: Uri) {
-        viewModelScope.launch {
-            val result = backupRestoreUseCase.importFromUri(uri)
-            if (result.isFailure) {
-                _uiState.update { it.copy(error = "インポート失敗: ${result.exceptionOrNull()?.message}") }
-            }
-        }
-    }
-
     // ===== Storage info =====
 
     private fun updateStorageInfo() {
@@ -385,25 +357,5 @@ class MainViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
-    }
-
-    fun formatDate(timestamp: Long): String {
-        val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
-        return sdf.format(Date(timestamp))
-    }
-
-    fun formatDuration(ms: Long): String {
-        val totalSeconds = ms / 1000
-        val h = totalSeconds / 3600
-        val m = (totalSeconds % 3600) / 60
-        val s = totalSeconds % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
-    }
-
-    fun formatTimer(seconds: Int): String {
-        val h = seconds / 3600
-        val m = (seconds % 3600) / 60
-        val s = seconds % 60
-        return "%02d:%02d:%02d".format(h, m, s)
     }
 }

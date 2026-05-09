@@ -10,7 +10,6 @@ import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
-import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -42,7 +41,6 @@ class SummaryFlowTest {
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
-    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var tempDir: File
@@ -55,7 +53,6 @@ class SummaryFlowTest {
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
-        backupRestoreUseCase = mockk<BackupRestoreUseCase>(relaxed = true)
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         tempDir = File(System.getProperty("java.io.tmpdir"), "sft-${System.currentTimeMillis()}").also { it.mkdirs() }
@@ -80,7 +77,7 @@ class SummaryFlowTest {
 
     private fun createViewModel() = MainViewModel(
         transcriptionProvider, summaryProvider, recordingController, summaryDao,
-        deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+        deleteSummaryUseCase, application, savedStateHandle
     )
 
     @Test

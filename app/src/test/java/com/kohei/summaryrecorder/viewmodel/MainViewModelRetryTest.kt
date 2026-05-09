@@ -1,5 +1,7 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import com.kohei.summaryrecorder.ui.util.FormatUtil
+
 import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
@@ -10,7 +12,6 @@ import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
-import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,6 @@ class MainViewModelRetryTest {
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
-    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var summariesFlow: MutableStateFlow<List<SummaryEntity>>
@@ -55,7 +55,6 @@ class MainViewModelRetryTest {
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
-        backupRestoreUseCase = mockk<BackupRestoreUseCase>(relaxed = true)
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         summariesFlow = MutableStateFlow(emptyList())
@@ -77,7 +76,7 @@ class MainViewModelRetryTest {
 
     private fun createViewModel() = MainViewModel(
         transcriptionProvider, summaryProvider, recordingController, summaryDao,
-        deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+        deleteSummaryUseCase, application, savedStateHandle
     )
 
     // ===== retryPendingRecords (init内で呼ばれる) =====
@@ -221,19 +220,16 @@ class MainViewModelRetryTest {
 
     @Test
     fun `formatTimer zero`() {
-        val vm = createViewModel()
-        assertEquals("00:00:00", vm.formatTimer(0))
+        assertEquals("00:00:00", FormatUtil.formatTimer(0))
     }
 
     @Test
     fun `formatTimer with hours`() {
-        val vm = createViewModel()
-        assertEquals("01:23:45", vm.formatTimer(1 * 3600 + 23 * 60 + 45))
+        assertEquals("01:23:45", FormatUtil.formatTimer(1 * 3600 + 23 * 60 + 45))
     }
 
     @Test
     fun `formatTimer minutes and seconds only`() {
-        val vm = createViewModel()
-        assertEquals("00:05:30", vm.formatTimer(330))
+        assertEquals("00:05:30", FormatUtil.formatTimer(330))
     }
 }

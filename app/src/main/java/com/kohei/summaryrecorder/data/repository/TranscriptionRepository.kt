@@ -1,6 +1,8 @@
 package com.kohei.summaryrecorder.data.repository
 
+import com.kohei.summaryrecorder.BuildConfig
 import com.kohei.summaryrecorder.data.api.GroqApiService
+import com.kohei.summaryrecorder.data.preferences.SettingsDataStore
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,7 +14,7 @@ import java.io.RandomAccessFile
 
 class TranscriptionRepository(
     private val apiService: GroqApiService,
-    private val apiKey: String,
+    private val dataStore: SettingsDataStore,
     private val maxChunkSize: Int = 25 * 1024 * 1024 // 25MB
 ) : TranscriptionProvider {
 
@@ -33,6 +35,11 @@ class TranscriptionRepository(
         }
     }
 
+    private suspend fun apiKey(): String {
+        val fromStore = dataStore.getGroqApiKey()
+        return fromStore.ifEmpty { BuildConfig.GROQ_API_KEY }
+    }
+
     private suspend fun transcribeSingleFile(file: File): Result<String> {
         return try {
             Log.d(TAG, "transcribeSingleFile: ${file.name}, size=${file.length()}")
@@ -41,7 +48,7 @@ class TranscriptionRepository(
                 "file", file.name, fileBody
             )
             val response = apiService.transcribe(
-                authorization = "Bearer $apiKey",
+                authorization = "Bearer ${apiKey()}",
                 file = filePart,
                 model = "whisper-large-v3".toRequestBody("text/plain".toMediaType()),
                 language = "ja".toRequestBody("text/plain".toMediaType()),

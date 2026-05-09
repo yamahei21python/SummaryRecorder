@@ -1,5 +1,7 @@
 package com.kohei.summaryrecorder.viewmodel
 
+import com.kohei.summaryrecorder.ui.util.FormatUtil
+
 import android.app.Application
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
@@ -10,7 +12,6 @@ import com.kohei.summaryrecorder.data.model.SummaryResult
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
-import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -45,7 +46,6 @@ class MainViewModelTabSessionTest {
     private lateinit var recordingController: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
-    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var summariesFlow: MutableStateFlow<List<SummaryEntity>>
@@ -58,7 +58,6 @@ class MainViewModelTabSessionTest {
         recordingController = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk<SummaryDao>(relaxed = true)
         deleteSummaryUseCase = mockk<DeleteSummaryUseCase>(relaxed = true)
-        backupRestoreUseCase = mockk<BackupRestoreUseCase>(relaxed = true)
         application = mockk<Application>(relaxed = true)
         savedStateHandle = SavedStateHandle()
         summariesFlow = MutableStateFlow(emptyList())
@@ -81,7 +80,7 @@ class MainViewModelTabSessionTest {
 
     private fun createViewModel() = MainViewModel(
         transcriptionProvider, summaryProvider, recordingController, summaryDao,
-        deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+        deleteSummaryUseCase, application, savedStateHandle
     )
 
     @Test
@@ -163,18 +162,16 @@ class MainViewModelTabSessionTest {
 
     @Test
     fun `formatDuration formats correctly`() {
-        val vm = createViewModel()
-        assertEquals("1:30", vm.formatDuration(90000L))
-        assertEquals("0:00", vm.formatDuration(0L))
-        assertEquals("1:00:00", vm.formatDuration(3600000L))
+        assertEquals("1:30", FormatUtil.formatDuration(90000L))
+        assertEquals("0:00", FormatUtil.formatDuration(0L))
+        assertEquals("1:00:00", FormatUtil.formatDuration(3600000L))
     }
 
     @Test
     fun `formatTimer formats correctly`() {
-        val vm = createViewModel()
-        assertEquals("00:00:00", vm.formatTimer(0))
-        assertEquals("00:01:30", vm.formatTimer(90))
-        assertEquals("01:00:00", vm.formatTimer(3600))
+        assertEquals("00:00:00", FormatUtil.formatTimer(0))
+        assertEquals("00:01:30", FormatUtil.formatTimer(90))
+        assertEquals("01:00:00", FormatUtil.formatTimer(3600))
     }
 
     @Test

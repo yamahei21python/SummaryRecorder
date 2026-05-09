@@ -24,8 +24,49 @@ import java.io.File
 class DebugPipelineReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != "com.kohei.summaryrecorder.DEBUG_TRIGGER_PIPELINE") return
+        when (intent.action) {
+            "com.kohei.summaryrecorder.DEBUG_INSERT_SUMMARY" -> handleInsert(context, intent)
+            "com.kohei.summaryrecorder.DEBUG_TRIGGER_PIPELINE" -> handlePipeline(context, intent)
+        }
+    }
 
+    private fun handleInsert(context: Context, intent: Intent) {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PipelineEntryPoint::class.java
+        )
+        val summaryDao = entryPoint.summaryDao()
+
+        val sessionId = intent.getStringExtra("session_id") ?: return
+        val audioFilePath = intent.getStringExtra("audio_file_path") ?: return
+        val durationMs = intent.getLongExtra("duration_ms", 0L)
+
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                summaryDao.insert(
+                    com.kohei.summaryrecorder.data.db.SummaryEntity(
+                        sessionId = sessionId,
+                        createdAt = System.currentTimeMillis(),
+                        title = "",
+                        summaryText = "",
+                        transcriptionText = "",
+                        audioFilePath = audioFilePath,
+                        durationMs = durationMs,
+                        status = com.kohei.summaryrecorder.data.db.SummaryStatus.RECORDED,
+                        errorMessage = ""
+                    )
+                )
+                Log.d("DebugInsert", "Inserted session: $sessionId")
+            } catch (e: Exception) {
+                Log.e("DebugInsert", "Insert failed", e)
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+
+    private fun handlePipeline(context: Context, intent: Intent) {
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
             PipelineEntryPoint::class.java

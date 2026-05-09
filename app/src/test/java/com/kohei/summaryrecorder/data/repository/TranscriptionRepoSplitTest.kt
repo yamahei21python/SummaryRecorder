@@ -2,6 +2,9 @@ package com.kohei.summaryrecorder.data.repository
 
 import com.google.gson.Gson
 import com.kohei.summaryrecorder.data.api.GroqTranscriptionResponse
+import com.kohei.summaryrecorder.data.preferences.SettingsDataStore
+import io.mockk.*
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -19,11 +22,16 @@ class TranscriptionRepoSplitTest {
 
     private lateinit var server: MockWebServer
     private lateinit var apiService: GroqApiService
+    private lateinit var mockDataStore: SettingsDataStore
 
     @BeforeEach
     fun setUp() {
         server = MockWebServer()
         server.start()
+
+        mockDataStore = mockk()
+        every { mockDataStore.groqApiKey } returns flowOf("test-key")
+        coEvery { mockDataStore.getGroqApiKey() } returns "test-key"
 
         apiService = Retrofit.Builder()
             .baseUrl(server.url("/"))
@@ -80,7 +88,7 @@ class TranscriptionRepoSplitTest {
     @Test
     fun `small file is sent as single request`() = runTest {
         val smallChunkSize = 1000 // 1000 bytes max
-        val repo = TranscriptionRepository(apiService, "test-key", maxChunkSize = smallChunkSize)
+        val repo = TranscriptionRepository(apiService, mockDataStore, maxChunkSize = smallChunkSize)
 
         // 100 bytes PCM = 144 bytes total (100 < 1000)
         val wavFile = createTestWav(100)
@@ -105,7 +113,7 @@ class TranscriptionRepoSplitTest {
     fun `large file is split into multiple requests`() = runTest {
         // maxChunkSize = 200 bytes → ヘッダー44 + PCM 156 bytes per chunk
         val smallChunkSize = 200
-        val repo = TranscriptionRepository(apiService, "test-key", maxChunkSize = smallChunkSize)
+        val repo = TranscriptionRepository(apiService, mockDataStore, maxChunkSize = smallChunkSize)
 
         // 300 bytes PCM = 344 bytes total (300 > 200 → split)
         val wavFile = createTestWav(300)
@@ -135,7 +143,7 @@ class TranscriptionRepoSplitTest {
     @Test
     fun `split failure on second chunk returns error`() = runTest {
         val smallChunkSize = 200
-        val repo = TranscriptionRepository(apiService, "test-key", maxChunkSize = smallChunkSize)
+        val repo = TranscriptionRepository(apiService, mockDataStore, maxChunkSize = smallChunkSize)
 
         val wavFile = createTestWav(300)
 
@@ -156,7 +164,7 @@ class TranscriptionRepoSplitTest {
     @Test
     fun `temp chunk files are cleaned up on success`() = runTest {
         val smallChunkSize = 200
-        val repo = TranscriptionRepository(apiService, "test-key", maxChunkSize = smallChunkSize)
+        val repo = TranscriptionRepository(apiService, mockDataStore, maxChunkSize = smallChunkSize)
 
         val wavFile = createTestWav(300)
 

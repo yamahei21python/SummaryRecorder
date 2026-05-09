@@ -8,7 +8,6 @@ import com.kohei.summaryrecorder.data.db.SummaryEntity
 import com.kohei.summaryrecorder.domain.controller.RecordingController
 import com.kohei.summaryrecorder.domain.repository.TranscriptionProvider
 import com.kohei.summaryrecorder.domain.repository.SummaryProvider
-import com.kohei.summaryrecorder.domain.usecase.BackupRestoreUseCase
 import com.kohei.summaryrecorder.domain.usecase.DeleteSummaryUseCase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +40,6 @@ class MainViewModelEdgeTest {
     private lateinit var controller: RecordingController
     private lateinit var summaryDao: SummaryDao
     private lateinit var deleteSummaryUseCase: DeleteSummaryUseCase
-    private lateinit var backupRestoreUseCase: BackupRestoreUseCase
     private lateinit var application: Application
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var viewModel: MainViewModel
@@ -54,7 +52,6 @@ class MainViewModelEdgeTest {
         controller = mockk<RecordingController>(relaxed = true)
         summaryDao = mockk(relaxed = true)
         deleteSummaryUseCase = mockk(relaxed = true)
-        backupRestoreUseCase = mockk(relaxed = true)
         application = mockk(relaxed = true)
         savedStateHandle = SavedStateHandle()
 
@@ -70,7 +67,7 @@ class MainViewModelEdgeTest {
 
         viewModel = MainViewModel(
             transcriptionProvider, summaryProvider, controller, summaryDao,
-            deleteSummaryUseCase, backupRestoreUseCase, application, savedStateHandle
+            deleteSummaryUseCase, application, savedStateHandle
         )
     }
 
